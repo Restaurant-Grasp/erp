@@ -246,6 +246,17 @@
                     </a>
                 </li>
                 @endcan
+
+            
+                @role('super_admin|hr_manager')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('staff.*') ? 'active' : '' }}" href="{{ route('staff.index') }}">
+                        <i class="fas fa-user-friends"></i> Staff
+                    </a>
+                </li>
+                @endrole
+             
+
                 
                 <li class="nav-item">
                     <a class="nav-link" href="#">
