@@ -166,4 +166,8 @@ class User extends Authenticatable
     {
         return 'username';
     }
+    public function staff()
+    {
+        return $this->belongsTo(Staff::class, 'staff_id');
+    }
 }

@@ -62,6 +62,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission.spatie' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+
+            'superadminandhrmanager.access' => \App\Http\Middleware\RoleAccessMiddleware::class,
         ]);
 
         // Priority middleware

@@ -72,5 +72,7 @@ class Kernel extends HttpKernel
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
         'permission.spatie' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+
+        'superadminandhrmanager.access' => \App\Http\Middleware\RoleAccessMiddleware::class,
     ];
 }

@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -113,4 +114,17 @@ Route::middleware(['auth'])->group(function () {
             return view('coming-soon', ['module' => 'Reports']);
         })->name('index');
     });
+
+});
+
+// Only allow access to users with roles: super_admin or hr_manager
+Route::middleware(['superadminandhrmanager.access'])->prefix('staff')->name('staff.')->group(function () {
+    Route::get('/index', [StaffController::class, 'index'])->name('index');            
+    Route::get('/create', [StaffController::class, 'create'])->name('create');   
+    Route::post('/store', [StaffController::class, 'store'])->name('store');       
+
+    Route::put('/update/{staff}', [StaffController::class, 'update'])->name('update');
+    Route::get('/edit/{staff}', [StaffController::class, 'edit'])->name('edit');
+    Route::delete('/destroy/{staff}', [StaffController::class, 'destroy'])->name('destroy');
+    
 });
