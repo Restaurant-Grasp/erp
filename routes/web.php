@@ -3,10 +3,16 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\MasterController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -118,13 +124,56 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Only allow access to users with roles: super_admin or hr_manager
-Route::middleware(['superadminandhrmanager.access'])->prefix('staff')->name('staff.')->group(function () {
-    Route::get('/index', [StaffController::class, 'index'])->name('index');            
-    Route::get('/create', [StaffController::class, 'create'])->name('create');   
-    Route::post('/store', [StaffController::class, 'store'])->name('store');       
+Route::middleware(['superadminandhrmanager.access'])->group(function () {
 
-    Route::put('/update/{staff}', [StaffController::class, 'update'])->name('update');
-    Route::get('/edit/{staff}', [StaffController::class, 'edit'])->name('edit');
-    Route::delete('/destroy/{staff}', [StaffController::class, 'destroy'])->name('destroy');
-    
+    // Staff Routes
+    Route::prefix('staff')->name('staff.')->group(function () {
+        Route::get('/index', [StaffController::class, 'index'])->name('index');
+        Route::get('/create', [StaffController::class, 'create'])->name('create');
+        Route::post('/store', [StaffController::class, 'store'])->name('store');
+        Route::get('/edit/{staff}', [StaffController::class, 'edit'])->name('edit');
+        Route::put('/update/{staff}', [StaffController::class, 'update'])->name('update');
+        Route::delete('/destroy/{staff}', [StaffController::class, 'destroy'])->name('destroy');
+    });
+
+    // Department Routes
+    Route::prefix('department')->name('department.')->group(function () {
+        Route::get('/index', [DepartmentController::class, 'index'])->name('index');
+        Route::get('/create', [DepartmentController::class, 'create'])->name('create');
+        Route::post('/store', [DepartmentController::class, 'store'])->name('store');
+        Route::get('/edit/{department}', [DepartmentController::class, 'edit'])->name('edit');
+        Route::put('/update/{department}', [DepartmentController::class, 'update'])->name('update');
+        Route::delete('/destroy/{department}', [DepartmentController::class, 'destroy'])->name('destroy');
+    });
+});
+//Master-Brand Routes
+Route::prefix('brand')->name('brand.')->group(function () {
+    Route::get('/index', [MasterController::class, 'brandIndex'])->name('index');
+    Route::get('/create', [MasterController::class, 'brandCreate'])->name('create');
+    Route::post('/store', [MasterController::class, 'brandStore'])->name('store');
+    Route::get('/edit/{brand}', [MasterController::class, 'brandEdit'])->name('edit');
+    Route::put('/update/{brand}', [MasterController::class, 'brandUpdate'])->name('update');
+    Route::delete('/destroy/{brand}', [MasterController::class, 'brandDestroy'])->name('destroy');
+});
+
+//Master-Model Routes
+Route::prefix('model')->name('model.')->group(function () {
+    Route::get('/index', [MasterController::class, 'modelIndex'])->name('index');
+    Route::get('/create', [MasterController::class, 'modelCreate'])->name('create');
+    Route::post('/store', [MasterController::class, 'modelStore'])->name('store');
+    Route::get('/edit/{model}', [MasterController::class, 'modelEdit'])->name('edit');
+    Route::put('/update/{model}', [MasterController::class, 'modelUpdate'])->name('update');
+    Route::delete('/destroy/{model}', [MasterController::class, 'modelDestroy'])->name('destroy');
+});
+
+
+//Product-categories Routes
+Route::prefix('categories')->name('categories.')->group(function () {
+    Route::get('/index', [ProductController::class, 'categoriesIndex'])->name('index');
+    Route::get('/create', [ProductController::class, 'categoriesCreate'])->name('create');
+    Route::post('/store', [ProductController::class, 'categoriesStore'])->name('store');
+    Route::get('/edit/{categories}', [ProductController::class, 'categoriesEdit'])->name('edit');
+    Route::put('/update/{categories}', [ProductController::class, 'categoriesUpdate'])->name('update');
+    Route::delete('/destroy/{categories}', [ProductController::class, 'categoriesDestroy'])->name('destroy');
+
 });

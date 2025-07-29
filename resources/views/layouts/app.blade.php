@@ -205,13 +205,35 @@
                 margin-left: 0;
             }
         }
+        .hover-scroll {
+    height: 100vh;
+    overflow-y: hidden;
+    transition: overflow 0.3s ease;
+}
+
+.hover-scroll:hover {
+    overflow-y: auto;
+}
+
+.hover-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.hover-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.hover-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
     </style>
 
     @stack('styles')
 </head>
 <body>
     <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
+    <div class="sidebar hover-scroll" id="sidebar">
         <div class="sidebar-logo">
             <i class="fas fa-leaf"></i> ERP SYSTEM
         </div>
@@ -222,7 +244,7 @@
                         <i class="fas fa-home"></i> Dashboard
                     </a>
                 </li>
-                
+     
                 @can('users.view')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
@@ -246,18 +268,53 @@
                     </a>
                 </li>
                 @endcan
+                @php
+    $role = auth()->user()->getRoleNames()->first();
+    $permissions = getCurrentRolePermissions($role);
+@endphp
 
-            
-                @role('super_admin|hr_manager')
+               
+                @if ($permissions->contains('name', 'staff.view'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('department.*') ? 'active' : '' }}" href="{{ route('department.index') }}">
+                    <i class="fas fa-building me-2"></i> Department
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('staff.*') ? 'active' : '' }}" href="{{ route('staff.index') }}">
                         <i class="fas fa-user-friends"></i> Staff
                     </a>
                 </li>
-                @endrole
-             
+                @endif
+                @if ($permissions->contains('name', 'brand.view') || $permissions->contains('name', 'model.view'))
+    <li class="nav-item">
+        <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#masterMenu" role="button" aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? 'true' : 'false' }}" aria-controls="masterMenu">
+            <span><i class="fas fa-cogs me-2"></i> Master</span>
+            <i class="fas fa-chevron-down"></i>
+        </a>
 
-                
+        <div class="collapse {{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? 'show' : '' }}" id="masterMenu">
+            <ul class="nav flex-column ms-3">
+                @if ($permissions->contains('name', 'brand.view'))
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('brand.*') ? 'active' : '' }}" href="{{ route('brand.index') }}">
+                            <i class="fas fa-tags me-2"></i> Brand
+                        </a>
+                    </li>
+                @endif
+
+                @if ($permissions->contains('name', 'model.view'))
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('model.*') ? 'active' : '' }}" href="{{ route('model.index') }}">
+                            <i class="fas fa-cube me-2"></i> Model
+                        </a>
+                    </li>
+                @endif
+            </ul>
+        </div>
+    </li>
+@endif
+
                 <li class="nav-item">
                     <a class="nav-link" href="#">
                         <i class="fas fa-user-tie"></i> Customers
@@ -269,12 +326,31 @@
                         <i class="fas fa-truck"></i> Vendors
                     </a>
                 </li>
-                
+              
                 <li class="nav-item">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-box"></i> Products
-                    </a>
-                </li>
+    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('categories.*') ? '' : 'collapsed' }}"
+       data-bs-toggle="collapse"
+       href="#productsMenu"
+       role="button"
+       aria-expanded="{{ request()->routeIs('categories.*') ? 'true' : 'false' }}"
+       aria-controls="productsMenu">
+        <span><i class="fas fa-cogs me-2"></i> Products</span>
+        <i class="fas fa-chevron-down"></i>
+    </a>
+
+    <div class="collapse {{ request()->routeIs('categories.*') ? 'show' : '' }}" id="productsMenu">
+        <ul class="nav flex-column ms-3">
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}" href="{{ route('categories.index') }}">
+                    <i class="fas fa-tags me-2"></i> Categories
+                </a>
+            </li>
+        </ul>
+    </div>
+</li>
+
+
+
                 
                 <li class="nav-item">
                     <a class="nav-link" href="#">

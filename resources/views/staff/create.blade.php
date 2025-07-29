@@ -11,18 +11,22 @@
                 <input type="text" name="name" class="form-control" required>
             </div>
             <div class="mb-3">
+             <label>Password <span class="text-danger">*</span></label>
+              <input type="password" name="password" class="form-control" required>
+             </div>
+            <div class="mb-3">
                 <label>Employee ID <span class="text-danger">*</span></label>
                 <input type="text" name="employee_id" class="form-control" required>
             </div>
-            <div class="mb-3">
+           <div class="mb-3">
                 <label>Email <span class="text-danger">*</span></label>
                 <input type="email" name="email" class="form-control" required>
             </div>
-            <div class="mb-3">
+          <div class="mb-3">
                 <label>Phone</label>
                 <input type="text" name="phone" class="form-control">
             </div>
-            <div class="mb-3">
+               <div class="mb-3">
                 <label>Address</label>
                 <textarea name="address" class="form-control" rows="3"></textarea>
 
@@ -48,7 +52,7 @@
                         <option value="{{ $role->id }}">{{ $role->name }}</option>
                     @endforeach
                 </select>
-            </div>
+            </div> 
             <button type="submit" class="btn btn-primary">Create</button>
             <a href="{{ route('staff.index') }}" class="btn btn-secondary">Cancel</a>
         </form>
