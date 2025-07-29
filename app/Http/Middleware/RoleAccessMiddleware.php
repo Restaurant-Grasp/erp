@@ -27,11 +27,6 @@ class RoleAccessMiddleware
             return $next($request);
         }
 
-        // Check if user has the required permission
-        if ($user->can($permission)) {
-          return $next($request);
-     }
-
         // AJAX request ku JSON error
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['error' => 'Unauthorized'], 403);

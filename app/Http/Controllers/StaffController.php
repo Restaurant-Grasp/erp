@@ -32,12 +32,13 @@ class StaffController extends Controller
         $request->validate([
             'name' => 'required|string|max:255|unique:users,name',
             'email' => 'required|email|max:255|unique:users,email',
-            'department_id' => 'required|exists:departments,id',
+           'department_id' => 'required|exists:departments,id',
             'role' => 'required|exists:roles,id',
             'employee_id' => 'required|string|max:255|unique:staff,employee_id',
+            'password' => 'required|string',
         ]);
         
-        $password = str()->random(8);
+        $password =$request->password;
       
         $staff = Staff::create([
             'name' => $request->name,
