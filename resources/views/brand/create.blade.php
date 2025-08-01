@@ -2,7 +2,9 @@
 @section('title', 'Create Brand')
 @section('content')
 <div class="card">
-    <div class="card-header"><h5>Create Brand</h5></div>
+    <div class="card-header">
+        <h5>Create Brand</h5>
+    </div>
     <div class="card-body">
         <form method="POST" action="{{ route('brand.store') }}" enctype="multipart/form-data">
             @csrf

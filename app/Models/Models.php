@@ -14,5 +14,14 @@ class Models extends Model
         'specifications',
         'status',
         'created_by',
-    ];   
+    ];
+    public function followUps()
+    {
+        return $this->hasMany(FollowUp::class);
+    }
+
+    public function communicationHistory()
+    {
+        return $this->hasMany(CommunicationHistory::class);
+    }
 }

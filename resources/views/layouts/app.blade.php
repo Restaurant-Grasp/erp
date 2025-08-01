@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,7 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+
     <style>
         :root {
             --primary-green: #00A551;
@@ -33,7 +34,7 @@
             height: 100vh;
             width: var(--sidebar-width);
             background-color: #fff;
-            box-shadow: 0 0 15px rgba(0,0,0,0.05);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
             z-index: 1000;
             transition: all 0.3s;
         }
@@ -87,7 +88,7 @@
         /* Top Navbar */
         .top-navbar {
             background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
             padding: 15px 30px;
         }
 
@@ -134,12 +135,12 @@
         /* Cards */
         .card {
             border: none;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             transition: all 0.3s;
         }
 
         .card:hover {
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
         }
 
         .card-header {
@@ -196,41 +197,47 @@
             .sidebar {
                 transform: translateX(-100%);
             }
-            
+
             .sidebar.show {
                 transform: translateX(0);
             }
-            
+
             .main-content {
                 margin-left: 0;
             }
         }
+
         .hover-scroll {
-    height: 100vh;
-    overflow-y: hidden;
-    transition: overflow 0.3s ease;
-}
+            height: 100vh;
+            overflow-y: hidden;
+            transition: overflow 0.3s ease;
+        }
 
-.hover-scroll:hover {
-    overflow-y: auto;
-}
+        .hover-scroll:hover {
+            overflow-y: auto;
+        }
 
-.hover-scroll::-webkit-scrollbar {
-    width: 6px;
-}
+        .hover-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
 
-.hover-scroll::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-}
+        .hover-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
 
-.hover-scroll::-webkit-scrollbar-track {
-    background: transparent;
-}
+        .hover-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .text-green {
+            color: var(--primary-green) !important;
+        }
     </style>
 
     @stack('styles')
 </head>
+
 <body>
     <!-- Sidebar -->
     <div class="sidebar hover-scroll" id="sidebar">
@@ -244,7 +251,7 @@
                         <i class="fas fa-home"></i> Dashboard
                     </a>
                 </li>
-     
+
                 @can('users.view')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
@@ -252,7 +259,7 @@
                     </a>
                 </li>
                 @endcan
-                
+
                 @can('roles.view')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}" href="{{ route('roles.index') }}">
@@ -260,7 +267,7 @@
                     </a>
                 </li>
                 @endcan
-                
+
                 @can('permissions.view')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('permissions.*') ? 'active' : '' }}" href="{{ route('permissions.index') }}">
@@ -269,15 +276,15 @@
                 </li>
                 @endcan
                 @php
-    $role = auth()->user()->getRoleNames()->first();
-    $permissions = getCurrentRolePermissions($role);
-@endphp
+                $role = auth()->user()->getRoleNames()->first();
+                $permissions = getCurrentRolePermissions($role);
+                @endphp
 
-               
+
                 @if ($permissions->contains('name', 'staff.view'))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('department.*') ? 'active' : '' }}" href="{{ route('department.index') }}">
-                    <i class="fas fa-building me-2"></i> Department
+                        <i class="fas fa-building me-2"></i> Department
                     </a>
                 </li>
                 <li class="nav-item">
@@ -286,96 +293,128 @@
                     </a>
                 </li>
                 @endif
-                @if ($permissions->contains('name', 'brand.view') || $permissions->contains('name', 'model.view'))
-    <li class="nav-item">
-        <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#masterMenu" role="button" aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? 'true' : 'false' }}" aria-controls="masterMenu">
-            <span><i class="fas fa-cogs me-2"></i> Master</span>
-            <i class="fas fa-chevron-down"></i>
-        </a>
 
-        <div class="collapse {{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? 'show' : '' }}" id="masterMenu">
-            <ul class="nav flex-column ms-3">
-                @if ($permissions->contains('name', 'brand.view'))
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('brand.*') ? 'active' : '' }}" href="{{ route('brand.index') }}">
-                            <i class="fas fa-tags me-2"></i> Brand
-                        </a>
-                    </li>
-                @endif
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#masterMenu" role="button" aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? 'true' : 'false' }}" aria-controls="masterMenu">
+                        <span><i class="fas fa-tools me-2"></i> Master</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </a>
 
-                @if ($permissions->contains('name', 'model.view'))
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('model.*') ? 'active' : '' }}" href="{{ route('model.index') }}">
-                            <i class="fas fa-cube me-2"></i> Model
-                        </a>
-                    </li>
-                @endif
-            </ul>
-        </div>
-    </li>
-@endif
+                    <div class="collapse {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') ? 'show' : '' }}" id="masterMenu">
+                        <ul class="nav flex-column ms-3">
+
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('brand.*') ? 'active' : '' }}" href="{{ route('brand.index') }}">
+                                    <i class="fas fa-briefcase me-2"></i> Brand
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('model.*') ? 'active' : '' }}" href="{{ route('model.index') }}">
+                                    <i class="fas fa-layer-group me-2"></i> Model
+                                </a>
+                            </li>
+
+
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}" href="{{ route('categories.index') }}">
+                                    <i class="fas fa-sitemap me-2"></i> Categories
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('uom.*') ? 'active' : '' }}" href="{{ route('uom.index') }}">
+                                    <i class="fas fa-balance-scale me-2"></i> UOM
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('warehouse.*') ? 'active' : '' }}" href="{{ route('warehouse.index') }}">
+                                    <i class="fas fa-warehouse me-2"></i> Warehouse
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('temple-categories.*') ? 'active' : '' }}" href="{{ route('temple-categories.index') }}">
+                        <i class="fas fa-place-of-worship"></i> Temple Categories
+                    </a>
+                </li>
+
+
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center 
+        {{ request()->routeIs('leads.*') || request()->routeIs('followups.*') ? '' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#leadMenu" role="button"
+                        aria-expanded="{{ request()->routeIs('leads.*') || request()->routeIs('followups.*') ? 'true' : 'false' }}"
+                        aria-controls="leadMenu">
+                        <span><i class="fas fa-user-plus me-2"></i> Lead Management</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </a>
+
+                    <div class="collapse {{ request()->routeIs('leads.*') || request()->routeIs('followups.*') ? 'show' : '' }}" id="leadMenu">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('leads.*') ? 'active' : '' }}" href="{{ route('leads.index') }}">
+                                    <i class="fas fa-user me-2"></i> Lead
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('followups.*') ? 'active' : '' }}" href="{{ route('followups.index') }}">
+                                    <i class="fas fa-calendar-check me-2"></i> Follow-Up
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+
 
                 <li class="nav-item">
                     <a class="nav-link" href="#">
                         <i class="fas fa-user-tie"></i> Customers
                     </a>
                 </li>
-                
+
                 <li class="nav-item">
                     <a class="nav-link" href="#">
                         <i class="fas fa-truck"></i> Vendors
                     </a>
                 </li>
-              
+
                 <li class="nav-item">
-    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('categories.*') ? '' : 'collapsed' }}"
-       data-bs-toggle="collapse"
-       href="#productsMenu"
-       role="button"
-       aria-expanded="{{ request()->routeIs('categories.*') ? 'true' : 'false' }}"
-       aria-controls="productsMenu">
-        <span><i class="fas fa-cogs me-2"></i> Products</span>
-        <i class="fas fa-chevron-down"></i>
-    </a>
-
-    <div class="collapse {{ request()->routeIs('categories.*') ? 'show' : '' }}" id="productsMenu">
-        <ul class="nav flex-column ms-3">
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}" href="{{ route('categories.index') }}">
-                    <i class="fas fa-tags me-2"></i> Categories
-                </a>
-            </li>
-        </ul>
-    </div>
-</li>
+                    <a class="nav-link {{ request()->routeIs('product.*') ? 'active' : '' }}" href="{{ route('product.index') }}">
+                        <i class="fas fa-file-invoice"></i> Products
+                    </a>
+                </li>
 
 
 
-                
                 <li class="nav-item">
                     <a class="nav-link" href="#">
                         <i class="fas fa-file-invoice"></i> Sales
                     </a>
                 </li>
-                
+
                 <li class="nav-item">
                     <a class="nav-link" href="#">
                         <i class="fas fa-shopping-cart"></i> Purchases
                     </a>
                 </li>
-                
+
                 <li class="nav-item">
                     <a class="nav-link" href="#">
                         <i class="fas fa-wrench"></i> Service
                     </a>
                 </li>
-                
+
                 <li class="nav-item">
                     <a class="nav-link" href="#">
                         <i class="fas fa-users-cog"></i> HRM
                     </a>
                 </li>
-                
+
                 <li class="nav-item">
                     <a class="nav-link" href="#">
                         <i class="fas fa-chart-line"></i> Reports
@@ -392,7 +431,7 @@
             <button class="btn btn-link d-md-none" onclick="toggleSidebar()">
                 <i class="fas fa-bars"></i>
             </button>
-            
+
             <div class="ms-auto navbar-user-info">
                 <div class="dropdown">
                     <button class="btn btn-link dropdown-toggle text-decoration-none text-dark" type="button" data-bs-toggle="dropdown">
@@ -409,7 +448,9 @@
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i> Profile</a></li>
                         <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i> Settings</a></li>
-                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
                         <li>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -426,17 +467,17 @@
         <!-- Content Wrapper -->
         <div class="content-wrapper">
             @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
             @endif
 
             @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    {{ session('error') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
             @endif
 
             @yield('content')
@@ -447,7 +488,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+    <script src="{{ asset('js/product.js') }}"></script>
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('show');
@@ -465,4 +506,5 @@
 
     @stack('scripts')
 </body>
+
 </html>

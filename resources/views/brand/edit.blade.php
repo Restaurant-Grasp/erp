@@ -2,7 +2,9 @@
 @section('title', 'Edit Brand')
 @section('content')
 <div class="card">
-    <div class="card-header"><h5>Edit Brand</h5></div>
+    <div class="card-header">
+        <h5>Edit Brand</h5>
+    </div>
     <div class="card-body">
         <form method="POST" action="{{ route('brand.update', $brand) }}" enctype="multipart/form-data">
             @csrf @method('PUT')
@@ -14,13 +16,13 @@
                 <label>Code</label>
                 <input type="text" name="code" class="form-control" value="{{ $brand->code }}">
             </div>
-      
+
             <div class="mb-3">
                 <label>Logo</label><br>
                 <input type="file" name="logo" class="form-control">
                 <small class="text-muted">Supported formats: jpg, png, svg, gif.</small><br>
                 @if ($brand->logo)
-                    <img src="{{ asset('assets/' . $brand->logo) }}" width="100" class="mb-2"><br>
+                <img src="{{ asset('assets/' . $brand->logo) }}" width="100" class="mb-2"><br>
                 @endif
             </div>
 

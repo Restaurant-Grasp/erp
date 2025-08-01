@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Department;
 use Illuminate\Http\Request;
 
@@ -8,7 +9,7 @@ class DepartmentController extends Controller
 {
     public function index()
     {
-        $departmentList = Department::paginate(10);
+        $departmentList = Department::orderBy('id', 'desc')->paginate(10);
         return view('department.index', compact('departmentList'));
     }
     public function create()
@@ -21,13 +22,17 @@ class DepartmentController extends Controller
             'name' => 'required',
             'code' => 'required|string|max:50|unique:departments,code',
         ]);
-        
-        $department = Department::create([
-            'name' => $request->name,
-            'code' => $request->code,
-            'description' => $request->description,
-        ]);
-        return redirect()->route('department.index')->with('success', 'Department created successfully.');
+        try {
+            $department = Department::create([
+                'name' => $request->name,
+                'code' => $request->code,
+                'description' => $request->description,
+                'created_by' => auth()->id(),
+            ]);
+            return redirect()->route('department.index')->with('success', 'Department created successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error creating department: ' . $e->getMessage());
+        }
     }
     public function edit(Department $department)
     {
@@ -40,12 +45,17 @@ class DepartmentController extends Controller
             'name' => 'required|string|max:100',
             'code' => 'required|string|max:50|unique:departments,code,' . $department->id,
         ]);
-        $department->update([
-            'name' => $request->name,
-            'code' => $request->code,
-            'description' => $request->description,
-        ]);
-        return redirect()->route('department.index')->with('success', 'Department updated successfully.');
+        try {
+            $department->update([
+                'name' => $request->name,
+                'code' => $request->code,
+                'description' => $request->description,
+                'created_by' => auth()->id(),
+            ]);
+            return redirect()->route('department.index')->with('success', 'Department updated successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error updating department: ' . $e->getMessage());
+        }
     }
     public function destroy(Department $department)
     {

@@ -2,7 +2,9 @@
 @section('title', 'Edit Model')
 @section('content')
 <div class="card">
-    <div class="card-header"><h5>Edit Model</h5></div>
+    <div class="card-header">
+        <h5>Edit Model</h5>
+    </div>
     <div class="card-body">
         <form method="POST" action="{{ route('model.update', $model) }}">
             @csrf @method('PUT')
@@ -19,9 +21,9 @@
                 <select name="brand_id" class="form-control" required>
                     <option value="">-- Select Brand --</option>
                     @foreach($brands as $brand)
-                        <option value="{{ $brand->id }}" {{ $brand->id == old('brand_id', $model->brand_id) ? 'selected' : '' }}>
-                            {{ $brand->name }}
-                        </option>
+                    <option value="{{ $brand->id }}" {{ $brand->id == old('brand_id', $model->brand_id) ? 'selected' : '' }}>
+                        {{ $brand->name }}
+                    </option>
                     @endforeach
                 </select>
             </div>

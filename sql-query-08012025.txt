@@ -1,0 +1,256 @@
+-- 1. Create temple_categories table
+CREATE TABLE `temple_categories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `status` tinyint(4) DEFAULT 1,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_name` (`name`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `temple_categories_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 2. Update leads table - Add temple specific columns
+ALTER TABLE `leads` 
+ADD COLUMN `temple_category_id` int(11) DEFAULT NULL,
+ADD COLUMN `temple_size` enum('small','medium','large','very_large') DEFAULT NULL,
+ADD COLUMN `follow_up_scheduled` tinyint(4) DEFAULT 0,
+ADD COLUMN `reminder_sent_date` datetime DEFAULT NULL,
+ADD KEY `idx_temple_category` (`temple_category_id`),
+ADD CONSTRAINT `leads_ibfk_3` FOREIGN KEY (`temple_category_id`) REFERENCES `temple_categories` (`id`);
+
+
+-- 3. Create lead_documents table
+CREATE TABLE `lead_documents` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `lead_id` int(11) NOT NULL,
+  `document_name` varchar(255) NOT NULL,
+  `file_name` varchar(500) NOT NULL,
+  `file_path` varchar(1000) NOT NULL,
+  `file_size` int(11) DEFAULT NULL,
+  `file_type` varchar(100) DEFAULT NULL,
+  `uploaded_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_lead` (`lead_id`),
+  KEY `idx_uploaded_by` (`uploaded_by`),
+  CONSTRAINT `lead_documents_ibfk_1` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `lead_documents_ibfk_2` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4. Add permissions for lead management
+INSERT INTO `permissions` (`name`, `guard_name`, `module`, `permission`, `description`) VALUES
+('leads.view', 'web', 'leads', 'view', 'View leads'),
+('leads.create', 'web', 'leads', 'create', 'Create leads'),
+('leads.edit', 'web', 'leads', 'edit', 'Edit leads'),
+('leads.delete', 'web', 'leads', 'delete', 'Delete leads'),
+('leads.convert', 'web', 'leads', 'convert', 'Convert leads to customers'),
+('temple_categories.manage', 'web', 'temple_categories', 'manage', 'Manage temple categories');
+
+-- 5. Create lead_reminder_logs table for tracking sent reminders
+CREATE TABLE `lead_reminder_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `lead_id` int(11) NOT NULL,
+  `reminder_type` varchar(50) DEFAULT '7_day_followup',
+  `sent_date` datetime NOT NULL,
+  `email_sent_to` varchar(255) DEFAULT NULL,
+  `status` enum('sent','failed') DEFAULT 'sent',
+  `error_message` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_lead` (`lead_id`),
+  KEY `idx_sent_date` (`sent_date`),
+  CONSTRAINT `lead_reminder_logs_ibfk_1` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+ALTER TABLE `lead_activities` 
+ADD COLUMN `updated_at` TIMESTAMP NULL DEFAULT NULL;
+
+
+
+-- 1. Create follow_ups table
+CREATE TABLE `follow_ups` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `lead_id` int(11) DEFAULT NULL,
+  `customer_id` int(11) DEFAULT NULL,
+  `follow_up_type` enum('phone_call','email','whatsapp','in_person_meeting','video_call','other') NOT NULL,
+  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',
+  `scheduled_date` datetime NOT NULL,
+  `completed_date` datetime DEFAULT NULL,
+  `status` enum('scheduled','completed','cancelled','overdue','rescheduled') DEFAULT 'scheduled',
+  `outcome` enum('interested','not_interested','callback_later','no_response','meeting_scheduled','demo_scheduled','quotation_requested','other') DEFAULT NULL,
+  `subject` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `assigned_to` int(11) NOT NULL,
+  `reminder_sent` tinyint(4) DEFAULT 0,
+  `reminder_sent_date` datetime DEFAULT NULL,
+  `template_id` int(11) DEFAULT NULL,
+  `is_recurring` tinyint(4) DEFAULT 0,
+  `recurring_pattern` enum('daily','weekly','monthly','custom') DEFAULT NULL,
+  `recurring_interval` int(11) DEFAULT NULL COMMENT 'Interval in days',
+  `recurring_end_date` date DEFAULT NULL,
+  `parent_follow_up_id` int(11) DEFAULT NULL COMMENT 'For recurring follow-ups',
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_lead` (`lead_id`),
+  KEY `idx_customer` (`customer_id`),
+  KEY `idx_scheduled_date` (`scheduled_date`),
+  KEY `idx_status` (`status`),
+  KEY `idx_assigned_to` (`assigned_to`),
+  KEY `idx_reminder` (`reminder_sent`, `scheduled_date`),
+  KEY `idx_template` (`template_id`),
+  KEY `idx_parent` (`parent_follow_up_id`),
+  CONSTRAINT `follow_ups_ibfk_1` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `follow_ups_ibfk_2` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `follow_ups_ibfk_3` FOREIGN KEY (`assigned_to`) REFERENCES `staff` (`id`),
+  CONSTRAINT `follow_ups_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `follow_ups_ibfk_5` FOREIGN KEY (`template_id`) REFERENCES `follow_up_templates` (`id`),
+  CONSTRAINT `follow_ups_ibfk_6` FOREIGN KEY (`parent_follow_up_id`) REFERENCES `follow_ups` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 2. Create follow_up_templates table
+CREATE TABLE `follow_up_templates` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `follow_up_type` enum('phone_call','email','whatsapp','in_person_meeting','video_call','other') NOT NULL,
+  `subject` varchar(255) DEFAULT NULL,
+  `content` text NOT NULL,
+  `category` enum('initial_contact','demo_followup','proposal_followup','general','closing') DEFAULT 'general',
+  `is_active` tinyint(4) DEFAULT 1,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_type` (`follow_up_type`),
+  KEY `idx_category` (`category`),
+  KEY `idx_active` (`is_active`),
+  CONSTRAINT `follow_up_templates_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. Create follow_up_reminder_logs table
+CREATE TABLE `follow_up_reminder_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `follow_up_id` int(11) NOT NULL,
+  `reminder_type` enum('email','whatsapp','both') NOT NULL,
+  `sent_to` varchar(255) NOT NULL,
+  `sent_date` datetime NOT NULL,
+  `status` enum('sent','failed') DEFAULT 'sent',
+  `error_message` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_follow_up` (`follow_up_id`),
+  KEY `idx_sent_date` (`sent_date`),
+  CONSTRAINT `follow_up_reminder_logs_ibfk_1` FOREIGN KEY (`follow_up_id`) REFERENCES `follow_ups` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4. Create communication_history table (for call/email logs)
+CREATE TABLE `communication_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `lead_id` int(11) DEFAULT NULL,
+  `customer_id` int(11) DEFAULT NULL,
+  `follow_up_id` int(11) DEFAULT NULL,
+  `communication_type` enum('phone_call','email','whatsapp','sms','meeting','other') NOT NULL,
+  `direction` enum('incoming','outgoing') DEFAULT 'outgoing',
+  `contact_person` varchar(255) DEFAULT NULL,
+  `contact_number` varchar(50) DEFAULT NULL,
+  `duration_minutes` int(11) DEFAULT NULL COMMENT 'For calls',
+  `subject` varchar(500) DEFAULT NULL,
+  `content` text DEFAULT NULL,
+  `outcome` varchar(255) DEFAULT NULL,
+  `recorded_by` int(11) NOT NULL,
+  `communication_date` datetime NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_lead` (`lead_id`),
+  KEY `idx_customer` (`customer_id`),
+  KEY `idx_follow_up` (`follow_up_id`),
+  KEY `idx_date` (`communication_date`),
+  KEY `idx_type` (`communication_type`),
+  CONSTRAINT `communication_history_ibfk_1` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `communication_history_ibfk_2` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `communication_history_ibfk_3` FOREIGN KEY (`follow_up_id`) REFERENCES `follow_ups` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `communication_history_ibfk_4` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5. Add follow-up related columns to leads table
+ALTER TABLE `leads` 
+ADD COLUMN `last_follow_up_date` datetime DEFAULT NULL AFTER `next_followup_date`,
+ADD COLUMN `total_follow_ups` int(11) DEFAULT 0 AFTER `follow_up_count`,
+ADD KEY `idx_last_follow_up` (`last_follow_up_date`);
+
+-- 6. Add permissions for follow-up management
+INSERT INTO `permissions` (`name`, `guard_name`, `module`, `permission`, `description`) VALUES
+('followups.view', 'web', 'followups', 'view', 'View follow-ups'),
+('followups.create', 'web', 'followups', 'create', 'Create follow-ups'),
+('followups.edit', 'web', 'followups', 'edit', 'Edit follow-ups'),
+('followups.delete', 'web', 'followups', 'delete', 'Delete follow-ups'),
+('followups.complete', 'web', 'followups', 'complete', 'Complete follow-ups'),
+('followup_templates.manage', 'web', 'followup_templates', 'manage', 'Manage follow-up templates'),
+('communication_history.view', 'web', 'communication_history', 'view', 'View communication history'),
+('communication_history.create', 'web', 'communication_history', 'create', 'Create communication logs');
+
+-- 7. Insert default follow-up templates
+INSERT INTO `follow_up_templates` (`name`, `follow_up_type`, `subject`, `content`, `category`, `is_active`, `created_by`) VALUES
+('Initial Contact - Phone', 'phone_call', 'Initial Contact Call', 'Hello {{contact_person}},\n\nThis is {{staff_name}} from Temple Management Software. I am calling to follow up on your inquiry about our temple management system.\n\nKey points to discuss:\n- Understanding your temple requirements\n- Software features overview\n- Demo scheduling\n- Pricing information', 'initial_contact', 1, 1),
+
+('Demo Follow-up - Email', 'email', 'Thank you for attending our demo', 'Dear {{contact_person}},\n\nThank you for taking the time to attend our temple management software demo today.\n\nAs discussed, our system offers:\n- Complete temple administration\n- Devotee management\n- Donation tracking\n- Event management\n- Financial reporting\n\nPlease let me know if you have any questions or would like to proceed with the implementation.\n\nBest regards,\n{{staff_name}}', 'demo_followup', 1, 1),
+
+('Proposal Follow-up - WhatsApp', 'whatsapp', 'Proposal Follow-up', 'Dear {{contact_person}}, \n\nI hope you had a chance to review our proposal for the temple management system. \n\nI would be happy to clarify any questions you might have. When would be a good time to discuss this further?\n\nRegards,\n{{staff_name}}', 'proposal_followup', 1, 1),
+
+('General Check-in', 'phone_call', 'Regular Check-in', 'Hello {{contact_person}},\n\nI am calling to check if you have any updates regarding the temple management software implementation.\n\nPoints to cover:\n- Current status\n- Any concerns or questions\n- Next steps\n- Timeline', 'general', 1, 1),
+
+('Closing Call', 'phone_call', 'Final Decision Discussion', 'Hello {{contact_person}},\n\nI am calling to discuss the final decision regarding our temple management software.\n\nTopics:\n- Address any final concerns\n- Finalize pricing and terms\n- Implementation timeline\n- Training schedule', 'closing', 1, 1);
+
+-- 8. Create view for follow-up dashboard
+CREATE OR REPLACE VIEW `v_follow_up_dashboard` AS
+SELECT 
+    f.id,
+    f.follow_up_type,
+    f.priority,
+    f.scheduled_date,
+    f.status,
+    f.subject,
+    CASE 
+        WHEN f.lead_id IS NOT NULL THEN 'Lead'
+        WHEN f.customer_id IS NOT NULL THEN 'Customer'
+    END as entity_type,
+    COALESCE(l.lead_no, c.customer_code) as entity_code,
+    COALESCE(l.company_name, c.company_name, l.contact_person, c.contact_person) as entity_name,
+    s.name as assigned_to_name,
+    CASE 
+        WHEN f.status = 'scheduled' AND f.scheduled_date < NOW() THEN 'overdue'
+        WHEN f.status = 'scheduled' AND f.scheduled_date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 1 DAY) THEN 'today'
+        WHEN f.status = 'scheduled' AND f.scheduled_date BETWEEN DATE_ADD(NOW(), INTERVAL 1 DAY) AND DATE_ADD(NOW(), INTERVAL 7 DAY) THEN 'upcoming'
+        ELSE 'future'
+    END as urgency
+FROM follow_ups f
+LEFT JOIN leads l ON f.lead_id = l.id
+LEFT JOIN customers c ON f.customer_id = c.id
+LEFT JOIN staff s ON f.assigned_to = s.id
+WHERE f.status IN ('scheduled', 'overdue')
+ORDER BY f.scheduled_date ASC;
+
+ALTER TABLE inventory_transactions ADD updated_at TIMESTAMP on update CURRENT_TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP AFTER created_at;
+CREATE TABLE warehouses (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description LONGTEXT,
+    status TINYINT(1) DEFAULT 1,
+    created_by BIGINT UNSIGNED,
+    updated_by BIGINT UNSIGNED,
+    created_at TIMESTAMP NULL DEFAULT NULL,
+    updated_at TIMESTAMP NULL DEFAULT NULL
+);
+ALTER TABLE inventory_transactions
+MODIFY COLUMN transaction_type 
+ENUM('purchase', 'sale', 'adjustment', 'transfer', 'return', 'opening') 
+NOT NULL;
+ALTER TABLE products
+MODIFY COLUMN product_code VARCHAR(255) NULL;

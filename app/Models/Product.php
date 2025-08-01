@@ -3,6 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Categories;
+use App\Models\Brand;
+use App\Models\Uom;
+use App\Models\Models;
+
 
 class Product extends Model
 {
@@ -30,4 +35,27 @@ class Product extends Model
         'image',
         'created_by',
     ];
+   // Category Relationship
+   public function category()
+   {
+       return $this->belongsTo(Categories::class, 'category_id');
+   }
+
+   // Brand Relationship
+   public function brand()
+   {
+       return $this->belongsTo(Brand::class, 'brand_id');
+   }
+
+   // Model Relationship
+   public function model()
+   {
+       return $this->belongsTo(Models::class, 'model_id');
+   }
+
+   // UOM Relationship
+   public function uom()
+   {
+       return $this->belongsTo(Uom::class, 'uom_id');
+   }
 }
