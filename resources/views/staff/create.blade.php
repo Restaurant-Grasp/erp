@@ -2,13 +2,19 @@
 @section('title', 'Create Staff')
 @section('content')
 <div class="card">
-    <div class="card-header"><h5>Create Staff</h5></div>
+    <div class="card-header">
+        <h5>Create Staff</h5>
+    </div>
     <div class="card-body">
         <form method="POST" action="{{ route('staff.store') }}">
             @csrf
             <div class="mb-3">
                 <label>Name <span class="text-danger">*</span></label>
                 <input type="text" name="name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label>Password <span class="text-danger">*</span></label>
+                <input type="password" name="password" class="form-control" required>
             </div>
             <div class="mb-3">
                 <label>Employee ID <span class="text-danger">*</span></label>
@@ -32,7 +38,7 @@
                 <select name="department_id" class="form-control" required>
                     <option value="">-- Select Department --</option>
                     @foreach($departments as $dept)
-                        <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                    <option value="{{ $dept->id }}">{{ $dept->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -45,7 +51,7 @@
                 <select name="role" class="form-control" required>
                     <option value="">-- Select Role --</option>
                     @foreach($roles as $role)
-                        <option value="{{ $role->id }}">{{ $role->name }}</option>
+                    <option value="{{ $role->id }}">{{ $role->name }}</option>
                     @endforeach
                 </select>
             </div>

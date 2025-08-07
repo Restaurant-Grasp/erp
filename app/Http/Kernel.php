@@ -2,6 +2,8 @@
 
 namespace App\Http;
 
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
@@ -75,4 +77,40 @@ class Kernel extends HttpKernel
 
         'superadminandhrmanager.access' => \App\Http\Middleware\RoleAccessMiddleware::class,
     ];
+  /**
+     * Define the application's command schedule.
+     *
+     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
+     * @return void
+     */
+    protected function schedule(Schedule $schedule)
+    {
+        // Existing schedules...
+        
+        // Lead Management Schedules
+        $schedule->command('leads:send-followup-reminders')
+            ->daily()
+            ->at('09:00')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/lead-reminders.log'));
+            
+        // Alternative: Run every morning at 9 AM with email notification on failure
+        // $schedule->command('leads:send-followup-reminders')
+        //     ->dailyAt('09:00')
+        //     ->emailOutputOnFailure('admin@example.com');
+    }
+
+    /**
+     * Register the commands for the application.
+     *
+     * @return void
+     */
+    protected function commands()
+    {
+        $this->load(__DIR__.'/Commands');
+
+        require base_path('routes/console.php');
+    }
 }

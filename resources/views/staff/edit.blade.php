@@ -2,7 +2,9 @@
 @section('title', 'Edit Staff')
 @section('content')
 <div class="card">
-    <div class="card-header"><h5>Edit Staff</h5></div>
+    <div class="card-header">
+        <h5>Edit Staff</h5>
+    </div>
     <div class="card-body">
         <form method="POST" action="{{ route('staff.update', $staff) }}">
             @csrf @method('PUT')
@@ -24,14 +26,14 @@
             </div>
             <div class="mb-3">
                 <label>Address</label>
-                <textarea name="address" class="form-control" rows="3" >{{ $staff->address }}</textarea>
+                <textarea name="address" class="form-control" rows="3">{{ $staff->address }}</textarea>
 
             </div>
             <div class="mb-3">
                 <label>Department <span class="text-danger">*</span></label>
                 <select name="department_id" class="form-control" required>
                     @foreach($departments as $dept)
-                        <option value="{{ $dept->id }}" {{ $dept->id == $staff->department_id ? 'selected' : '' }}>{{ $dept->name }}</option>
+                    <option value="{{ $dept->id }}" {{ $dept->id == $staff->department_id ? 'selected' : '' }}>{{ $dept->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -43,7 +45,7 @@
                 <label>Role <span class="text-danger">*</span></label>
                 <select name="role" class="form-control" required>
                     @foreach($roles as $role)
-                        <option value="{{ $role->id }}" {{ $staff->user && $staff->user->hasRole($role->name) ? 'selected' : '' }}>{{ $role->name }}</option>
+                    <option value="{{ $role->id }}" {{ $staff->user && $staff->user->hasRole($role->name) ? 'selected' : '' }}>{{ $role->name }}</option>
                     @endforeach
                 </select>
             </div>
