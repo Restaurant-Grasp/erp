@@ -29,7 +29,9 @@
             "Database\\Seeders\\": "database/seeders/"
         },
         "files": [
-            "app/Helpers/SuperAdminAccess.php"
+            "app/Helpers/SuperAdminAccess.php",
+            "app/Helpers/SettingsHelper.php",
+            "app/Helpers/PermissionHelper.php"
         ]
         
     },

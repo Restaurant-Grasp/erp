@@ -6,7 +6,7 @@ use App\Http\Controllers\TempleCategoryController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\FollowUpController;
 use App\Http\Controllers\FollowUpTemplateController;
-
+use App\Http\Controllers\CommunicationHistoryController;
 /*
 |--------------------------------------------------------------------------
 | API Routes

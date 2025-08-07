@@ -12,6 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css">
 
     <style>
         :root {
@@ -247,14 +248,16 @@
         <nav class="sidebar-nav">
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                    <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
+                        href="{{ route('dashboard') }}">
                         <i class="fas fa-home"></i> Dashboard
                     </a>
                 </li>
 
                 @can('users.view')
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
+                    <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
+                        href="{{ route('users.index') }}">
                         <i class="fas fa-users"></i> Users
                     </a>
                 </li>
@@ -262,7 +265,8 @@
 
                 @can('roles.view')
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}" href="{{ route('roles.index') }}">
+                    <a class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}"
+                        href="{{ route('roles.index') }}">
                         <i class="fas fa-user-shield"></i> Roles
                     </a>
                 </li>
@@ -270,7 +274,8 @@
 
                 @can('permissions.view')
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('permissions.*') ? 'active' : '' }}" href="{{ route('permissions.index') }}">
+                    <a class="nav-link {{ request()->routeIs('permissions.*') ? 'active' : '' }}"
+                        href="{{ route('permissions.index') }}">
                         <i class="fas fa-key"></i> Permissions
                     </a>
                 </li>
@@ -283,52 +288,63 @@
 
                 @if ($permissions->contains('name', 'staff.view'))
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('department.*') ? 'active' : '' }}" href="{{ route('department.index') }}">
+                    <a class="nav-link {{ request()->routeIs('department.*') ? 'active' : '' }}"
+                        href="{{ route('department.index') }}">
                         <i class="fas fa-building me-2"></i> Department
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('staff.*') ? 'active' : '' }}" href="{{ route('staff.index') }}">
+                    <a class="nav-link {{ request()->routeIs('staff.*') ? 'active' : '' }}"
+                        href="{{ route('staff.index') }}">
                         <i class="fas fa-user-friends"></i> Staff
                     </a>
                 </li>
                 @endif
 
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#masterMenu" role="button" aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? 'true' : 'false' }}" aria-controls="masterMenu">
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? '' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#masterMenu" role="button"
+                        aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? 'true' : 'false' }}"
+                        aria-controls="masterMenu">
                         <span><i class="fas fa-tools me-2"></i> Master</span>
                         <i class="fas fa-chevron-down"></i>
                     </a>
 
-                    <div class="collapse {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') ? 'show' : '' }}" id="masterMenu">
+                    <div class="collapse {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') ? 'show' : '' }}"
+                        id="masterMenu">
                         <ul class="nav flex-column ms-3">
 
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('brand.*') ? 'active' : '' }}" href="{{ route('brand.index') }}">
+                                <a class="nav-link {{ request()->routeIs('brand.*') ? 'active' : '' }}"
+                                    href="{{ route('brand.index') }}">
                                     <i class="fas fa-briefcase me-2"></i> Brand
                                 </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('model.*') ? 'active' : '' }}" href="{{ route('model.index') }}">
+                                <a class="nav-link {{ request()->routeIs('model.*') ? 'active' : '' }}"
+                                    href="{{ route('model.index') }}">
                                     <i class="fas fa-layer-group me-2"></i> Model
                                 </a>
                             </li>
 
 
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}" href="{{ route('categories.index') }}">
+                                <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}"
+                                    href="{{ route('categories.index') }}">
                                     <i class="fas fa-sitemap me-2"></i> Categories
                                 </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('uom.*') ? 'active' : '' }}" href="{{ route('uom.index') }}">
+                                <a class="nav-link {{ request()->routeIs('uom.*') ? 'active' : '' }}"
+                                    href="{{ route('uom.index') }}">
                                     <i class="fas fa-balance-scale me-2"></i> UOM
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('warehouse.*') ? 'active' : '' }}" href="{{ route('warehouse.index') }}">
+                                <a class="nav-link {{ request()->routeIs('warehouse.*') ? 'active' : '' }}"
+                                    href="{{ route('warehouse.index') }}">
                                     <i class="fas fa-warehouse me-2"></i> Warehouse
                                 </a>
                             </li>
@@ -337,7 +353,8 @@
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('temple-categories.*') ? 'active' : '' }}" href="{{ route('temple-categories.index') }}">
+                    <a class="nav-link {{ request()->routeIs('temple-categories.*') ? 'active' : '' }}"
+                        href="{{ route('temple-categories.index') }}">
                         <i class="fas fa-place-of-worship"></i> Temple Categories
                     </a>
                 </li>
@@ -353,15 +370,18 @@
                         <i class="fas fa-chevron-down"></i>
                     </a>
 
-                    <div class="collapse {{ request()->routeIs('leads.*') || request()->routeIs('followups.*') ? 'show' : '' }}" id="leadMenu">
+                    <div class="collapse {{ request()->routeIs('leads.*') || request()->routeIs('followups.*') ? 'show' : '' }}"
+                        id="leadMenu">
                         <ul class="nav flex-column ms-3">
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('leads.*') ? 'active' : '' }}" href="{{ route('leads.index') }}">
+                                <a class="nav-link {{ request()->routeIs('leads.*') ? 'active' : '' }}"
+                                    href="{{ route('leads.index') }}">
                                     <i class="fas fa-user me-2"></i> Lead
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('followups.*') ? 'active' : '' }}" href="{{ route('followups.index') }}">
+                                <a class="nav-link {{ request()->routeIs('followups.*') ? 'active' : '' }}"
+                                    href="{{ route('followups.index') }}">
                                     <i class="fas fa-calendar-check me-2"></i> Follow-Up
                                 </a>
                             </li>
@@ -384,7 +404,8 @@
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('product.*') ? 'active' : '' }}" href="{{ route('product.index') }}">
+                    <a class="nav-link {{ request()->routeIs('product.*') ? 'active' : '' }}"
+                        href="{{ route('product.index') }}">
                         <i class="fas fa-file-invoice"></i> Products
                     </a>
                 </li>
@@ -402,6 +423,138 @@
                         <i class="fas fa-shopping-cart"></i> Purchases
                     </a>
                 </li>
+                <!-- NEW ACCOUNTS MENU -->
+                @php
+                $role = auth()->user()->getRoleNames()->first();
+                $permissions = getCurrentRolePermissions($role);
+                @endphp
+
+                @if (
+                $permissions->contains('name', 'accounts.receipt.view') ||
+                $permissions->contains('name', 'accounts.payment.view') ||
+                $permissions->contains('name', 'accounts.journal.view') ||
+                $permissions->contains('name', 'chart_of_accounts.view') ||
+                $permissions->contains('name', 'accounts.reports.view')
+                )
+                {{-- ACCOUNTS MENU WITH PERMISSIONS --}}
+
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center 
+                {{ request()->routeIs('chart_of_accounts.*') || request()->routeIs('accounts.*') || request()->routeIs('receipt.*') ? '' : 'collapsed' }}"
+                        data-bs-toggle="collapse"
+                        href="#accountsMenu"
+                        role="button"
+                        aria-expanded="{{ request()->routeIs('chart_of_accounts.*') || request()->routeIs('accounts.*') || request()->routeIs('receipt.*') ? 'true' : 'false' }}"
+                        aria-controls="accountsMenu">
+                        <span><i class="fas fa-calculator me-2"></i> Accounts</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </a>
+
+                    <div class="collapse 
+                {{ request()->routeIs('chart_of_accounts.*') || request()->routeIs('accounts.*') || request()->routeIs('receipt.*') ? 'show' : '' }}"
+                        id="accountsMenu">
+                        <ul class="nav flex-column ms-3">
+
+                            @if ($permissions->contains('name', 'chart_of_accounts.view'))
+                            {{-- Chart of Accounts --}}
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('chart_of_accounts.*') ? 'active' : '' }}"
+                                    href="{{ route('chart_of_accounts.index') }}">
+                                    <i class="fas fa-sitemap me-2"></i> Chart of Accounts
+                                </a>
+                            </li>
+                            @endif
+                            @if ($permissions->contains('name', 'accounts.receipt.view'))
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('receipt.*') ? 'active' : '' }}"
+                                    href="{{ route('accounts.receipt.list') }}">
+                                    <i class="fas fa-receipt me-2"></i> Receipt
+                                </a>
+                            </li>
+                            @endif
+
+
+                            {{-- Payment Vouchers --}}
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('accounts.payment.*') ? 'active' : '' }}"
+                                    href="{{ route('accounts.payment.list') }}">
+                                    <i class="fas fa-minus-circle me-2"></i> Payment Vouchers
+                                </a>
+                            </li>
+
+
+
+                            {{-- Journal Entries --}}
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('accounts.journal.*') ? 'active' : '' }}"
+                                    href="{{ route('accounts.journal.list') }}">
+                                    <i class="fas fa-exchange-alt me-2"></i> Journal
+                                </a>
+                            </li>
+
+
+
+                            {{-- Reconciliation --}}
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('accounts.reconciliation.*') ? 'active' : '' }}"
+                                    href="{{ route('accounts.reconciliation.index') }}">
+                                    <i class="fas fa-balance-scale me-2"></i> Reconciliation
+                                </a>
+                            </li>
+
+
+                            @if($permissions->contains('accounts.reports.view'))
+                            {{-- Reports Submenu --}}
+                            <li class="nav-item">
+                                <a class="nav-link d-flex justify-content-between align-items-center 
+                                {{ request()->routeIs('accounts.reports.*') || request()->routeIs('accounts.income-statement') ? '' : 'collapsed' }}"
+                                    data-bs-toggle="collapse"
+                                    href="#reportsMenu"
+                                    role="button"
+                                    aria-expanded="{{ request()->routeIs('accounts.reports.*') || request()->routeIs('accounts.income-statement') ? 'true' : 'false' }}"
+                                    aria-controls="reportsMenu">
+                                    <span><i class="fas fa-chart-bar me-2"></i> Reports</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </a>
+
+                                <div class="collapse {{ request()->routeIs('accounts.reports.*') || request()->routeIs('accounts.income-statement') ? 'show' : '' }}"
+                                    id="reportsMenu">
+                                    <ul class="nav flex-column ms-3">
+                                        <li class="nav-item">
+                                            <a class="nav-link {{ request()->routeIs('accounts.reports.general-ledger') ? 'active' : '' }}"
+                                                href="{{ route('accounts.reports.general-ledger') }}">
+                                                <i class="fas fa-book me-2"></i> General Ledger
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link {{ request()->routeIs('accounts.reports.trial-balance') ? 'active' : '' }}"
+                                                href="{{ route('accounts.reports.trial-balance') }}">
+                                                <i class="fas fa-balance-scale-left me-2"></i> Trial Balance
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link {{ request()->routeIs('accounts.reports.balance-sheet') ? 'active' : '' }}"
+                                                href="{{ route('accounts.reports.balance-sheet') }}">
+                                                <i class="fas fa-chart-pie me-2"></i> Balance Sheet
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link {{ request()->routeIs('accounts.income-statement') ? 'active' : '' }}"
+                                                href="{{ route('accounts.income-statement') }}">
+                                                <i class="fas fa-chart-line me-2"></i> Income Statement
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </li>
+                            @endif
+
+                        </ul>
+                    </div>
+                </li>
+                @endif
+
+
 
                 <li class="nav-item">
                     <a class="nav-link" href="#">
@@ -420,6 +573,12 @@
                         <i class="fas fa-chart-line"></i> Reports
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" href="{{ route('settings.index') }}">
+                        <i class="fas fa-cogs"></i> Settings
+                    </a>
+                </li>
+
             </ul>
         </nav>
     </div>
@@ -434,7 +593,8 @@
 
             <div class="ms-auto navbar-user-info">
                 <div class="dropdown">
-                    <button class="btn btn-link dropdown-toggle text-decoration-none text-dark" type="button" data-bs-toggle="dropdown">
+                    <button class="btn btn-link dropdown-toggle text-decoration-none text-dark" type="button"
+                        data-bs-toggle="dropdown">
                         <div class="d-flex align-items-center gap-2">
                             <div class="user-avatar">
                                 {{ substr(Auth::user()->name, 0, 1) }}
@@ -464,6 +624,7 @@
             </div>
         </nav>
 
+
         <!-- Content Wrapper -->
         <div class="content-wrapper">
             @if(session('success'))
@@ -484,11 +645,21 @@
         </div>
     </div>
 
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <!-- Bootstrap Bundle JS -->
+
+    <!-- Bootstrap Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ asset('js/product.js') }}"></script>
+
+    <!-- Other Scripts -->
+    <script src="{{ asset('js/accounts.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Select2 -->
+    <!-- <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script> -->
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('show');
@@ -501,6 +672,9 @@
                     $('#sidebar').removeClass('show');
                 }
             }
+        });
+        $(document).ready(function() {
+            $('.select2').select2();
         });
     </script>
 

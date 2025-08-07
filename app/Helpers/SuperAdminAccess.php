@@ -18,7 +18,7 @@ if (!function_exists('getCurrentRolePermissions')) {
             }
         }
 
-        return collect(); // empty collection
+        return collect(); 
     }
 }
 
