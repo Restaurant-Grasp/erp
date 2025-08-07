@@ -92,7 +92,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/quotations', function () {
             return view('coming-soon', ['module' => 'Quotations']);
         })->name('quotations.index');
-        
+
         Route::get('/invoices', function () {
             return view('coming-soon', ['module' => 'Invoices']);
         })->name('invoices.index');
@@ -108,11 +108,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/staff', function () {
             return view('coming-soon', ['module' => 'Staff Management']);
         })->name('staff.index');
-        
+
         Route::get('/payroll', function () {
             return view('coming-soon', ['module' => 'Payroll']);
         })->name('payroll.index');
-        
+
         Route::get('/attendance', function () {
             return view('coming-soon', ['module' => 'Attendance']);
         })->name('attendance.index');
@@ -122,7 +122,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tickets', function () {
             return view('coming-soon', ['module' => 'Service Tickets']);
         })->name('tickets.index');
-        
+
         Route::get('/amc', function () {
             return view('coming-soon', ['module' => 'AMC Contracts']);
         })->name('amc.index');
@@ -134,36 +134,36 @@ Route::middleware(['auth'])->group(function () {
         })->name('index');
     });
 
-  // Lead CRUD Routes
+    // Lead CRUD Routes
     Route::resource('leads', LeadController::class);
-    
+
     // Lead Conversion Routes
     Route::get('leads/{lead}/convert', [LeadController::class, 'convertToCustomer'])
         ->name('leads.convert')
         ->middleware('permission:leads.convert');
-    
+
     Route::post('leads/{lead}/convert', [LeadController::class, 'processConversion'])
         ->name('leads.process-conversion')
         ->middleware('permission:leads.convert');
-    
+
     // Lead Document Routes
     Route::get('leads/{lead}/documents/{document}/download', [LeadController::class, 'downloadDocument'])
         ->name('leads.documents.download')
         ->middleware('permission:leads.view');
-    
+
     Route::delete('leads/{lead}/documents/{document}', [LeadController::class, 'deleteDocument'])
         ->name('leads.documents.delete')
         ->middleware('permission:leads.edit');
-    
+
     Route::post('leads/{lead}/documents', [LeadController::class, 'uploadDocument'])
         ->name('leads.documents.upload')
         ->middleware('permission:leads.edit');
-    
+
     // Lead Activity Routes
     Route::post('leads/{lead}/activities', [LeadController::class, 'storeActivity'])
         ->name('leads.activities.store')
         ->middleware('permission:leads.edit');
-    
+
     // Temple Category Routes (for lead management)
     Route::prefix('temple-categories')->name('temple-categories.')->group(function () {
         Route::get('/', [TempleCategoryController::class, 'index'])->name('index');
@@ -171,30 +171,30 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/{templeCategory}', [TempleCategoryController::class, 'update'])->name('update');
         Route::delete('/{templeCategory}', [TempleCategoryController::class, 'destroy'])->name('destroy');
     })->middleware('permission:temple_categories.manage');
-    
 
-    
+
+
     // Follow-up CRUD Routes
     Route::resource('followups', FollowUpController::class);
-    
+
     // Follow-up Special Actions
     Route::get('followups/{followup}/complete', [FollowUpController::class, 'complete'])
         ->name('followups.complete')
         ->middleware('permission:followups.complete');
-    
+
     Route::post('followups/{followup}/complete', [FollowUpController::class, 'markComplete'])
         ->name('followups.mark-complete')
         ->middleware('permission:followups.complete');
-    
+
     Route::patch('followups/{followup}/reschedule', [FollowUpController::class, 'reschedule'])
         ->name('followups.reschedule')
         ->middleware('permission:followups.edit');
-    
+
     // Follow-up Calendar View
     Route::get('followups/calendar/view', [FollowUpController::class, 'calendar'])
         ->name('followups.calendar')
         ->middleware('permission:followups.view');
-    
+
     // Follow-up Template Routes
     Route::prefix('followup-templates')->name('followup-templates.')->group(function () {
         Route::get('/', [FollowUpTemplateController::class, 'index'])->name('index');
@@ -202,25 +202,25 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/{followupTemplate}', [FollowUpTemplateController::class, 'update'])->name('update');
         Route::delete('/{followupTemplate}', [FollowUpTemplateController::class, 'destroy'])->name('destroy');
     })->middleware('permission:followup_templates.manage');
-    
+
     // Communication History Routes
     Route::prefix('communication-history')->name('communication-history.')->group(function () {
         Route::get('/', [CommunicationHistoryController::class, 'index'])
             ->name('index');
-        
+
         Route::post('/', [CommunicationHistoryController::class, 'store'])
             ->name('store');
     });
 
 
-    
+
     // Quick access routes from other modules
     Route::get('leads/create-from-contact/{phone}', [LeadController::class, 'createFromContact'])
         ->name('leads.create-from-contact');
-    
+
     Route::get('followups/create-for-lead/{lead}', [FollowUpController::class, 'createForLead'])
         ->name('followups.create-for-lead');
-    
+
     Route::get('followups/create-for-customer/{customer}', [FollowUpController::class, 'createForCustomer'])
         ->name('followups.create-for-customer');
     // Follow-up routes
@@ -233,27 +233,27 @@ Route::middleware(['auth'])->group(function () {
         ->name('followups.reschedule');
     Route::get('followups/calendar/view', [FollowUpController::class, 'calendar'])
         ->name('followups.calendar');
-    
+
     // Follow-up Template routes
     Route::resource('followup-templates', FollowUpTemplateController::class)->except(['show', 'create', 'edit']);
-   
+
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');
     Route::delete('/settings/{setting}', [SettingsController::class, 'destroy'])->name('settings.destroy');
 
- // Chart of Accounts Routes with Permissions
+    // Chart of Accounts Routes with Permissions
     Route::prefix('chart-of-accounts')->name('chart_of_accounts.')->group(function () {
-        
+
         // Main Chart of Accounts (requires view permission)
         Route::get('/', [ChartOfAccountsController::class, 'index'])
             ->name('index')
             ->middleware('permission:chart_of_accounts.view');
-            
+
         Route::get('/tree-data', [ChartOfAccountsController::class, 'getTreeData'])
             ->name('tree_data')
             ->middleware('permission:chart_of_accounts.view');
-            
+
         Route::get('/summary-totals', [ChartOfAccountsController::class, 'getSummaryTotals'])
             ->name('summary_totals')
             ->middleware('permission:chart_of_accounts.view');
@@ -263,23 +263,23 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/create', [ChartOfAccountsController::class, 'createGroup'])
                 ->name('create')
                 ->middleware('permission:chart_of_accounts.create_group');
-                
+
             Route::post('/', [ChartOfAccountsController::class, 'storeGroup'])
                 ->name('store')
                 ->middleware('permission:chart_of_accounts.create_group');
-                
+
             Route::get('/{id}/edit', [ChartOfAccountsController::class, 'editGroup'])
                 ->name('edit')
                 ->middleware('permission:chart_of_accounts.edit_group');
-                
+
             Route::put('/{id}', [ChartOfAccountsController::class, 'updateGroup'])
                 ->name('update')
                 ->middleware('permission:chart_of_accounts.edit_group');
-                
+
             Route::delete('/{id}', [ChartOfAccountsController::class, 'deleteGroup'])
                 ->name('delete')
                 ->middleware('permission:chart_of_accounts.delete_group');
-                
+
             Route::get('/{id}/details', [ChartOfAccountsController::class, 'getGroupDetails'])
                 ->name('details')
                 ->middleware('permission:chart_of_accounts.view_ledger_details');
@@ -290,27 +290,27 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/create', [ChartOfAccountsController::class, 'createLedger'])
                 ->name('create')
                 ->middleware('permission:chart_of_accounts.create_ledger');
-                
+
             Route::post('/store', [ChartOfAccountsController::class, 'storeLedger'])
                 ->name('store')
                 ->middleware('permission:chart_of_accounts.create_ledger');
-                
+
             Route::get('/{id}/edit', [ChartOfAccountsController::class, 'editLedger'])
                 ->name('edit')
                 ->middleware('permission:chart_of_accounts.edit_ledger');
-                
+
             Route::put('/{id}/update', [ChartOfAccountsController::class, 'updateLedger'])
                 ->name('update')
                 ->middleware('permission:chart_of_accounts.edit_ledger');
-                
+
             Route::delete('/{id}', [ChartOfAccountsController::class, 'deleteLedger'])
                 ->name('delete')
                 ->middleware('permission:chart_of_accounts.delete_ledger');
-                
+
             Route::get('/{id}/details', [ChartOfAccountsController::class, 'getLedgerDetails'])
                 ->name('details')
                 ->middleware('permission:chart_of_accounts.view_ledger_details');
-                
+
             Route::get('/{id}/view', [ChartOfAccountsController::class, 'viewLedger'])
                 ->name('view')
                 ->middleware('permission:chart_of_accounts.view_ledger_details');
@@ -322,10 +322,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/details', [ChartOfAccountsController::class, 'getGroupDetails'])
             ->middleware('permission:chart_of_accounts.view_ledger_details');
     });
-    
+
     // Accounts Menu Routes (already exist, just add permissions where missing)
     Route::prefix('accounts')->name('accounts.')->group(function () {
-        
+
         // Journal Entries Routes (add permissions if needed)
         Route::prefix('receipt')->name('receipt.')->group(function () {
             Route::get('/', [EntriesController::class, 'receiptList'])->name('list');
@@ -344,7 +344,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/print/{id}', [EntriesController::class, 'printReceipt'])
                 ->name('print');
         });
-        
+
         Route::prefix('payment')->name('payment.')->group(function () {
             Route::get('/', [EntriesController::class, 'paymentList'])
                 ->name('list')
@@ -371,7 +371,7 @@ Route::middleware(['auth'])->group(function () {
                 ->name('print')
                 ->middleware('permission:accounts.payment.view');
         });
-        
+
         Route::prefix('journal')->name('journal.')->group(function () {
             Route::get('/', [EntriesController::class, 'journalList'])
                 ->name('list')
@@ -397,29 +397,17 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/print/{id}', [EntriesController::class, 'printJournal'])
                 ->name('print')
                 ->middleware('permission:accounts.journal.view');
+
         });
-        
-        // Reports Routes
-        Route::prefix('reports')->name('reports.')->group(function () {
-            Route::get('/general-ledger', [ReportsController::class, 'generalLedger'])
-                ->name('general-ledger')
-                ->middleware('permission:accounts.reports.view');
-            Route::get('/search-ledgers', [ReportsController::class, 'searchLedgers'])
-                ->name('search-ledgers')
-                ->middleware('permission:accounts.reports.view');
-            Route::get('/trial-balance', [ReportsController::class, 'trialBalance'])
-                ->name('trial-balance')
-                ->middleware('permission:accounts.reports.view');
-            Route::get('/balance-sheet', [ReportsController::class, 'balanceSheet'])
-                ->name('balance-sheet')
-                ->middleware('permission:accounts.reports.view');
-        });
-        
-        // Income Statement
-        Route::get('/income-statement', [IncomeStatementController::class, 'index'])
-            ->name('income-statement')
-            ->middleware('permission:accounts.reports.view');
-        
+          Route::prefix('reports')->name('reports.')->group(function () {
+                Route::get('/general-ledger', [ReportsController::class, 'generalLedger'])->name('general-ledger');
+                Route::get('/search-ledgers', [ReportsController::class, 'searchLedgers'])->name('search-ledgers');
+                Route::get('/trial-balance', [ReportsController::class, 'trialBalance'])->name('trial-balance');
+                Route::get('/balance-sheet', [ReportsController::class, 'balanceSheet'])->name('balance-sheet');
+            });
+
+            Route::get('/income-statement', [IncomeStatementController::class, 'index'])
+                ->name('income-statement');
         // Bank Reconciliation
         Route::prefix('reconciliation')->name('reconciliation.')->group(function () {
             Route::get('/', [ReconciliationController::class, 'index'])
@@ -463,7 +451,7 @@ Route::middleware(['auth'])->group(function () {
                 ->middleware('permission:accounts.reconciliation.delete');
         });
     });
-      // Enhanced Fund Management Routes
+    // Enhanced Fund Management Routes
     Route::prefix('funds')->name('funds.')->group(function () {
         Route::get('/', [FundController::class, 'index'])->name('index')->middleware('permission:chart_of_accounts.view');
         Route::get('/create', [FundController::class, 'create'])->name('create')
@@ -475,48 +463,48 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('permission:chart_of_accounts.edit_group');
         Route::put('/{id}', [FundController::class, 'update'])->name('update')->middleware('permission:chart_of_accounts.edit_group');
         Route::delete('delete/{id}', [FundController::class, 'destroy'])->name('destroy');
-        
+
         // New Fund Analysis Routes
         Route::get('/analysis/comparison', [FundController::class, 'comparison'])->name('comparison');
         Route::get('/analysis/utilization', [FundController::class, 'utilization'])->name('utilization');
         Route::get('/analysis/trend', [FundController::class, 'trend'])->name('trend');
         Route::get('/export/comparison', [FundController::class, 'exportComparison'])->name('export.comparison');
         Route::get('/export/utilization', [FundController::class, 'exportUtilization'])->name('export.utilization');
-        
+
         // Fund Transaction Routes
         Route::get('/{id}/transactions', [FundController::class, 'transactions'])->name('transactions');
         Route::get('/{id}/entries/{type}', [FundController::class, 'entriesByType'])->name('entries.type');
     });
-    
+
     // Enhanced Financial Reports Routes
     Route::prefix('financial-reports')->name('financial.reports.')->group(function () {
-        
+
         // Executive Dashboard Reports
         Route::get('/executive-dashboard', [ReportsController::class, 'executiveDashboard'])->name('executive.dashboard');
         Route::get('/financial-summary', [ReportsController::class, 'financialSummary'])->name('financial.summary');
         Route::get('/kpi-dashboard', [ReportsController::class, 'kpiDashboard'])->name('kpi.dashboard');
-        
+
         // Cash Flow Reports
         Route::get('/cash-flow', [ReportsController::class, 'cashFlow'])->name('cash.flow');
         Route::get('/cash-flow/monthly', [ReportsController::class, 'monthlyCashFlow'])->name('cash.flow.monthly');
         Route::get('/cash-flow/fund-wise', [ReportsController::class, 'fundWiseCashFlow'])->name('cash.flow.fund.wise');
-        
+
         // Ratio Analysis
         Route::get('/ratio-analysis', [ReportsController::class, 'ratioAnalysis'])->name('ratio.analysis');
         Route::get('/financial-ratios', [ReportsController::class, 'financialRatios'])->name('financial.ratios');
         Route::get('/trend-analysis', [ReportsController::class, 'trendAnalysis'])->name('trend.analysis');
-        
+
         // Comparative Reports
         Route::get('/comparative-balance-sheet', [ReportsController::class, 'comparativeBalanceSheet'])->name('comparative.balance.sheet');
         Route::get('/comparative-income-statement', [ReportsController::class, 'comparativeIncomeStatement'])->name('comparative.income.statement');
         Route::get('/year-over-year', [ReportsController::class, 'yearOverYear'])->name('year.over.year');
-        
+
         // Advanced Analytics
         Route::get('/budget-vs-actual', [ReportsController::class, 'budgetVsActual'])->name('budget.vs.actual');
         Route::get('/variance-analysis', [ReportsController::class, 'varianceAnalysis'])->name('variance.analysis');
         Route::get('/forecast-report', [ReportsController::class, 'forecastReport'])->name('forecast.report');
     });
-    
+
     // API Routes for Financial Data
     Route::prefix('api/financial')->name('api.financial.')->group(function () {
         Route::get('/summary-totals', [ChartOfAccountsController::class, 'getSummaryTotals'])->name('summary.totals');
@@ -526,25 +514,25 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/cash-flow-data', [ReportsController::class, 'getCashFlowData'])->name('cash.flow.data');
         Route::get('/ratio-calculations', [ReportsController::class, 'getRatioCalculations'])->name('ratio.calculations');
     });
-    
+
     // Enhanced Chart of Accounts Routes
     Route::prefix('chart-of-accounts')->name('chart_of_accounts.')->group(function () {
-        // ... existing routes ...
-        
+
+
         // New Analysis Routes
         Route::get('/analysis/structure', [ChartOfAccountsController::class, 'structureAnalysis'])->name('analysis.structure');
         Route::get('/analysis/utilization', [ChartOfAccountsController::class, 'utilizationAnalysis'])->name('analysis.utilization');
         Route::get('/export/structure', [ChartOfAccountsController::class, 'exportStructure'])->name('export.structure');
-        
+
         // Bulk Operations
         Route::post('/bulk/activate', [ChartOfAccountsController::class, 'bulkActivate'])->name('bulk.activate');
         Route::post('/bulk/deactivate', [ChartOfAccountsController::class, 'bulkDeactivate'])->name('bulk.deactivate');
         Route::post('/bulk/export', [ChartOfAccountsController::class, 'bulkExport'])->name('bulk.export');
     });
-    
 
 
-    
+
+
     // Settings for Financial Module
     Route::prefix('settings/financial')->name('settings.financial.')->group(function () {
         Route::get('/', [SettingsController::class, 'financialSettings'])->name('index');
@@ -577,7 +565,6 @@ Route::middleware(['superadminandhrmanager.access'])->group(function () {
         Route::put('/update/{department}', [DepartmentController::class, 'update'])->name('update');
         Route::delete('/destroy/{department}', [DepartmentController::class, 'destroy'])->name('destroy');
     });
-
 });
 //Master-Brand Routes
 Route::prefix('brand')->name('brand.')->group(function () {
@@ -608,7 +595,6 @@ Route::prefix('categories')->name('categories.')->group(function () {
     Route::get('/edit/{categories}', [ProductController::class, 'categoriesEdit'])->name('edit');
     Route::put('/update/{categories}', [ProductController::class, 'categoriesUpdate'])->name('update');
     Route::delete('/destroy/{categories}', [ProductController::class, 'categoriesDestroy'])->name('destroy');
-
 });
 
 //Master-uom Routes
@@ -639,10 +625,7 @@ Route::prefix('product')->name('product.')->group(function () {
     Route::get('/edit/{product}', [ProductController::class, 'productEdit'])->name('edit');
     Route::put('/update/{product}', [ProductController::class, 'productUpdate'])->name('update');
     Route::delete('/destroy/{product}', [ProductController::class, 'productDestroy'])->name('destroy');
-   
-     //Add quantity route
-     Route::post('/add-quantity', [ProductController::class, 'addQuantity'])->name('addQuantity');
+
+    //Add quantity route
+    Route::post('/add-quantity', [ProductController::class, 'addQuantity'])->name('addQuantity');
 });
-
-
-

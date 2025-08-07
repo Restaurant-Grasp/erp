@@ -493,62 +493,42 @@
                             </li>
 
 
-
+                            {{-- General Ledger --}}
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('accounts.reports.general-ledger') ? 'active' : '' }}"
+                                    href="{{ route('accounts.reports.general-ledger') }}">
+                                 <i class="fas fa-book me-2"></i> General Ledger
+                                </a>
+                            </li>
+                            {{-- Trial Balance --}}
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('accounts.reports.trial-balance') ? 'active' : '' }}"
+                                    href="{{ route('accounts.reports.trial-balance') }}">
+                                 <i class="fas fa-balance-scale me-2"></i> Trial Balance
+                                </a>
+                            </li>
+                             {{-- Income Statement --}}
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('accounts.income-statement') ? 'active' : '' }}"
+                                    href="{{ route('accounts.income-statement') }}">
+                                 <i class="fas fa-chart-line me-2"></i> Income Statement
+                                </a>
+                            </li>
+                                {{-- Balance Sheet --}}
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('accounts.reports.balance-sheet') ? 'active' : '' }}"
+                                    href="{{ route('accounts.reports.balance-sheet') }}">
+                                 <i class="fas fa-file-invoice-dollar me-2"></i>  Balance Sheet
+                                </a>
+                            </li>
                             {{-- Reconciliation --}}
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('accounts.reconciliation.*') ? 'active' : '' }}"
                                     href="{{ route('accounts.reconciliation.index') }}">
-                                    <i class="fas fa-balance-scale me-2"></i> Reconciliation
+                                  <i class="fas fa-exchange-alt me-2"></i> Reconciliation
+
                                 </a>
                             </li>
-
-
-                            @if($permissions->contains('accounts.reports.view'))
-                            {{-- Reports Submenu --}}
-                            <li class="nav-item">
-                                <a class="nav-link d-flex justify-content-between align-items-center 
-                                {{ request()->routeIs('accounts.reports.*') || request()->routeIs('accounts.income-statement') ? '' : 'collapsed' }}"
-                                    data-bs-toggle="collapse"
-                                    href="#reportsMenu"
-                                    role="button"
-                                    aria-expanded="{{ request()->routeIs('accounts.reports.*') || request()->routeIs('accounts.income-statement') ? 'true' : 'false' }}"
-                                    aria-controls="reportsMenu">
-                                    <span><i class="fas fa-chart-bar me-2"></i> Reports</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </a>
-
-                                <div class="collapse {{ request()->routeIs('accounts.reports.*') || request()->routeIs('accounts.income-statement') ? 'show' : '' }}"
-                                    id="reportsMenu">
-                                    <ul class="nav flex-column ms-3">
-                                        <li class="nav-item">
-                                            <a class="nav-link {{ request()->routeIs('accounts.reports.general-ledger') ? 'active' : '' }}"
-                                                href="{{ route('accounts.reports.general-ledger') }}">
-                                                <i class="fas fa-book me-2"></i> General Ledger
-                                            </a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="nav-link {{ request()->routeIs('accounts.reports.trial-balance') ? 'active' : '' }}"
-                                                href="{{ route('accounts.reports.trial-balance') }}">
-                                                <i class="fas fa-balance-scale-left me-2"></i> Trial Balance
-                                            </a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="nav-link {{ request()->routeIs('accounts.reports.balance-sheet') ? 'active' : '' }}"
-                                                href="{{ route('accounts.reports.balance-sheet') }}">
-                                                <i class="fas fa-chart-pie me-2"></i> Balance Sheet
-                                            </a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="nav-link {{ request()->routeIs('accounts.income-statement') ? 'active' : '' }}"
-                                                href="{{ route('accounts.income-statement') }}">
-                                                <i class="fas fa-chart-line me-2"></i> Income Statement
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </li>
-                            @endif
-
                         </ul>
                     </div>
                 </li>
