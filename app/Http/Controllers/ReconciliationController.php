@@ -10,8 +10,8 @@ use App\Models\Entry;
 use App\Models\EntryItem;
 use App\Models\Ledger;
 use App\Models\AcYear;
-use DB;
-use Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class ReconciliationController extends Controller
 {

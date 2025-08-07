@@ -10,8 +10,8 @@ use App\Models\Ledger;
 use App\Models\Group;
 use App\Models\Fund;
 use App\Models\AcYear;
-use DB;
-use Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class EntriesController extends Controller
 {
