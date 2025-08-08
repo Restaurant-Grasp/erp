@@ -15,7 +15,7 @@ use App\Http\Controllers\TempleCategoryController;
 use App\Http\Controllers\FollowUpController;
 use App\Http\Controllers\FollowUpTemplateController;
 use App\Http\Controllers\CommunicationHistoryController;
-
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ChartOfAccountsController;
 use App\Http\Controllers\EntriesController;
@@ -23,9 +23,6 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\FundController;
 use App\Http\Controllers\IncomeStatementController;
-
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -70,12 +67,6 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Placeholder routes for future modules
-    Route::prefix('customers')->name('customers.')->group(function () {
-        Route::get('/', function () {
-            return view('coming-soon', ['module' => 'Customers']);
-        })->name('index');
-    });
-
     Route::prefix('vendors')->name('vendors.')->group(function () {
         Route::get('/', function () {
             return view('coming-soon', ['module' => 'Vendors']);
@@ -97,6 +88,7 @@ Route::middleware(['auth'])->group(function () {
             return view('coming-soon', ['module' => 'Invoices']);
         })->name('invoices.index');
     });
+
 
     Route::prefix('purchases')->name('purchases.')->group(function () {
         Route::get('/orders', function () {
@@ -530,9 +522,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/bulk/export', [ChartOfAccountsController::class, 'bulkExport'])->name('bulk.export');
     });
 
-
-
-
     // Settings for Financial Module
     Route::prefix('settings/financial')->name('settings.financial.')->group(function () {
         Route::get('/', [SettingsController::class, 'financialSettings'])->name('index');
@@ -541,6 +530,14 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/taxes', [SettingsController::class, 'updateTaxSettings'])->name('taxes');
         Route::post('/currencies', [SettingsController::class, 'updateCurrencySettings'])->name('currencies');
     });
+     // Customer Routes
+    Route::resource('customers', CustomerController::class);
+    Route::get('customers/{customer}/statement', [CustomerController::class, 'statement'])->name('customers.statement');
+    Route::get('customers/search', [CustomerController::class, 'search'])->name('customers.search');
+    
+    // Lead Conversion Routes (Update existing lead routes)
+    Route::get('leads/{lead}/convert', [LeadController::class, 'convertToCustomer'])->name('leads.convert');
+    Route::post('leads/{lead}/convert', [LeadController::class, 'processConversion'])->name('leads.process-conversion');
 });
 
 // Only allow access to users with roles: super_admin or hr_manager

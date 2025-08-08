@@ -64,7 +64,7 @@ class LeadController extends Controller
         }
 
         $leads = $query->orderBy('created_at', 'desc')->paginate(15);
-        $templeCategories = TempleCategory::active()->get();
+        $templeCategories = TempleCategory::where('status', 1)->get();
 
         return view('leads.index', compact('leads', 'templeCategories'));
     }
@@ -74,7 +74,7 @@ class LeadController extends Controller
      */
     public function create()
     {
-        $templeCategories = TempleCategory::active()->orderBy('name')->get();
+        $templeCategories = TempleCategory::where('status', 1)->orderBy('name')->get();
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
         
         return view('leads.create', compact('templeCategories', 'staff'));
@@ -164,7 +164,7 @@ class LeadController extends Controller
             return redirect()->route('leads.show', $lead)->with('error', 'Converted leads cannot be edited.');
         }
 
-        $templeCategories = TempleCategory::active()->orderBy('name')->get();
+        $templeCategories = TempleCategory::where('status', 1)->orderBy('name')->get();
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
         
         return view('leads.edit', compact('lead', 'templeCategories', 'staff'));
@@ -264,7 +264,12 @@ class LeadController extends Controller
         }
 
         // Get the trade debtor group for customer ledger creation
-        $tradeDebtorGroup = Group::where('code', '1210')->first();
+        $tradeDebtorGroup = Group::where('td', 1)->first();
+        
+        if (!$tradeDebtorGroup) {
+            return redirect()->route('leads.show', $lead)
+                ->with('error', 'Trade Debtors group not configured. Please configure accounting groups first.');
+        }
 
         return view('leads.convert', compact('lead', 'tradeDebtorGroup'));
     }
@@ -281,36 +286,38 @@ class LeadController extends Controller
         $validated = $request->validate([
             'credit_limit' => 'nullable|numeric|min:0',
             'credit_days' => 'nullable|integer|min:0',
-            'discount_percentage' => 'nullable|numeric|min:0|max:100',
-            'create_ledger' => 'boolean'
+            'discount_percentage' => 'nullable|numeric|min:0|max:100'
         ]);
 
         DB::beginTransaction();
         try {
+            // Check if trade debtors group exists
+            $tradeDebtorGroup = Group::where('td', 1)->first();
+            if (!$tradeDebtorGroup) {
+                throw new \Exception('Trade Debtors group not configured');
+            }
+
             // Generate customer code
             $customerCode = $this->generateCustomerCode();
 
-            // Create ledger if requested
-            $ledgerId = null;
-            if ($request->create_ledger) {
-                $tradeDebtorGroup = Group::where('code', '1210')->first();
-                if ($tradeDebtorGroup) {
-                    $ledger = Ledger::create([
-                        'group_id' => $tradeDebtorGroup->id,
-                        'name' => $lead->company_name ?: $lead->contact_person,
-                        'type' => 0,
-                        'reconciliation' => 0,
-                        'aging' => 1
-                    ]);
-                    $ledgerId = $ledger->id;
-                }
-            }
+            // Create ledger
+            $companyName = $lead->company_name ?: $lead->contact_person;
+            $ledgerName = $companyName . ' (' . $customerCode . ')';
+            
+            $ledger = Ledger::create([
+                'group_id' => $tradeDebtorGroup->id,
+                'name' => $ledgerName,
+                'type' => 0,
+                'reconciliation' => 0,
+                'aging' => 1,
+                'credit_aging' => 0
+            ]);
 
             // Create customer record
             $customer = Customer::create([
                 'customer_code' => $customerCode,
-                'ledger_id' => $ledgerId,
-                'company_name' => $lead->company_name ?: $lead->contact_person,
+                'ledger_id' => $ledger->id,
+                'company_name' => $companyName,
                 'contact_person' => $lead->contact_person,
                 'email' => $lead->email,
                 'phone' => $lead->phone,
@@ -412,58 +419,64 @@ class LeadController extends Controller
      */
     private function generateCustomerCode()
     {
-        $prefix = 'TEMP';
-        $year = date('y');
-        $lastCustomer = Customer::where('customer_code', 'like', $prefix . $year . '%')
+        $prefix = 'CU';
+        $lastCustomer = Customer::where('customer_code', 'like', $prefix . '%')
             ->orderBy('customer_code', 'desc')
             ->first();
 
         if ($lastCustomer) {
-            $lastNumber = intval(substr($lastCustomer->customer_code, -4));
+            $lastNumber = intval(substr($lastCustomer->customer_code, strlen($prefix)));
             $newNumber = $lastNumber + 1;
         } else {
             $newNumber = 1;
         }
 
-        return $prefix . $year . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
 
-public function storeActivity(Request $request, Lead $lead)
-{
-    $validated = $request->validate([
-        'activity_type' => 'required|in:call,email,meeting,note',
-        'subject' => 'required|string|max:255',
-        'description' => 'required|string'
-    ]);
+    /**
+     * Store activity for a lead
+     */
+    public function storeActivity(Request $request, Lead $lead)
+    {
+        $validated = $request->validate([
+            'activity_type' => 'required|in:call,email,meeting,note',
+            'subject' => 'required|string|max:255',
+            'description' => 'required|string'
+        ]);
 
-    $validated['lead_id'] = $lead->id;
-    $validated['activity_date'] = now();
-    $validated['created_by'] = Auth::id();
+        $validated['lead_id'] = $lead->id;
+        $validated['activity_date'] = now();
+        $validated['created_by'] = Auth::id();
 
-    LeadActivity::create($validated);
+        LeadActivity::create($validated);
 
-    // Update lead's last activity date
-    $lead->update([
-        'last_activity_date' => now(),
-        'last_contact_date' => now()
-    ]);
+        // Update lead's last activity date
+        $lead->update([
+            'last_activity_date' => now(),
+            'last_contact_date' => now()
+        ]);
 
-    return redirect()->back()->with('success', 'Activity recorded successfully.');
-}
-public function search(Request $request)
-{
-    $query = $request->get('q');
-    
-    $leads = Lead::where(function($q) use ($query) {
-        $q->where('lead_no', 'like', "%{$query}%")
-          ->orWhere('company_name', 'like', "%{$query}%")
-          ->orWhere('contact_person', 'like', "%{$query}%");
-    })
-    ->where('lead_status', '!=', 'lost')
-    ->whereNull('converted_to_customer_id')
-    ->limit(10)
-    ->get(['id', 'lead_no', 'company_name', 'contact_person']);
+        return redirect()->back()->with('success', 'Activity recorded successfully.');
+    }
 
-    return response()->json($leads);
-}
+    /**
+     * Search leads for autocomplete
+     */
+    public function search(Request $request)
+    {
+        $query = $request->get('q');
+        
+        $leads = Lead::where(function($q) use ($query) {
+            $q->where('lead_no', 'like', "%{$query}%")
+              ->orWhere('company_name', 'like', "%{$query}%")
+              ->orWhere('contact_person', 'like', "%{$query}%");
+        })
+        ->where('lead_status', '!=', 'lost')
+        ->whereNull('converted_to_customer_id')
+        ->limit(10)
+        ->get(['id', 'lead_no', 'company_name', 'contact_person']);
+
+        return response()->json($leads);
+    }
 }

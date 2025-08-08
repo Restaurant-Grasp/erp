@@ -131,6 +131,7 @@ return [
         'Auth' => Illuminate\Support\Facades\Auth::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
         // ... other aliases
+    'Route' => Illuminate\Support\Facades\Route::class,
 
         'Pdf' => Barryvdh\DomPDF\Facade\Pdf::class, 
 

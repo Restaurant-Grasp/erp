@@ -276,4 +276,13 @@ class Group extends Model
         
         return $codeInt >= $rangeStart && $codeInt <= $rangeEnd;
     }
+        public function scopeTradeDebtors($query)
+    {
+        return $query->where('td', 1);
+    }
+
+    public function scopeTradeCreditors($query)
+    {
+        return $query->where('tc', 1);
+    }
 }

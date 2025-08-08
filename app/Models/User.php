@@ -170,4 +170,5 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Staff::class, 'staff_id');
     }
+
 }

@@ -75,4 +75,6 @@ class CommunicationHistory extends Model
     {
         return $this->direction === 'incoming' ? 'success' : 'primary';
     }
+
+
 }
