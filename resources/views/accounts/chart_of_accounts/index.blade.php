@@ -139,17 +139,6 @@
     background-color: #07be6e;
 }
 </style>
-<script>
-    const permissions = @json($permissions);
-    const ROUTES = {
-        treeData: "{{ route('chart_of_accounts.tree_data') }}",
-        summaryTotals: "{{ route('chart_of_accounts.summary_totals') }}",
-        groupDetails: "{{ url('group') }}", // base URL only
-        ledgerDetails: "{{ url('chart-of-accounts/ledger') }}", // base URL only
-        deleteGroup: "{{ url('chart-of-accounts/group') }}", // base URL only
-        deleteLedger: "{{ url('chart-of-accounts/ledger') }}" // base URL only
-    };
-    
-</script>
+
 
 @endsection

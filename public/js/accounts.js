@@ -7,11 +7,21 @@
 //     document.getElementById('modal_product_id').value = productId;
 //     document.getElementById('modal_product_name').textContent = productName;
 // });
+
+    const ROUTES = {
+        treeData: "{{ route('chart_of_accounts.tree_data') }}",
+        summaryTotals: "{{ route('chart_of_accounts.summary_totals') }}",
+        groupDetails: "{{ url('group') }}", // base URL only
+        ledgerDetails: "{{ url('chart-of-accounts/ledger') }}", // base URL only
+        deleteGroup: "{{ url('chart-of-accounts/group') }}", // base URL only
+        deleteLedger: "{{ url('chart-of-accounts/ledger') }}" // base URL only
+    };
+    
  $(document).ready(function() {
     let selectedId = null;
     let selectedType = null;
     
-    // Get permissions from PHP
+
   
     
     // Initialize tree
@@ -39,10 +49,10 @@
     
     // Handle node selection
     $('#account-tree').on('select_node.jstree', function(e, data) {
-        if (!permissions.can_view_details) {
+   
             $('#details-panel').html('<p class="text-center text-muted">You do not have permission to view details</p>');
             return;
-        }
+        
         
         if (data.node.type === 'ledger') {
             selectedType = 'ledger';
@@ -94,12 +104,12 @@
                             </tr>
                         </table>
                         <div class="mt-3">
-                            ${!isFixed && permissions.can_edit_group ? `
+                            ${!isFixed ? `
                                 <a href="${ROUTES.deleteGroup}/${group.id}/edit" class="btn btn-primary btn-sm">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
                             ` : ''}
-                            ${!isFixed && permissions.can_delete_group ? `
+                            ${!isFixed  ? `
                                 <button class="btn btn-danger btn-sm" onclick="deleteGroup(${group.id})">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>
@@ -160,21 +170,21 @@
                             ${ledger.notes ? `<tr><th>Notes:</th><td>${ledger.notes}</td></tr>` : ''}
                         </table>
                         <div class="mt-3">
-                            ${permissions.can_view_details ? `
+                         
                                 <a href="${ROUTES.ledgerDetails}/${ledger.id}/view" class="btn btn-info btn-sm">
                                     <i class="fas fa-eye"></i> View Details
                                 </a>
-                            ` : ''}
-                            ${permissions.can_edit_ledger ? `
+                           
+                          
                                 <a href="${ROUTES.ledgerDetails}/${ledger.id}/edit" class="btn btn-primary btn-sm">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
-                            ` : ''}
-                            ${permissions.can_delete_ledger ? `
+                          
+                      
                                 <button class="btn btn-danger btn-sm" onclick="deleteLedger(${ledger.id})">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>
-                            ` : ''}
+                  
                         </div>
                     `;
                     
@@ -189,10 +199,8 @@
     
     // Delete group
     window.deleteGroup = function(groupId) {
-        if (!permissions.can_delete_group) {
-            alert('You do not have permission to delete groups');
-            return;
-        }
+
+   
         
         selectedId = groupId;
         selectedType = 'group';
@@ -202,10 +210,7 @@
     
     // Delete ledger
     window.deleteLedger = function(ledgerId) {
-        if (!permissions.can_delete_ledger) {
-            alert('You do not have permission to delete ledgers');
-            return;
-        }
+     
         
         selectedId = ledgerId;
         selectedType = 'ledger';
@@ -285,11 +290,11 @@
                 } else {
                     // Show error state
                     $('.card h4').text('Error loading');
-                    console.error('Error loading summary:', response.message);
+           
                 }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX Error loading summary:', error);
+               
                 $('#total-assets').text('Error');
                 $('#total-liabilities').text('Error');
                 $('#total-income').text('Error');
@@ -346,7 +351,7 @@ function loadFinancialSummary() {
             }
         },
         error: function() {
-            console.error('Failed to load financial summary');
+            
         }
     });
 }

@@ -23,6 +23,10 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\FundController;
 use App\Http\Controllers\IncomeStatementController;
+use App\Http\Controllers\VendorController;
+use App\Http\Controllers\Sales\TaxController;
+use App\Http\Controllers\Sales\QuotationController;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -66,27 +70,15 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Placeholder routes for future modules
-    Route::prefix('vendors')->name('vendors.')->group(function () {
-        Route::get('/', function () {
-            return view('coming-soon', ['module' => 'Vendors']);
-        })->name('index');
-    });
+    // Vendor Module
+    Route::resource('vendors', VendorController::class);
+    Route::get('vendors/search', [VendorController::class, 'search'])->name('vendors.search');
+
 
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', function () {
             return view('coming-soon', ['module' => 'Products']);
         })->name('index');
-    });
-
-    Route::prefix('sales')->name('sales.')->group(function () {
-        Route::get('/quotations', function () {
-            return view('coming-soon', ['module' => 'Quotations']);
-        })->name('quotations.index');
-
-        Route::get('/invoices', function () {
-            return view('coming-soon', ['module' => 'Invoices']);
-        })->name('invoices.index');
     });
 
 
@@ -192,7 +184,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [FollowUpTemplateController::class, 'index'])->name('index');
         Route::post('/', [FollowUpTemplateController::class, 'store'])->name('store');
         Route::put('/{followupTemplate}', [FollowUpTemplateController::class, 'update'])->name('update');
-        Route::delete('/{followupTemplate}', [FollowUpTemplateController::class, 'destroy'])->name('destroy');
+        Route::delete('delete/{followupTemplate}', [FollowUpTemplateController::class, 'destroy'])->name('destroy');
     })->middleware('permission:followup_templates.manage');
 
     // Communication History Routes
@@ -389,17 +381,16 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/print/{id}', [EntriesController::class, 'printJournal'])
                 ->name('print')
                 ->middleware('permission:accounts.journal.view');
-
         });
-          Route::prefix('reports')->name('reports.')->group(function () {
-                Route::get('/general-ledger', [ReportsController::class, 'generalLedger'])->name('general-ledger');
-                Route::get('/search-ledgers', [ReportsController::class, 'searchLedgers'])->name('search-ledgers');
-                Route::get('/trial-balance', [ReportsController::class, 'trialBalance'])->name('trial-balance');
-                Route::get('/balance-sheet', [ReportsController::class, 'balanceSheet'])->name('balance-sheet');
-            });
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/general-ledger', [ReportsController::class, 'generalLedger'])->name('general-ledger');
+            Route::get('/search-ledgers', [ReportsController::class, 'searchLedgers'])->name('search-ledgers');
+            Route::get('/trial-balance', [ReportsController::class, 'trialBalance'])->name('trial-balance');
+            Route::get('/balance-sheet', [ReportsController::class, 'balanceSheet'])->name('balance-sheet');
+        });
 
-            Route::get('/income-statement', [IncomeStatementController::class, 'index'])
-                ->name('income-statement');
+        Route::get('/income-statement', [IncomeStatementController::class, 'index'])
+            ->name('income-statement');
         // Bank Reconciliation
         Route::prefix('reconciliation')->name('reconciliation.')->group(function () {
             Route::get('/', [ReconciliationController::class, 'index'])
@@ -530,14 +521,130 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/taxes', [SettingsController::class, 'updateTaxSettings'])->name('taxes');
         Route::post('/currencies', [SettingsController::class, 'updateCurrencySettings'])->name('currencies');
     });
-     // Customer Routes
+    // Customer Routes
     Route::resource('customers', CustomerController::class);
     Route::get('customers/{customer}/statement', [CustomerController::class, 'statement'])->name('customers.statement');
     Route::get('customers/search', [CustomerController::class, 'search'])->name('customers.search');
-    
+
     // Lead Conversion Routes (Update existing lead routes)
     Route::get('leads/{lead}/convert', [LeadController::class, 'convertToCustomer'])->name('leads.convert');
     Route::post('leads/{lead}/convert', [LeadController::class, 'processConversion'])->name('leads.process-conversion');
+    // Sales Routes Group
+    Route::prefix('sales')->name('sales.')->group(function () {
+
+
+
+        // Tax Management Routes
+        Route::resource('taxes', App\Http\Controllers\Sales\TaxController::class);
+
+        Route::post('taxes/calculate-tax', [App\Http\Controllers\Sales\TaxController::class, 'calculateTax'])
+            ->name('taxes.calculate');
+
+        // Quotation Management Routes
+        Route::resource('quotations', App\Http\Controllers\Sales\QuotationController::class);
+        Route::post('quotations/{quotation}/approve', [App\Http\Controllers\Sales\QuotationController::class, 'approve'])
+            ->name('quotations.approve');
+        Route::post('quotations/{quotation}/reject', [App\Http\Controllers\Sales\QuotationController::class, 'reject'])
+            ->name('quotations.reject');
+        Route::post('quotations/{quotation}/send', [App\Http\Controllers\Sales\QuotationController::class, 'send'])
+            ->name('quotations.send');
+        Route::post('quotations/{quotation}/revision', [App\Http\Controllers\Sales\QuotationController::class, 'createRevision'])
+            ->name('quotations.revision');
+        Route::post('quotations/{quotation}/duplicate', [App\Http\Controllers\Sales\QuotationController::class, 'duplicate'])
+            ->name('quotations.duplicate');
+        Route::get('quotations/{quotation}/pdf', [App\Http\Controllers\Sales\QuotationController::class, 'pdf'])
+            ->name('quotations.pdf');
+
+
+        // Sales Invoice Management Routes
+        Route::resource('invoices', App\Http\Controllers\Sales\SalesInvoiceController::class)
+            ->except(['destroy']); // No destroy, only cancel
+        Route::post('invoices/{invoice}/cancel', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'cancel'])
+            ->name('invoices.cancel');
+        Route::post('invoices/{invoice}/duplicate', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'duplicate'])
+            ->name('invoices.duplicate');
+        Route::post('invoices/{invoice}/create-delivery-order', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'createDeliveryOrder'])
+            ->name('invoices.create-delivery-order');
+        Route::post('invoices/{invoice}/submit-einvoice', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'submitEInvoice'])
+            ->name('invoices.submit-einvoice');
+        Route::get('invoices/{invoice}/pdf', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'pdf'])
+            ->name('invoices.pdf');
+        Route::get('invoices/statistics/get-statistics', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'getStatistics'])
+            ->name('invoices.statistics');
+
+        // Delivery Order Management Routes
+        Route::resource('delivery-orders', App\Http\Controllers\Sales\DeliveryOrderController::class);
+        Route::post('delivery-orders/{deliveryOrder}/mark-delivered', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'markDelivered'])
+            ->name('delivery-orders.mark-delivered');
+        Route::get('delivery-orders/{deliveryOrder}/pdf', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'pdf'])
+            ->name('delivery-orders.pdf');
+        Route::get('delivery-orders/invoices/get-pending-invoices', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'getPendingInvoices'])
+            ->name('delivery-orders.get-pending-invoices');
+    });
+
+    //Master-Brand Routes
+    Route::prefix('brand')->name('brand.')->group(function () {
+        Route::get('/index', [MasterController::class, 'brandIndex'])->name('index');
+        Route::get('/create', [MasterController::class, 'brandCreate'])->name('create');
+        Route::post('/store', [MasterController::class, 'brandStore'])->name('store');
+        Route::get('/edit/{brand}', [MasterController::class, 'brandEdit'])->name('edit');
+        Route::put('/update/{brand}', [MasterController::class, 'brandUpdate'])->name('update');
+        Route::delete('/destroy/{brand}', [MasterController::class, 'brandDestroy'])->name('destroy');
+    });
+
+    //Master-Model Routes
+    Route::prefix('model')->name('model.')->group(function () {
+        Route::get('/index', [MasterController::class, 'modelIndex'])->name('index');
+        Route::get('/create', [MasterController::class, 'modelCreate'])->name('create');
+        Route::post('/store', [MasterController::class, 'modelStore'])->name('store');
+        Route::get('/edit/{model}', [MasterController::class, 'modelEdit'])->name('edit');
+        Route::put('/update/{model}', [MasterController::class, 'modelUpdate'])->name('update');
+        Route::delete('/destroy/{model}', [MasterController::class, 'modelDestroy'])->name('destroy');
+    });
+
+
+    //Master-categories Routes
+    Route::prefix('categories')->name('categories.')->group(function () {
+        Route::get('/index', [ProductController::class, 'categoriesIndex'])->name('index');
+        Route::get('/create', [ProductController::class, 'categoriesCreate'])->name('create');
+        Route::post('/store', [ProductController::class, 'categoriesStore'])->name('store');
+        Route::get('/edit/{categories}', [ProductController::class, 'categoriesEdit'])->name('edit');
+        Route::put('/update/{categories}', [ProductController::class, 'categoriesUpdate'])->name('update');
+        Route::delete('/destroy/{categories}', [ProductController::class, 'categoriesDestroy'])->name('destroy');
+    });
+
+    //Master-uom Routes
+    Route::prefix('uom')->name('uom.')->group(function () {
+        Route::get('/index', [MasterController::class, 'uomIndex'])->name('index');
+        Route::get('/create', [MasterController::class, 'uomCreate'])->name('create');
+        Route::post('/store', [MasterController::class, 'uomStore'])->name('store');
+        Route::get('/edit/{uom}', [MasterController::class, 'uomEdit'])->name('edit');
+        Route::put('/update/{uom}', [MasterController::class, 'uomUpdate'])->name('update');
+        Route::delete('/destroy/{uom}', [MasterController::class, 'uomDestroy'])->name('destroy');
+    });
+
+    //Master-warehouse Routes
+    Route::prefix('warehouse')->name('warehouse.')->group(function () {
+        Route::get('/index', [MasterController::class, 'warehouseIndex'])->name('index');
+        Route::get('/create', [MasterController::class, 'warehouseCreate'])->name('create');
+        Route::post('/store', [MasterController::class, 'warehouseStore'])->name('store');
+        Route::get('/edit/{warehouse}', [MasterController::class, 'warehouseEdit'])->name('edit');
+        Route::put('/update/{warehouse}', [MasterController::class, 'warehouseUpdate'])->name('update');
+        Route::delete('/destroy/{warehouse}', [MasterController::class, 'warehouseDestroy'])->name('destroy');
+    });
+
+    //Product Routes
+    Route::prefix('product')->name('product.')->group(function () {
+        Route::get('/index', [ProductController::class, 'productIndex'])->name('index');
+        Route::get('/create', [ProductController::class, 'productCreate'])->name('create');
+        Route::post('/store', [ProductController::class, 'productStore'])->name('store');
+        Route::get('/edit/{product}', [ProductController::class, 'productEdit'])->name('edit');
+        Route::put('/update/{product}', [ProductController::class, 'productUpdate'])->name('update');
+        Route::delete('/destroy/{product}', [ProductController::class, 'productDestroy'])->name('destroy');
+
+        //Add quantity route
+        Route::post('/add-quantity', [ProductController::class, 'addQuantity'])->name('addQuantity');
+    });
 });
 
 // Only allow access to users with roles: super_admin or hr_manager
@@ -563,66 +670,10 @@ Route::middleware(['superadminandhrmanager.access'])->group(function () {
         Route::delete('/destroy/{department}', [DepartmentController::class, 'destroy'])->name('destroy');
     });
 });
-//Master-Brand Routes
-Route::prefix('brand')->name('brand.')->group(function () {
-    Route::get('/index', [MasterController::class, 'brandIndex'])->name('index');
-    Route::get('/create', [MasterController::class, 'brandCreate'])->name('create');
-    Route::post('/store', [MasterController::class, 'brandStore'])->name('store');
-    Route::get('/edit/{brand}', [MasterController::class, 'brandEdit'])->name('edit');
-    Route::put('/update/{brand}', [MasterController::class, 'brandUpdate'])->name('update');
-    Route::delete('/destroy/{brand}', [MasterController::class, 'brandDestroy'])->name('destroy');
-});
-
-//Master-Model Routes
-Route::prefix('model')->name('model.')->group(function () {
-    Route::get('/index', [MasterController::class, 'modelIndex'])->name('index');
-    Route::get('/create', [MasterController::class, 'modelCreate'])->name('create');
-    Route::post('/store', [MasterController::class, 'modelStore'])->name('store');
-    Route::get('/edit/{model}', [MasterController::class, 'modelEdit'])->name('edit');
-    Route::put('/update/{model}', [MasterController::class, 'modelUpdate'])->name('update');
-    Route::delete('/destroy/{model}', [MasterController::class, 'modelDestroy'])->name('destroy');
-});
-
-
-//Master-categories Routes
-Route::prefix('categories')->name('categories.')->group(function () {
-    Route::get('/index', [ProductController::class, 'categoriesIndex'])->name('index');
-    Route::get('/create', [ProductController::class, 'categoriesCreate'])->name('create');
-    Route::post('/store', [ProductController::class, 'categoriesStore'])->name('store');
-    Route::get('/edit/{categories}', [ProductController::class, 'categoriesEdit'])->name('edit');
-    Route::put('/update/{categories}', [ProductController::class, 'categoriesUpdate'])->name('update');
-    Route::delete('/destroy/{categories}', [ProductController::class, 'categoriesDestroy'])->name('destroy');
-});
-
-//Master-uom Routes
-Route::prefix('uom')->name('uom.')->group(function () {
-    Route::get('/index', [MasterController::class, 'uomIndex'])->name('index');
-    Route::get('/create', [MasterController::class, 'uomCreate'])->name('create');
-    Route::post('/store', [MasterController::class, 'uomStore'])->name('store');
-    Route::get('/edit/{uom}', [MasterController::class, 'uomEdit'])->name('edit');
-    Route::put('/update/{uom}', [MasterController::class, 'uomUpdate'])->name('update');
-    Route::delete('/destroy/{uom}', [MasterController::class, 'uomDestroy'])->name('destroy');
-});
-
-//Master-warehouse Routes
-Route::prefix('warehouse')->name('warehouse.')->group(function () {
-    Route::get('/index', [MasterController::class, 'warehouseIndex'])->name('index');
-    Route::get('/create', [MasterController::class, 'warehouseCreate'])->name('create');
-    Route::post('/store', [MasterController::class, 'warehouseStore'])->name('store');
-    Route::get('/edit/{warehouse}', [MasterController::class, 'warehouseEdit'])->name('edit');
-    Route::put('/update/{warehouse}', [MasterController::class, 'warehouseUpdate'])->name('update');
-    Route::delete('/destroy/{warehouse}', [MasterController::class, 'warehouseDestroy'])->name('destroy');
-});
-
-//Product Routes
-Route::prefix('product')->name('product.')->group(function () {
-    Route::get('/index', [ProductController::class, 'productIndex'])->name('index');
-    Route::get('/create', [ProductController::class, 'productCreate'])->name('create');
-    Route::post('/store', [ProductController::class, 'productStore'])->name('store');
-    Route::get('/edit/{product}', [ProductController::class, 'productEdit'])->name('edit');
-    Route::put('/update/{product}', [ProductController::class, 'productUpdate'])->name('update');
-    Route::delete('/destroy/{product}', [ProductController::class, 'productDestroy'])->name('destroy');
-
-    //Add quantity route
-    Route::post('/add-quantity', [ProductController::class, 'addQuantity'])->name('addQuantity');
+  Route::get('taxes/for-dropdown', [App\Http\Controllers\Sales\TaxController::class, 'getTaxesForDropdown'])
+             ->name('taxes.for-dropdown');
+Route::get('quotations/get-items', [App\Http\Controllers\Sales\QuotationController::class, 'getItems'])
+             ->name('quotations.get-items');
+Route::get('/test-get-items', function(Request $request) {
+    return response()->json(['message' => 'Test route works', 'params' => $request->all()]);
 });
