@@ -12,5 +12,5 @@ class CustomerServiceType extends Model
         'customer_id',
         'service_type_id',
     ];
-
+    public $timestamps = false; 
 }

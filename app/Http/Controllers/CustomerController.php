@@ -124,7 +124,6 @@ class CustomerController extends Controller
         try {
             // Generate customer code
             $customerCode = $this->generateCustomerCode();
-
             // Get trade debtors group
             $tradeDebtorGroup = Group::where('td', 1)->first();
             if (!$tradeDebtorGroup) {
