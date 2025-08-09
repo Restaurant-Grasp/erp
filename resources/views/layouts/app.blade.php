@@ -412,6 +412,17 @@
 
 
 
+                @php
+                $role = auth()->user()->getRoleNames()->first();
+                $permissions = getCurrentRolePermissions($role);
+                @endphp
+
+                @if (
+                $permissions->contains('name', 'sales.taxes.view') ||
+                $permissions->contains('name', 'sales.quotations.view') ||
+                $permissions->contains('name', 'sales.invoices.view') ||
+                $permissions->contains('name', 'sales.delivery_orders.view')
+                )
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center 
         {{ request()->routeIs('sales.*') ? '' : 'collapsed' }}"
@@ -425,50 +436,46 @@
                     <div class="collapse {{ request()->routeIs('sales.*') ? 'show' : '' }}" id="salesMenu">
                         <ul class="nav flex-column ms-3">
 
-                           
-                        
+                            @if ($permissions->contains('name', 'sales.taxes.view'))
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('sales.taxes.*') ? 'active' : '' }}"
                                     href="{{ route('sales.taxes.index') }}">
                                     <i class="fas fa-percentage me-2"></i> Tax Management
                                 </a>
                             </li>
-                      
+                            @endif
 
-               
-                            
+                            @if ($permissions->contains('name', 'sales.quotations.view'))
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('sales.quotations.*') ? 'active' : '' }}"
                                     href="{{ route('sales.quotations.index') }}">
                                     <i class="fas fa-file-invoice me-2"></i> Quotations
                                 </a>
                             </li>
-                       
-                            
+                            @endif
 
-                        
-                            
+                            @if ($permissions->contains('name', 'sales.invoices.view'))
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('sales.invoices.*') ? 'active' : '' }}"
                                     href="{{ route('sales.invoices.index') }}">
                                     <i class="fas fa-file-invoice-dollar me-2"></i> Sales Invoices
                                 </a>
                             </li>
-                         
-                                                      
+                            @endif
+
+                            @if ($permissions->contains('name', 'sales.delivery_orders.view'))
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('sales.delivery-orders.*') ? 'active' : '' }}"
                                     href="{{ route('sales.delivery-orders.index') }}">
                                     <i class="fas fa-truck me-2"></i> Delivery Orders
                                 </a>
                             </li>
-                    
-                            
+                            @endif
 
                         </ul>
                     </div>
                 </li>
-              
+                @endif
 
                 <li class="nav-item">
                     <a class="nav-link" href="#">
