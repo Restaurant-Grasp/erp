@@ -426,4 +426,30 @@ class SalesInvoiceController extends Controller
 
         return response()->json($statistics);
     }
+    public function getTaxesForDropdown(Request $request)
+{
+    $itemType = $request->get('type', 'both');
+    
+    $query = Tax::where('status', 1);
+    
+    if ($itemType === 'product') {
+        $query->whereIn('applicable_for', ['product', 'both']);
+    } elseif ($itemType === 'service') {
+        $query->whereIn('applicable_for', ['service', 'both']);
+    } else {
+        // For 'both' or any other case, show all active taxes
+        $query->whereIn('applicable_for', ['product', 'service', 'both']);
+    }
+    
+    $taxes = $query->orderBy('name')->get();
+    
+    return response()->json($taxes->map(function ($tax) {
+        return [
+            'id' => $tax->id,
+            'name' => $tax->name,
+            'percent' => $tax->percent,
+            'applicable_for' => $tax->applicable_for
+        ];
+    }));
+}
 }

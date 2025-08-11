@@ -302,15 +302,16 @@
                 @endif
 
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? '' : 'collapsed' }}"
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') ? '' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#masterMenu" role="button"
-                        aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') ? 'true' : 'false' }}"
+                        aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') ? 'true' : 'false' }}"
                         aria-controls="masterMenu">
                         <span><i class="fas fa-tools me-2"></i> Master</span>
                         <i class="fas fa-chevron-down"></i>
                     </a>
 
-                    <div class="collapse {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') ? 'show' : '' }}"
+
+                    <div class="collapse {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') ? 'show' : '' }}"
                         id="masterMenu">
                         <ul class="nav flex-column ms-3">
 
@@ -348,6 +349,26 @@
                                     <i class="fas fa-warehouse me-2"></i> Warehouse
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}"
+                                    href="{{ route('customers.index') }}">
+                                    <i class="fas fa-user-tie"></i> Customers
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('product.*') ? 'active' : '' }}"
+                                    href="{{ route('product.index') }}">
+                                    <i class="fas fa-file-invoice"></i> Products
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('vendors.*') ? 'active' : '' }}" href="{{ route('vendors.index') }}">
+                                    <i class="fas fa-truck"></i> Vendors
+                                </a>
+                            </li>
+
+
+
                         </ul>
                     </div>
                 </li>
@@ -390,42 +411,14 @@
                 </li>
 
 
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}"
-                        href="{{ route('customers.index') }}">
-                        <i class="fas fa-user-tie"></i> Customers
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('vendors.*') ? 'active' : '' }}" href="{{ route('vendors.index') }}">
-                        <i class="fas fa-truck"></i> Vendors
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('product.*') ? 'active' : '' }}"
-                        href="{{ route('product.index') }}">
-                        <i class="fas fa-file-invoice"></i> Products
-                    </a>
-                </li>
-
-
-
-                @php
-                $role = auth()->user()->getRoleNames()->first();
-                $permissions = getCurrentRolePermissions($role);
-                @endphp
-
-                @if (
-                $permissions->contains('name', 'sales.taxes.view') ||
+                @if ( $permissions->contains('name', 'sales.taxes.view') ||
                 $permissions->contains('name', 'sales.quotations.view') ||
                 $permissions->contains('name', 'sales.invoices.view') ||
-                $permissions->contains('name', 'sales.delivery_orders.view')
-                )
+                $permissions->contains('name', 'sales.delivery_orders.view'))
+
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center 
-        {{ request()->routeIs('sales.*') ? '' : 'collapsed' }}"
+                    {{ request()->routeIs('sales.*') ? '' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#salesMenu" role="button"
                         aria-expanded="{{ request()->routeIs('sales.*') ? 'true' : 'false' }}"
                         aria-controls="salesMenu">
@@ -436,6 +429,7 @@
                     <div class="collapse {{ request()->routeIs('sales.*') ? 'show' : '' }}" id="salesMenu">
                         <ul class="nav flex-column ms-3">
 
+
                             @if ($permissions->contains('name', 'sales.taxes.view'))
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('sales.taxes.*') ? 'active' : '' }}"
@@ -443,9 +437,11 @@
                                     <i class="fas fa-percentage me-2"></i> Tax Management
                                 </a>
                             </li>
+
                             @endif
 
                             @if ($permissions->contains('name', 'sales.quotations.view'))
+
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('sales.quotations.*') ? 'active' : '' }}"
                                     href="{{ route('sales.quotations.index') }}">
@@ -454,15 +450,17 @@
                             </li>
                             @endif
 
+
                             @if ($permissions->contains('name', 'sales.invoices.view'))
+
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('sales.invoices.*') ? 'active' : '' }}"
                                     href="{{ route('sales.invoices.index') }}">
                                     <i class="fas fa-file-invoice-dollar me-2"></i> Sales Invoices
                                 </a>
                             </li>
-                            @endif
 
+                            @endif
                             @if ($permissions->contains('name', 'sales.delivery_orders.view'))
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('sales.delivery-orders.*') ? 'active' : '' }}"
@@ -470,23 +468,110 @@
                                     <i class="fas fa-truck me-2"></i> Delivery Orders
                                 </a>
                             </li>
+
+                            @endif
+
+                        </ul>
+                    </div>
+                </li>
+
+             @endif
+
+                @if (
+                $permissions->contains('name', 'purchases.po.view') ||
+                $permissions->contains('name', 'purchases.invoices.view') ||
+                $permissions->contains('name', 'purchases.grn.view') ||
+                $permissions->contains('name', 'purchases.returns.view')
+                )
+                <li class="nav-item">
+                    <a class="nav-link d-flex justify-content-between align-items-center 
+                                  {{ request()->routeIs('purchase.*') ? '' : 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#purchaseMenu" role="button"
+                        aria-expanded="{{ request()->routeIs('purchase.*') ? 'true' : 'false' }}"
+                        aria-controls="purchaseMenu">
+                        <span><i class="fas fa-shopping-bag me-2"></i> Purchases</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </a>
+
+                    <div class="collapse {{ request()->routeIs('purchase.*') ? 'show' : '' }}" id="purchaseMenu">
+                        <ul class="nav flex-column ms-3">
+
+                            @if ($permissions->contains('name', 'purchases.po.view'))
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('purchase.orders.*') ? 'active' : '' }}"
+                                    href="{{ route('purchase.orders.index') }}">
+                                    <i class="fas fa-file-alt me-2"></i> Purchase Orders
+                                </a>
+                            </li>
+                            @endif
+
+                            @if ($permissions->contains('name', 'purchases.invoices.view'))
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('purchase.invoices.*') ? 'active' : '' }}"
+                                    href="{{ route('purchase.invoices.index') }}">
+                                    <i class="fas fa-file-invoice me-2"></i> Purchase Invoices
+                                </a>
+                            </li>
+                            @endif
+
+                            @if ($permissions->contains('name', 'purchases.grn.view'))
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('purchase.grn.*') ? 'active' : '' }}"
+                                    href="{{ route('purchase.grn.index') }}">
+                                    <i class="fas fa-truck-loading me-2"></i> Goods Receipt Notes
+                                </a>
+                            </li>
+                            @endif
+
+                            @if ($permissions->contains('name', 'purchases.returns.view'))
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('purchase.returns.*') ? 'active' : '' }}"
+                                    href="{{ route('purchase.returns.index') }}">
+                                    <i class="fas fa-undo me-2"></i> Purchase Returns
+                                </a>
+                            </li>
+                            @endif
+
+                            @if ($permissions->contains('name', 'purchases.reports.view'))
+                            <li class="nav-item">
+                                <a class="nav-link d-flex justify-content-between align-items-center collapsed"
+                                    data-bs-toggle="collapse" href="#purchaseReportsMenu" role="button"
+                                    aria-expanded="false" aria-controls="purchaseReportsMenu">
+                                    <span><i class="fas fa-chart-bar me-2"></i> Reports</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </a>
+                                <div class="collapse" id="purchaseReportsMenu">
+                                    <ul class="nav flex-column ms-3">
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="{{ route('purchase.reports.purchase-summary') }}">
+                                                <i class="fas fa-chart-pie me-2"></i> Purchase Summary
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="{{ route('purchase.reports.vendor-performance') }}">
+                                                <i class="fas fa-star me-2"></i> Vendor Performance
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="{{ route('purchase.reports.pending-approvals') }}">
+                                                <i class="fas fa-clock me-2"></i> Pending Approvals
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="{{ route('purchase.reports.grn-status') }}">
+                                                <i class="fas fa-clipboard-check me-2"></i> GRN Status
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </li>
                             @endif
 
                         </ul>
                     </div>
                 </li>
                 @endif
-
-                <li class="nav-item">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-shopping-cart"></i> Purchases
-                    </a>
-                </li>
                 <!-- NEW ACCOUNTS MENU -->
-                @php
-                $role = auth()->user()->getRoleNames()->first();
-                $permissions = getCurrentRolePermissions($role);
-                @endphp
 
                 @if (
                 $permissions->contains('name', 'accounts.receipt.view') ||
@@ -499,7 +584,7 @@
 
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center 
-                {{ request()->routeIs('chart_of_accounts.*') || request()->routeIs('accounts.*') || request()->routeIs('receipt.*') ? '' : 'collapsed' }}"
+                  {{ request()->routeIs('chart_of_accounts.*') || request()->routeIs('accounts.*') || request()->routeIs('receipt.*') ? '' : 'collapsed' }}"
                         data-bs-toggle="collapse"
                         href="#accountsMenu"
                         role="button"
@@ -510,7 +595,7 @@
                     </a>
 
                     <div class="collapse 
-                {{ request()->routeIs('chart_of_accounts.*') || request()->routeIs('accounts.*') || request()->routeIs('receipt.*') ? 'show' : '' }}"
+                  {{ request()->routeIs('chart_of_accounts.*') || request()->routeIs('accounts.*') || request()->routeIs('receipt.*') ? 'show' : '' }}"
                         id="accountsMenu">
                         <ul class="nav flex-column ms-3">
 
@@ -692,7 +777,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Other Scripts -->
-    <script src="{{ asset('js/accounts.js') }}"></script>
+    <!-- <script src="{{ asset('js/accounts.js') }}"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 

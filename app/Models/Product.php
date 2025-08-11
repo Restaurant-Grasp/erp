@@ -16,6 +16,7 @@ class Product extends Model
     protected $fillable = [
         'product_code',
         'ledger_id',
+        'item_type',
         'name',
         'description',
         'category_id',

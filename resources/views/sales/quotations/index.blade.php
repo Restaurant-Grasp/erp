@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('title', 'Quotation Management')
@@ -23,8 +22,8 @@
         <form method="GET" action="{{ route('sales.quotations.index') }}" id="filterForm">
             <div class="row g-3">
                 <div class="col-md-3">
-                    <input type="text" class="form-control" name="search" placeholder="Search quotations..." 
-                           value="{{ request('search') }}">
+                    <input type="text" class="form-control" name="search" placeholder="Search quotations..."
+                        value="{{ request('search') }}">
                 </div>
                 <div class="col-md-2">
                     <select class="form-select" name="status">
@@ -66,11 +65,16 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">All Quotations</h5>
         <div>
-            @can('sales.quotations.create')
+            @php
+            $role = auth()->user()->getRoleNames()->first();
+            $permissions = getCurrentRolePermissions($role);
+            @endphp
+            @if ($permissions->contains('name', 'sales.quotations.create'))
+
             <a href="{{ route('sales.quotations.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i> Create Quotation
             </a>
-            @endcan
+            @endif
         </div>
     </div>
     <div class="card-body">
@@ -96,23 +100,23 @@
                                 {{ $quotation->quotation_no }}
                             </a>
                             @if($quotation->is_revised)
-                                <span class="badge bg-info ms-1">Revised</span>
+                            <span class="badge bg-info ms-1">Revised</span>
                             @endif
                         </td>
                         <td>{{ $quotation->quotation_date->format('d/m/Y') }}</td>
                         <td>
                             @if($quotation->customer)
-                                <strong>{{ $quotation->customer->company_name }}</strong>
-                                <br><small class="text-muted">Customer</small>
+                            <strong>{{ $quotation->customer->company_name }}</strong>
+                            <br><small class="text-muted">Customer</small>
                             @elseif($quotation->lead)
-                                <strong>{{ $quotation->lead->company_name ?: $quotation->lead->contact_person }}</strong>
-                                <br><small class="text-muted">Lead</small>
+                            <strong>{{ $quotation->lead->company_name ?: $quotation->lead->contact_person }}</strong>
+                            <br><small class="text-muted">Lead</small>
                             @endif
                         </td>
                         <td>
                             {{ $quotation->valid_until->format('d/m/Y') }}
                             @if($quotation->is_expired)
-                                <br><small class="text-danger">Expired</small>
+                            <br><small class="text-danger">Expired</small>
                             @endif
                         </td>
                         <td>₹{{ number_format($quotation->total_amount, 2) }}</td>
@@ -128,43 +132,48 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                @can('sales.quotations.view')
-                                <a href="{{ route('sales.quotations.show', $quotation) }}" 
-                                   class="btn btn-sm btn-outline-primary" title="View">
+                                @if ($permissions->contains('name', 'sales.quotations.view'))
+
+                                <a href="{{ route('sales.quotations.show', $quotation) }}"
+                                    class="btn btn-sm btn-outline-primary" title="View">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                @endcan
+                                @endif
 
                                 @if($quotation->can_be_edited)
-                                    @can('sales.quotations.edit')
-                                    <a href="{{ route('sales.quotations.edit', $quotation) }}" 
-                                       class="btn btn-sm btn-outline-primary" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    @endcan
+                                @if ($permissions->contains('name', 'sales.quotations.edit'))
+
+                                <a href="{{ route('sales.quotations.edit', $quotation) }}"
+                                    class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                @endif
                                 @endif
 
                                 @if($quotation->can_be_approved)
-                                    @can('sales.quotations.approve')
-                                    <form action="{{ route('sales.quotations.approve', $quotation) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-outline-success approve-btn" title="Approve">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                    </form>
-                                    @endcan
+
+                                @if ($permissions->contains('name', 'sales.quotations.approve'))
+                                <form action="{{ route('sales.quotations.approve', $quotation) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-success approve-btn" title="Approve">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                                @endif
                                 @endif
 
                                 @if($quotation->can_be_deleted)
-                                    @can('sales.quotations.delete')
-                                    <form action="{{ route('sales.quotations.destroy', $quotation) }}" method="POST" class="d-inline delete-form">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                    @endcan
+
+                                @if ($permissions->contains('name', 'sales.quotations.delete'))
+
+                                <form action="{{ route('sales.quotations.destroy', $quotation) }}" method="POST" class="d-inline delete-form">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                @endif
                                 @endif
                             </div>
                         </td>
@@ -189,31 +198,31 @@
 </div>
 
 <script>
-$(document).ready(function() {
-    // Delete confirmation
-    $('.delete-form').on('submit', function(e) {
-        e.preventDefault();
-        const form = this;
-        
-        if (confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
-            form.submit();
-        }
-    });
+    $(document).ready(function() {
+        // Delete confirmation
+        $('.delete-form').on('submit', function(e) {
+            e.preventDefault();
+            const form = this;
 
-    // Approve confirmation
-    $('.approve-btn').on('click', function(e) {
-        e.preventDefault();
-        const form = $(this).closest('form');
-        
-        if (confirm('Are you sure you want to approve this quotation? It will be automatically converted to an invoice.')) {
-            form.submit();
-        }
-    });
+            if (confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
+                form.submit();
+            }
+        });
 
-    // Auto-submit filter form on change
-    $('#filterForm select').on('change', function() {
-        $('#filterForm').submit();
+        // Approve confirmation
+        $('.approve-btn').on('click', function(e) {
+            e.preventDefault();
+            const form = $(this).closest('form');
+
+            if (confirm('Are you sure you want to approve this quotation? It will be automatically converted to an invoice.')) {
+                form.submit();
+            }
+        });
+
+        // Auto-submit filter form on change
+        $('#filterForm select').on('change', function() {
+            $('#filterForm').submit();
+        });
     });
-});
 </script>
 @endsection

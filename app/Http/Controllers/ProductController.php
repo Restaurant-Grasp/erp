@@ -107,7 +107,7 @@ class ProductController extends Controller
     public function productIndex()
     {
         $productList = Product::orderBy('id', 'desc')->paginate(10);
-        $warehouses = Warehouse::all();
+        $warehouses = Warehouse::where('status',1)->get();
         return view('product.index', compact('productList', 'warehouses'));
     }
 
@@ -210,6 +210,7 @@ class ProductController extends Controller
     }
     public function addQuantity(Request $request)
     {
+              dd( $request->all());
         $request->validate([
             'quantity' => 'required',
             'warehouse_id' => 'required'
@@ -218,7 +219,7 @@ class ProductController extends Controller
 
         try {
             $product = Product::findOrFail($request->product_id);
-
+      
             $unitCost = $request->price;
             $totalCost = $unitCost * $request->quantity;
 

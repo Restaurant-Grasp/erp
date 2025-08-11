@@ -299,7 +299,18 @@ class LeadController extends Controller
 
             // Generate customer code
             $customerCode = $this->generateCustomerCode();
+            $existingLedgersCount = Ledger::where('group_id', $tradeDebtorGroup->id)->count();
+            $rightCodeNumber = $existingLedgersCount + 1;
 
+ 
+            $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
+
+            while (Ledger::where('right_code', $rightCode)->exists()) {
+                $rightCodeNumber++;
+                $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
+            }
+            $leftCode = str_pad($tradeDebtorGroup->id, 4, '0', STR_PAD_LEFT);
+            
             // Create ledger
             $companyName = $lead->company_name ?: $lead->contact_person;
             $ledgerName = $companyName . ' (' . $customerCode . ')';
@@ -310,7 +321,9 @@ class LeadController extends Controller
                 'type' => 0,
                 'reconciliation' => 0,
                 'aging' => 1,
-                'credit_aging' => 0
+                'credit_aging' => 0,
+                'left_code' => $leftCode,
+                'right_code' => $rightCode,
             ]);
 
             // Create customer record

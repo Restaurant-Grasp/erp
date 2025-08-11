@@ -56,11 +56,16 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">All Taxes</h5>
         <div>
-            @can('sales.taxes.create')
+                @php
+                $role = auth()->user()->getRoleNames()->first();
+                $permissions = getCurrentRolePermissions($role);
+                @endphp
+
+           @if ($permissions->contains('name', 'sales.taxes.create'))
             <a href="{{ route('sales.taxes.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i> Add New Tax
             </a>
-            @endcan
+            @endif
         </div>
     </div>
     <div class="card-body">
@@ -98,19 +103,21 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                @can('sales.taxes.view')
+                             
+                                
+           @if ($permissions->contains('name', 'sales.taxes.view'))
                                 <a href="{{ route('sales.taxes.show', $tax) }}" class="btn btn-sm btn-outline-primary" title="View">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                @endcan
+                                @endif
                                 
-                                @can('sales.taxes.edit')
+                                   @if ($permissions->contains('name', 'sales.taxes.edit'))
                                 <a href="{{ route('sales.taxes.edit', $tax) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                @endcan
+                                     @endif
                                 
-                                @can('sales.taxes.delete')
+                                   @if ($permissions->contains('name', 'sales.taxes.delete'))
                                 <form action="{{ route('sales.taxes.destroy', $tax) }}" method="POST" class="d-inline delete-form">
                                     @csrf
                                     @method('DELETE')
@@ -118,7 +125,7 @@
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
-                                @endcan
+                                @endif
                             </div>
                         </td>
                     </tr>

@@ -93,7 +93,7 @@
     <div class="modal-dialog">
         <form id="quantityForm" method="POST" action="{{ route('product.addQuantity') }}">
             @csrf
-            <input type="hidden" name="product_id" id="modal_product_id">
+            <input type="hidden" name="product_id" id="modal_product_id" value="">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="quantityModalLabel">Opening Stock - <span id="modal_product_name"></span></h5>
@@ -112,6 +112,7 @@
                         <label>Warehouse <span class="text-danger">*</span></label>
                         <select name="warehouse_id" id="warehouse_id" class="form-control" required>
                             <option value="">-- Select Warehouse --</option>
+
                             @foreach($warehouses as $warehouse)
                             <option value="{{ $warehouse->id }}">
                                 {{ $warehouse->name }}
@@ -127,4 +128,14 @@
         </form>
     </div>
 </div>
+<script>
+    var quantityModal = document.getElementById('quantityModal');
+
+quantityModal.addEventListener('show.bs.modal', function (event) {
+    var button = event.relatedTarget;
+    var productId = button.getAttribute('data-product-id');
+
+    document.getElementById('modal_product_id').value = productId;
+});
+</script>
 @endsection

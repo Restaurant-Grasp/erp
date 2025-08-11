@@ -46,10 +46,10 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Invoice Date <span class="text-danger">*</span></label>
-                            <input type="date" name="invoice_date" class="form-control @error('invoice_date') is-invalid @enderror" 
-                                   value="{{ old('invoice_date', $invoice->invoice_date->format('Y-m-d')) }}" required>
+                            <input type="date" name="invoice_date" class="form-control @error('invoice_date') is-invalid @enderror"
+                                value="{{ old('invoice_date', $invoice->invoice_date->format('Y-m-d')) }}" required>
                             @error('invoice_date')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                         <div class="col-md-3">
@@ -63,15 +63,15 @@
                                 @endforeach
                             </select>
                             @error('customer_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Payment Terms (Days) <span class="text-danger">*</span></label>
-                            <input type="number" name="payment_terms" class="form-control @error('payment_terms') is-invalid @enderror" 
-                                   value="{{ old('payment_terms', $invoice->payment_terms) }}" required min="1">
+                            <input type="number" name="payment_terms" class="form-control @error('payment_terms') is-invalid @enderror"
+                                value="{{ old('payment_terms', $invoice->payment_terms) }}" required min="1">
                             @error('payment_terms')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                         <div class="col-md-4">
@@ -87,18 +87,20 @@
                             <input type="date" class="form-control" value="{{ $invoice->due_date->format('Y-m-d') }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Currency <span class="text-danger">*</span></label>
-                            <select name="currency" class="form-select" required>
-                                <option value="INR" {{ old('currency', $invoice->currency) == 'INR' ? 'selected' : '' }}>INR</option>
-                                <option value="USD" {{ old('currency', $invoice->currency) == 'USD' ? 'selected' : '' }}>USD</option>
-                                <option value="EUR" {{ old('currency', $invoice->currency) == 'EUR' ? 'selected' : '' }}>EUR</option>
-                            </select>
+
+                            <label class="form-label">Currency</label>
+                            <input type="text"
+                                name="currency"
+                                class="form-control"
+                                value="{{ app(\App\Helpers\SettingsHelper::class)->getSettingCurrency('currency') . ' ' . $invoice->currency }}"
+                                disabled>
+
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Exchange Rate <span class="text-danger">*</span></label>
-                            <input type="number" name="exchange_rate" class="form-control" value="{{ old('exchange_rate', $invoice->exchange_rate) }}" 
-                                   required min="0" step="0.0001">
-                        </div>
+
+
+                        <input type="number" name="exchange_rate" class="form-control" value="1"
+                            required min="0" step="0.0001">
+
                         <div class="col-md-3">
                             <label class="form-label">Discount Type</label>
                             <select name="discount_type" class="form-select">
@@ -108,8 +110,8 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Discount Value</label>
-                            <input type="number" name="discount_value" class="form-control" value="{{ old('discount_value', $invoice->discount_value) }}" 
-                                   min="0" step="0.01">
+                            <input type="number" name="discount_value" class="form-control" value="{{ old('discount_value', $invoice->discount_value) }}"
+                                min="0" step="0.01">
                         </div>
                     </div>
                 </div>
@@ -132,7 +134,7 @@
                                     <th>Item</th>
                                     <th width="80">Qty</th>
                                     <th width="80">Delivered</th>
-                                    <th width="80">UOM</th>
+                                    <th width="80" style="display: none;">UOM</th>
                                     <th width="120">Unit Price</th>
                                     <th width="80">Disc %</th>
                                     <th width="120">Tax</th>
@@ -157,13 +159,13 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="number" name="items[{{ $index }}][quantity]" class="form-control quantity" required 
-                                               min="0.01" step="0.01" value="{{ $item->quantity }}" onchange="calculateRowTotal({{ $index }})">
+                                        <input type="number" name="items[{{ $index }}][quantity]" class="form-control quantity" required
+                                            min="0.01" step="0.01" value="{{ $item->quantity }}" onchange="calculateRowTotal({{ $index }})">
                                     </td>
                                     <td>
                                         <span class="badge bg-{{ $item->delivery_status_badge }}">{{ $item->delivered_quantity }}</span>
                                     </td>
-                                    <td>
+                                    <td style="display: none;">
                                         <select name="items[{{ $index }}][uom_id]" class="form-select uom-select">
                                             @if($item->uom)
                                             <option value="{{ $item->uom->id }}" selected>{{ $item->uom->name }}</option>
@@ -173,12 +175,12 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="number" name="items[{{ $index }}][unit_price]" class="form-control unit-price" required 
-                                               min="0" step="0.01" value="{{ $item->unit_price }}" onchange="calculateRowTotal({{ $index }})">
+                                        <input type="number" name="items[{{ $index }}][unit_price]" class="form-control unit-price" required
+                                            min="0" step="0.01" value="{{ $item->unit_price }}" onchange="calculateRowTotal({{ $index }})">
                                     </td>
                                     <td>
-                                        <input type="number" name="items[{{ $index }}][discount_value]" class="form-control discount-value" 
-                                               min="0" step="0.01" value="{{ $item->discount_value }}" onchange="calculateRowTotal({{ $index }})">
+                                        <input type="number" name="items[{{ $index }}][discount_value]" class="form-control discount-value"
+                                            min="0" step="0.01" value="{{ $item->discount_value }}" onchange="calculateRowTotal({{ $index }})">
                                         <input type="hidden" name="items[{{ $index }}][discount_type]" value="{{ $item->discount_type }}">
                                     </td>
                                     <td>
@@ -192,7 +194,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <span class="row-total">₹{{ number_format($item->total_amount, 2) }}</span>
+                                        <span class="row-total">{{ app(\App\Helpers\SettingsHelper::class)->getSettingCurrency('country') }} {{ number_format($item->total_amount, 2) }}</span>
                                     </td>
                                     <td>
                                         @if($item->delivered_quantity == 0)
@@ -210,23 +212,23 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="8" class="text-end"><strong>Subtotal:</strong></td>
-                                    <td><strong id="subtotalAmount">₹{{ number_format($invoice->subtotal, 2) }}</strong></td>
+                                    <td colspan="6" class="text-end"><strong>Subtotal:</strong></td>
+                                    <td><strong id="subtotalAmount">{{ app(\App\Helpers\SettingsHelper::class)->getSettingCurrency('country') }} {{ number_format($invoice->subtotal, 2) }}</strong></td>
                                     <td></td>
                                 </tr>
                                 <tr>
-                                    <td colspan="8" class="text-end"><strong>Discount:</strong></td>
-                                    <td><strong id="discountAmount">₹{{ number_format($invoice->discount_amount, 2) }}</strong></td>
+                                    <td colspan="6" class="text-end"><strong>Discount:</strong></td>
+                                    <td><strong id="discountAmount"> {{ app(\App\Helpers\SettingsHelper::class)->getSettingCurrency('country') }} {{ number_format($invoice->discount_amount, 2) }}</strong></td>
                                     <td></td>
                                 </tr>
                                 <tr>
-                                    <td colspan="8" class="text-end"><strong>Tax Amount:</strong></td>
-                                    <td><strong id="taxAmount">₹{{ number_format($invoice->tax_amount, 2) }}</strong></td>
+                                    <td colspan="6" class="text-end"><strong>Tax Amount:</strong></td>
+                                    <td><strong id="taxAmount">{{ app(\App\Helpers\SettingsHelper::class)->getSettingCurrency('country') }} {{ number_format($invoice->tax_amount, 2) }}</strong></td>
                                     <td></td>
                                 </tr>
                                 <tr>
                                     <td colspan="8" class="text-end"><strong>Total Amount:</strong></td>
-                                    <td><strong id="totalAmount">₹{{ number_format($invoice->total_amount, 2) }}</strong></td>
+                                    <td><strong id="totalAmount">{{ app(\App\Helpers\SettingsHelper::class)->getSettingCurrency('country') }} {{ number_format($invoice->total_amount, 2) }}</strong></td>
                                     <td></td>
                                 </tr>
                             </tfoot>
@@ -280,7 +282,7 @@
             <div class="modal-body">
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>
-                    This invoice contains items that have been partially or fully delivered. 
+                    This invoice contains items that have been partially or fully delivered.
                     Modifying these items may affect delivery records.
                 </div>
                 <p>Items with deliveries:</p>
@@ -296,14 +298,14 @@
 </div>
 
 <script>
-let itemIndex = {{ $invoice->items->count() }};
-let hasDeliveredItems = {{ $invoice->items->where('delivered_quantity', '>', 0)->count() > 0 ? 'true' : 'false' }};
+    let itemIndex = {{ $invoice->items->count() }};
+    let hasDeliveredItems = {{ $invoice->items->where('delivered_quantity', '>', 0)->count() > 0 ?'true':'false' }};
 
-function addItem() {
-    const tbody = document.getElementById('itemsTableBody');
-    const row = document.createElement('tr');
-    row.setAttribute('data-index', itemIndex);
-    row.innerHTML = `
+    function addItem() {
+        const tbody = document.getElementById('itemsTableBody');
+        const row = document.createElement('tr');
+        row.setAttribute('data-index', itemIndex);
+        row.innerHTML = `
         <td>
             <select name="items[${itemIndex}][item_type]" class="form-select item-type" required onchange="loadItems(this, ${itemIndex})">
                 <option value="">Select</option>
@@ -323,7 +325,7 @@ function addItem() {
         <td>
             <span class="badge bg-secondary">0</span>
         </td>
-        <td>
+        <td style="display: none;">
             <select name="items[${itemIndex}][uom_id]" class="form-select uom-select">
                 <option value="">-</option>
             </select>
@@ -335,13 +337,18 @@ function addItem() {
             <input type="number" name="items[${itemIndex}][discount_value]" class="form-control discount-value" min="0" step="0.01" value="0" onchange="calculateRowTotal(${itemIndex})">
             <input type="hidden" name="items[${itemIndex}][discount_type]" value="percentage">
         </td>
-        <td>
+        <td class="tax-cell">
+            <!-- Tax Dropdown (default) -->
             <select name="items[${itemIndex}][tax_id]" class="form-select tax-select" onchange="calculateRowTotal(${itemIndex})">
                 <option value="">No Tax</option>
             </select>
+            <!-- Tax Input Fields (for Package type) -->
+            <div class="tax-inputs" style="display: none;">
+                <input type="number" name="items[${itemIndex}][tax_rate]" class="form-control tax-rate mb-1" placeholder="Tax Rate %" min="0" step="0.01" onchange="calculateRowTotal(${itemIndex})">
+            </div>
         </td>
         <td>
-            <span class="row-total">₹0.00</span>
+            <span class="row-total">{{ app(\App\Helpers\SettingsHelper::class)->getSettingCurrency('country') }} 0.00</span>
         </td>
         <td>
             <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem(this)">
@@ -349,33 +356,65 @@ function addItem() {
             </button>
         </td>
     `;
-    tbody.appendChild(row);
-    itemIndex++;
-    loadTaxes(row.querySelector('.tax-select'));
-}
-
-function removeItem(button) {
-    const row = button.closest('tr');
-    const deliveredQty = row.querySelector('.badge');
-    
-    if (deliveredQty && deliveredQty.textContent !== '0') {
-        alert('Cannot remove item that has been delivered.');
-        return;
+        tbody.appendChild(row);
+        itemIndex++;
+        loadTaxes(row.querySelector('.tax-select'));
     }
-    
-    row.remove();
-    calculateTotals();
-}
 
+    function removeItem(button) {
+        const row = button.closest('tr');
+        const deliveredQty = row.querySelector('.badge');
+
+        if (deliveredQty && deliveredQty.textContent !== '0') {
+            alert('Cannot remove item that has been delivered.');
+            return;
+        }
+
+        row.remove();
+        calculateTotals();
+    }
+
+ // Modified loadItems function
 function loadItems(selectElement, index) {
     const itemType = selectElement.value;
     const itemSelect = selectElement.closest('tr').querySelector('.item-select');
-    
+    const row = selectElement.closest('tr');
+    const taxCell = row.querySelector('.tax-cell');
+    const taxSelect = taxCell.querySelector('.tax-select');
+    const taxInputs = taxCell.querySelector('.tax-inputs');
+
     itemSelect.innerHTML = '<option value="">Loading...</option>';
     
-    if (itemType) {
-        fetch(`/sales/quotations/get-items?type=${itemType}`)
-            .then(response => response.json())
+    // Toggle tax display based on item type
+    if (itemType === 'package') {
+        // Show tax input fields, hide dropdown
+        taxSelect.style.display = 'none';
+        taxInputs.style.display = 'block';
+        // Clear dropdown selection
+        taxSelect.value = '';
+    } else {
+        // Show tax dropdown, hide input fields
+        taxSelect.style.display = 'block';
+        taxInputs.style.display = 'none';
+        // Clear input fields
+        taxInputs.querySelector('.tax-rate').value = '';
+        taxInputs.querySelector('.tax-name').value = '';
+        
+        // Load taxes if not already loaded
+        if (taxSelect.children.length <= 1) {
+            loadTaxes(taxSelect);
+        }
+    }
+
+    if (itemType === 'service' || itemType === 'product') {
+        // Load items based on type
+        fetch(`/quotations/get-items?type=${itemType}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 itemSelect.innerHTML = '<option value="">Select Item</option>';
                 data.forEach(item => {
@@ -390,176 +429,202 @@ function loadItems(selectElement, index) {
         itemSelect.innerHTML = '<option value="">Select Item</option>';
     }
 }
-
-function updateItemDetails(selectElement, index) {
-    const option = selectElement.selectedOptions[0];
-    if (option && option.dataset.price) {
-        const row = selectElement.closest('tr');
-        row.querySelector('.unit-price').value = option.dataset.price;
-        calculateRowTotal(index);
+    function updateItemDetails(selectElement, index) {
+        const option = selectElement.selectedOptions[0];
+        if (option && option.dataset.price) {
+            const row = selectElement.closest('tr');
+            row.querySelector('.unit-price').value = option.dataset.price;
+            calculateRowTotal(index);
+        }
     }
-}
 
-function loadTaxes(selectElement) {
-    fetch('/sales/taxes/for-dropdown')
-        .then(response => response.json())
-        .then(data => {
-            // Keep existing selection if any
-            const currentValue = selectElement.value;
-            selectElement.innerHTML = '<option value="">No Tax</option>';
-            data.forEach(tax => {
-                const selected = tax.id == currentValue ? 'selected' : '';
-                selectElement.innerHTML += `<option value="${tax.id}" data-rate="${tax.percent}" ${selected}>${tax.name} (${tax.percent}%)</option>`;
+    function loadTaxes(selectElement) {
+        fetch('/sales/taxes/for-dropdown')
+            .then(response => response.json())
+            .then(data => {
+                // Keep existing selection if any
+                const currentValue = selectElement.value;
+                selectElement.innerHTML = '<option value="">No Tax</option>';
+                data.forEach(tax => {
+                    const selected = tax.id == currentValue ? 'selected' : '';
+                    selectElement.innerHTML += `<option value="${tax.id}" data-rate="${tax.percent}" ${selected}>${tax.name} (${tax.percent}%)</option>`;
+                });
             });
-        });
-}
+    }
 
-function calculateRowTotal(index) {
-    const rows = document.querySelectorAll('#itemsTableBody tr');
-    const row = rows[index];
-    
-    if (!row) return;
-    
-    const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
-    const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
-    const discountValue = parseFloat(row.querySelector('.discount-value').value) || 0;
-    const taxSelect = row.querySelector('.tax-select');
-    const taxRate = parseFloat(taxSelect.selectedOptions[0]?.dataset.rate || 0);
-    
-    const lineTotal = quantity * unitPrice;
-    const discountAmount = (lineTotal * discountValue) / 100;
-    const afterDiscount = lineTotal - discountAmount;
-    const taxAmount = (afterDiscount * taxRate) / 100;
-    const rowTotal = afterDiscount + taxAmount;
-    
-    row.querySelector('.row-total').textContent = `₹${rowTotal.toFixed(2)}`;
-    
-    calculateTotals();
-}
+    function calculateRowTotal(index) {
+        const rows = document.querySelectorAll('#itemsTableBody tr');
+        const row = rows[index];
 
-function calculateTotals() {
-    let subtotal = 0;
-    let totalDiscount = 0;
-    let totalTax = 0;
-    
-    document.querySelectorAll('#itemsTableBody tr').forEach((row, index) => {
+        if (!row) return;
+
         const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
         const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
         const discountValue = parseFloat(row.querySelector('.discount-value').value) || 0;
-        const taxSelect = row.querySelector('.tax-select');
-        const taxRate = parseFloat(taxSelect.selectedOptions[0]?.dataset.rate || 0);
-        
+ // Check if using tax dropdown or input fields
+    const taxSelect = row.querySelector('.tax-select');
+    const taxRateInput = row.querySelector('.tax-rate');
+    
+    let taxRate = 0;
+    if (taxSelect.style.display !== 'none' && taxSelect.value) {
+        // Using tax dropdown
+        taxRate = parseFloat(taxSelect.selectedOptions[0]?.dataset.rate || 0);
+    } else if (taxRateInput.style.display !== 'none') {
+        // Using tax input field
+        taxRate = parseFloat(taxRateInput.value || 0);
+    }
+
         const lineTotal = quantity * unitPrice;
         const discountAmount = (lineTotal * discountValue) / 100;
         const afterDiscount = lineTotal - discountAmount;
         const taxAmount = (afterDiscount * taxRate) / 100;
-        
-        subtotal += lineTotal;
-        totalDiscount += discountAmount;
-        totalTax += taxAmount;
-    });
-    
-    const total = subtotal - totalDiscount + totalTax;
-    
-    document.getElementById('subtotalAmount').textContent = `₹${subtotal.toFixed(2)}`;
-    document.getElementById('discountAmount').textContent = `₹${totalDiscount.toFixed(2)}`;
-    document.getElementById('taxAmount').textContent = `₹${totalTax.toFixed(2)}`;
-    document.getElementById('totalAmount').textContent = `₹${total.toFixed(2)}`;
-}
+        const rowTotal = afterDiscount + taxAmount;
 
-function proceedWithUpdate() {
-    $('#deliveryWarningModal').modal('hide');
-    document.getElementById('invoiceForm').submit();
-}
+        row.querySelector('.row-total').textContent = `RM ${rowTotal.toFixed(2)}`;
 
-$(document).ready(function() {
-    // Load taxes for existing items
-    document.querySelectorAll('.tax-select').forEach(select => {
-        if (!select.querySelector('option[selected]')) {
-            loadTaxes(select);
-        }
-    });
-    
-    // Load items for existing rows
-    document.querySelectorAll('.item-type').forEach((select, index) => {
-        if (select.value) {
-            loadItems(select, index);
-        }
-    });
-    
-    // Payment terms change updates due date
-    $('input[name="payment_terms"]').on('change', function() {
-        const invoiceDate = $('input[name="invoice_date"]').val();
-        const paymentTerms = parseInt($(this).val()) || 0;
+        calculateTotals();
+    }
+
+    function calculateTotals() {
+        let subtotal = 0;
+        let totalDiscount = 0;
+        let totalTax = 0;
+
+    document.querySelectorAll('#itemsTableBody tr').forEach((row, index) => {
+        const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+        const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
+        const discountValue = parseFloat(row.querySelector('.discount-value').value) || 0;
         
-        if (invoiceDate && paymentTerms > 0) {
-            const dueDate = new Date(invoiceDate);
-            dueDate.setDate(dueDate.getDate() + paymentTerms);
-            
-            const dueDateString = dueDate.toISOString().split('T')[0];
-            $('input[readonly][type="date"]').val(dueDateString);
+        // Check if using tax dropdown or input fields
+        const taxSelect = row.querySelector('.tax-select');
+        const taxRateInput = row.querySelector('.tax-rate');
+        
+        let taxRate = 0;
+        if (taxSelect.style.display !== 'none' && taxSelect.value) {
+            // Using tax dropdown
+            taxRate = parseFloat(taxSelect.selectedOptions[0]?.dataset.rate || 0);
+        } else if (taxRateInput && taxRateInput.style.display !== 'none') {
+            // Using tax input field
+            taxRate = parseFloat(taxRateInput.value || 0);
         }
+
+            const lineTotal = quantity * unitPrice;
+            const discountAmount = (lineTotal * discountValue) / 100;
+            const afterDiscount = lineTotal - discountAmount;
+            const taxAmount = (afterDiscount * taxRate) / 100;
+
+            subtotal += afterDiscount;
+            totalDiscount += discountAmount;
+            totalTax += taxAmount;
+        });
+
+        const total = subtotal - totalDiscount + totalTax;
+
+        document.getElementById('subtotalAmount').textContent = `RM ${subtotal.toFixed(2)}`;
+        document.getElementById('discountAmount').textContent = `RM ${totalDiscount.toFixed(2)}`;
+        document.getElementById('taxAmount').textContent = `RM ${totalTax.toFixed(2)}`;
+        document.getElementById('totalAmount').textContent = `RM ${total.toFixed(2)}`;
+    }
+
+    function proceedWithUpdate() {
+        $('#deliveryWarningModal').modal('hide');
+        document.getElementById('invoiceForm').submit();
+    }
+
+    $(document).ready(function() {
+        // Load taxes for existing items
+        document.querySelectorAll('.tax-select').forEach(select => {
+            if (!select.querySelector('option[selected]')) {
+                loadTaxes(select);
+            }
+        });
+
+        // Load items for existing rows
+        document.querySelectorAll('.item-type').forEach((select, index) => {
+            if (select.value) {
+                loadItems(select, index);
+            }
+        });
+
+        // Payment terms change updates due date
+        $('input[name="payment_terms"]').on('change', function() {
+            const invoiceDate = $('input[name="invoice_date"]').val();
+            const paymentTerms = parseInt($(this).val()) || 0;
+
+            if (invoiceDate && paymentTerms > 0) {
+                const dueDate = new Date(invoiceDate);
+                dueDate.setDate(dueDate.getDate() + paymentTerms);
+
+                const dueDateString = dueDate.toISOString().split('T')[0];
+                $('input[readonly][type="date"]').val(dueDateString);
+            }
+        });
+
+        // Form validation with delivery warning
+        $('#invoiceForm').on('submit', function(e) {
+            if (hasDeliveredItems) {
+                e.preventDefault();
+
+                // Show delivered items
+                const deliveredItems = [];
+                document.querySelectorAll('#itemsTableBody tr').forEach(row => {
+                    const itemName = row.querySelector('.item-select option:checked').textContent;
+                    const deliveredQty = row.querySelector('.badge').textContent;
+                    if (deliveredQty !== '0') {
+                        deliveredItems.push(`${itemName} (Delivered: ${deliveredQty})`);
+                    }
+                });
+
+                const listElement = document.getElementById('deliveredItemsList');
+                listElement.innerHTML = deliveredItems.map(item => `<li>${item}</li>`).join('');
+
+                $('#deliveryWarningModal').modal('show');
+            }
+        });
+
+        // Calculate initial totals
+        calculateTotals();
     });
-    
-    // Form validation with delivery warning
-    $('#invoiceForm').on('submit', function(e) {
-        if (hasDeliveredItems) {
-            e.preventDefault();
-            
-            // Show delivered items
-            const deliveredItems = [];
-            document.querySelectorAll('#itemsTableBody tr').forEach(row => {
-                const itemName = row.querySelector('.item-select option:checked').textContent;
-                const deliveredQty = row.querySelector('.badge').textContent;
-                if (deliveredQty !== '0') {
-                    deliveredItems.push(`${itemName} (Delivered: ${deliveredQty})`);
-                }
-            });
-            
-            const listElement = document.getElementById('deliveredItemsList');
-            listElement.innerHTML = deliveredItems.map(item => `<li>${item}</li>`).join('');
-            
-            $('#deliveryWarningModal').modal('show');
-        }
-    });
-    
-    // Calculate initial totals
-    calculateTotals();
-});
 </script>
 
 @push('styles')
 <style>
-.table td {
-    vertical-align: middle;
-}
-
-.item-select, .tax-select, .uom-select {
-    min-width: 150px;
-}
-
-.quantity, .unit-price, .discount-value {
-    min-width: 80px;
-}
-
-.row-total {
-    font-weight: bold;
-    color: #198754;
-}
-
-.badge {
-    font-size: 0.75em;
-}
-
-@media (max-width: 768px) {
-    .table-responsive {
-        font-size: 0.875rem;
+    .table td {
+        vertical-align: middle;
     }
-    
-    .item-select, .tax-select, .uom-select {
-        min-width: 120px;
+
+    .item-select,
+    .tax-select,
+    .uom-select {
+        min-width: 150px;
     }
-}
+
+    .quantity,
+    .unit-price,
+    .discount-value {
+        min-width: 80px;
+    }
+
+    .row-total {
+        font-weight: bold;
+        color: #198754;
+    }
+
+    .badge {
+        font-size: 0.75em;
+    }
+
+    @media (max-width: 768px) {
+        .table-responsive {
+            font-size: 0.875rem;
+        }
+
+        .item-select,
+        .tax-select,
+        .uom-select {
+            min-width: 120px;
+        }
+    }
 </style>
 @endpush
 @endsection

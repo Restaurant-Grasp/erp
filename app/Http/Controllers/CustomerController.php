@@ -83,7 +83,7 @@ class CustomerController extends Controller
         $categories = Category::where('type', 'customer')->where('status', 1)->orderBy('name')->get();
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
         $serviceTypes = ServiceType::where('status', 1)->orderBy('name')->get();
-        
+
         return view('customers.create', compact('categories', 'staff', 'serviceTypes'));
     }
 
@@ -117,7 +117,8 @@ class CustomerController extends Controller
             'assigned_to' => 'nullable|exists:staff,id',
             'notes' => 'nullable|string',
             'service_types' => 'array',
-            'service_types.*' => 'exists:service_types,id'
+            'service_types.*' => 'exists:service_types,id',
+
         ]);
 
         DB::beginTransaction();
@@ -129,24 +130,39 @@ class CustomerController extends Controller
             if (!$tradeDebtorGroup) {
                 throw new \Exception('Trade Debtors group not found');
             }
+            $existingLedgersCount = Ledger::where('group_id', $tradeDebtorGroup->id)->count();
+            $rightCodeNumber = $existingLedgersCount + 1;
+
+ 
+            $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
+
+            while (Ledger::where('right_code', $rightCode)->exists()) {
+                $rightCodeNumber++;
+                $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
+            }
+            $leftCode = str_pad($tradeDebtorGroup->id, 4, '0', STR_PAD_LEFT);
 
             // Create ledger for customer
             $ledgerName = $validated['company_name'] . ' (' . $customerCode . ')';
+
             $ledger = Ledger::create([
                 'group_id' => $tradeDebtorGroup->id,
                 'name' => $ledgerName,
                 'type' => 0,
                 'reconciliation' => 0,
                 'aging' => 1,
-                'credit_aging' => 0
+                'credit_aging' => 0,
+                'left_code' => $leftCode,
+                'right_code' => $rightCode,
             ]);
+
 
             // Create customer
             $validated['customer_code'] = $customerCode;
             $validated['ledger_id'] = $ledger->id;
             $validated['created_by'] = Auth::id();
             $validated['status'] = 'active';
-            
+
             $customer = Customer::create($validated);
 
             // Attach service types if provided
@@ -208,7 +224,7 @@ class CustomerController extends Controller
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
         $serviceTypes = ServiceType::where('status', 1)->orderBy('name')->get();
         $selectedServiceTypes = $customer->serviceTypes->pluck('id')->toArray();
-        
+
         return view('customers.edit', compact('customer', 'categories', 'staff', 'serviceTypes', 'selectedServiceTypes'));
     }
 
@@ -243,7 +259,8 @@ class CustomerController extends Controller
             'status' => 'required|in:active,inactive,blocked',
             'notes' => 'nullable|string',
             'service_types' => 'array',
-            'service_types.*' => 'exists:service_types,id'
+            'service_types.*' => 'exists:service_types,id',
+
         ]);
 
         DB::beginTransaction();
@@ -293,14 +310,14 @@ class CustomerController extends Controller
         try {
             // Delete related records
             CustomerServiceType::where('customer_id', $customer->id)->delete();
-            
+
             // Delete ledger if exists
             if ($customer->ledger) {
                 $customer->ledger->delete();
             }
 
             $customer->delete();
-            
+
             DB::commit();
             return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
         } catch (\Exception $e) {
@@ -350,15 +367,15 @@ class CustomerController extends Controller
     public function search(Request $request)
     {
         $query = $request->get('q');
-        
-        $customers = Customer::where(function($q) use ($query) {
+
+        $customers = Customer::where(function ($q) use ($query) {
             $q->where('customer_code', 'like', "%{$query}%")
-              ->orWhere('company_name', 'like', "%{$query}%")
-              ->orWhere('contact_person', 'like', "%{$query}%");
+                ->orWhere('company_name', 'like', "%{$query}%")
+                ->orWhere('contact_person', 'like', "%{$query}%");
         })
-        ->where('status', 'active')
-        ->limit(10)
-        ->get(['id', 'customer_code', 'company_name', 'contact_person']);
+            ->where('status', 'active')
+            ->limit(10)
+            ->get(['id', 'customer_code', 'company_name', 'contact_person']);
 
         return response()->json($customers);
     }

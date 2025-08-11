@@ -255,3 +255,15 @@ Route::prefix('v1')->group(function () {
         ->name('api.public.leads.submit')
         ->middleware('throttle:10,1'); // Rate limiting
 });
+
+Route::prefix('api')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/country-from-currency/{currency}', function($currency) {
+        $countryData = \App\Helpers\SettingsHelper::autoDetectCountry($currency, null);
+        return response()->json($countryData);
+    });
+    
+    Route::get('/country-from-timezone/{timezone}', function($timezone) {
+        $countryData = \App\Helpers\SettingsHelper::autoDetectCountry(null, $timezone);
+        return response()->json($countryData);
+    });
+});

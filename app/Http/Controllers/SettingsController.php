@@ -20,7 +20,10 @@ class SettingsController extends Controller
         // Get all unique categories for tabs
         $categories = $settingsByCategory->keys()->toArray();
         
-        return view('settings.index', compact('settingsByCategory', 'categories'));
+        // Get current country information
+        $currentCountryInfo = SettingsHelper::getCurrentCountryInfo();
+        
+        return view('settings.index', compact('settingsByCategory', 'categories', 'currentCountryInfo'));
     }
 
     // Update settings
@@ -34,8 +37,24 @@ class SettingsController extends Controller
 
         DB::beginTransaction();
         try {
+            $currencyChanged = false;
+            $timezoneChanged = false;
+            $newCurrency = null;
+            $newTimezone = null;
+
             foreach ($request->settings as $settingId => $value) {
                 $setting = CrmSetting::findOrFail($settingId);
+                
+                // Track currency and timezone changes
+                if ($setting->setting_key === 'currency' && $setting->setting_value !== $value) {
+                    $currencyChanged = true;
+                    $newCurrency = $value;
+                }
+                
+                if ($setting->setting_key === 'time_zone' && $setting->setting_value !== $value) {
+                    $timezoneChanged = true;
+                    $newTimezone = $value;
+                }
                 
                 // Handle file uploads
                 if ($setting->setting_type === 'file' && $request->hasFile("files.{$settingId}")) {
@@ -69,11 +88,33 @@ class SettingsController extends Controller
                 ]);
             }
 
+            // Auto-update country if currency or timezone changed
+            if ($currencyChanged || $timezoneChanged) {
+                // Get current values if only one changed
+                if (!$newCurrency) {
+                    $newCurrency = SettingsHelper::get('general', 'currency', 'MYR');
+                }
+                if (!$newTimezone) {
+                    $newTimezone = SettingsHelper::get('general', 'time_zone', 'Asia/Kuala_Lumpur');
+                }
+                
+                $countryData = SettingsHelper::updateCountryFromCurrencyTimezone($newCurrency, $newTimezone);
+                
+                // Add success message with country info
+                $countryMessage = " Country automatically updated to {$countryData['flag']} {$countryData['country_name']} based on currency and timezone.";
+            }
+
             // Clear settings cache
             SettingsHelper::clearCache();
 
             DB::commit();
-            return redirect()->route('settings.index')->with('success', 'Settings updated successfully.');
+            
+            $successMessage = 'Settings updated successfully.';
+            if (isset($countryMessage)) {
+                $successMessage .= $countryMessage;
+            }
+            
+            return redirect()->route('settings.index')->with('success', $successMessage);
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Error updating settings: ' . $e->getMessage());
@@ -132,6 +173,9 @@ class SettingsController extends Controller
                 'description' => $request->description,
             ]);
 
+            // Clear cache
+            SettingsHelper::clearCache();
+
             DB::commit();
             return redirect()->route('settings.index')->with('success', 'Setting created successfully.');
         } catch (\Exception $e) {
@@ -145,6 +189,7 @@ class SettingsController extends Controller
     {
         try {
             $setting->delete();
+            SettingsHelper::clearCache();
             return redirect()->route('settings.index')->with('success', 'Setting deleted successfully.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error deleting setting: ' . $e->getMessage());
@@ -159,5 +204,27 @@ class SettingsController extends Controller
                             ->first();
         
         return $setting ? $setting->setting_value : $default;
+    }
+
+    // AJAX endpoint to get country information based on currency and timezone
+    public function getCountryInfo(Request $request)
+    {
+        $currency = $request->input('currency');
+        $timezone = $request->input('timezone');
+        
+        if (!$currency && !$timezone) {
+            return response()->json(['error' => 'Currency or timezone required'], 400);
+        }
+        
+        $countryData = SettingsHelper::autoDetectCountry($currency, $timezone);
+        
+        return response()->json($countryData);
+    }
+
+    // Get supported currencies for dropdown
+    public function getSupportedCurrencies()
+    {
+        $currencies = SettingsHelper::getSupportedCurrencies();
+        return response()->json($currencies);
     }
 }
