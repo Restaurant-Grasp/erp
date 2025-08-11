@@ -416,6 +416,17 @@
                 $permissions->contains('name', 'sales.invoices.view') ||
                 $permissions->contains('name', 'sales.delivery_orders.view'))
 
+                @php
+                $role = auth()->user()->getRoleNames()->first();
+                $permissions = getCurrentRolePermissions($role);
+                @endphp
+
+                @if (
+                $permissions->contains('name', 'sales.taxes.view') ||
+                $permissions->contains('name', 'sales.quotations.view') ||
+                $permissions->contains('name', 'sales.invoices.view') ||
+                $permissions->contains('name', 'sales.delivery_orders.view')
+                )
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center 
                     {{ request()->routeIs('sales.*') ? '' : 'collapsed' }}"
@@ -428,7 +439,6 @@
 
                     <div class="collapse {{ request()->routeIs('sales.*') ? 'show' : '' }}" id="salesMenu">
                         <ul class="nav flex-column ms-3">
-
 
                             @if ($permissions->contains('name', 'sales.taxes.view'))
                             <li class="nav-item">
@@ -468,7 +478,6 @@
                                     <i class="fas fa-truck me-2"></i> Delivery Orders
                                 </a>
                             </li>
-
                             @endif
 
                         </ul>
