@@ -127,7 +127,17 @@ class VendorController extends Controller
             if (!$tradeCreditorsGroup) {
                 throw new \Exception('Trade Creditors group not found');
             }
+           $existingLedgersCount = Ledger::where('group_id', $tradeCreditorsGroup->id)->count();
+            $rightCodeNumber = $existingLedgersCount + 1;
 
+ 
+            $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
+
+            while (Ledger::where('right_code', $rightCode)->exists()) {
+                $rightCodeNumber++;
+                $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
+            }
+            $leftCode = str_pad($tradeCreditorsGroup->id, 4, '0', STR_PAD_LEFT);
             // Create ledger for vendor
             $ledgerName = $validated['company_name'] . ' (' . $vendorCode . ')';
             $ledger = Ledger::create([
@@ -136,7 +146,9 @@ class VendorController extends Controller
                 'type' => 0,
                 'reconciliation' => 0,
                 'aging' => 1,
-                'credit_aging' => 1
+                'credit_aging' => 1,
+                'left_code' => $leftCode,
+                'right_code' => $rightCode,
             ]);
 
             // Create vendor

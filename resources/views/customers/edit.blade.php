@@ -77,6 +77,7 @@
                             <label class="form-label">Website</label>
                             <input type="url" name="website" class="form-control" value="{{ old('website', $customer->website) }}" placeholder="https://">
                         </div>
+                   
                     </div>
                 </div>
             </div>

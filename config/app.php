@@ -123,17 +123,17 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    'aliases' => [
+  'aliases' => [
 
-        'App' => Illuminate\Support\Facades\App::class,
-        'Arr' => Illuminate\Support\Arr::class,
-        'Artisan' => Illuminate\Support\Facades\Artisan::class,
-        'Auth' => Illuminate\Support\Facades\Auth::class,
-        'Excel' => Maatwebsite\Excel\Facades\Excel::class,
-        // ... other aliases
+    'App' => Illuminate\Support\Facades\App::class,
+    'Arr' => Illuminate\Support\Arr::class,
+    'Artisan' => Illuminate\Support\Facades\Artisan::class,
+    'Auth' => Illuminate\Support\Facades\Auth::class,
+    'Excel' => Maatwebsite\Excel\Facades\Excel::class,
     'Route' => Illuminate\Support\Facades\Route::class,
+    'Pdf' => Barryvdh\DomPDF\Facade\Pdf::class,
+    'DB' => Illuminate\Support\Facades\DB::class,
+    'Str' => Illuminate\Support\Str::class, 
+],
 
-        'Pdf' => Barryvdh\DomPDF\Facade\Pdf::class, 
-
-    ],
 ];

@@ -87,7 +87,7 @@
         min-width: 250px;
     }
     
-    .timezone-dropdown {
+    .timezone-dropdown, .currency-dropdown {
         background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
         background-position: right 0.5rem center;
         background-repeat: no-repeat;
@@ -95,10 +95,74 @@
         padding-right: 2.5rem;
     }
     
-    .timezone-info {
+    .timezone-info, .currency-info {
         font-size: 12px;
         color: #6c757d;
         margin-top: 5px;
+    }
+    
+    .country-info-display {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .country-flag {
+        font-size: 2rem;
+        margin-right: 10px;
+    }
+    
+    .auto-detect-badge {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 15px;
+        font-size: 11px;
+        margin-left: 10px;
+    }
+    
+    .country-change-notification {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 10px 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        display: none;
+    }
+    
+    .currency-timezone-group {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        position: relative;
+    }
+    
+    .currency-timezone-group::before {
+        content: '🌍';
+        position: absolute;
+        top: -10px;
+        left: 20px;
+        background: white;
+        padding: 0 10px;
+        font-size: 20px;
+    }
+    
+    .setting-input-with-feedback {
+        position: relative;
+    }
+    
+    .setting-feedback {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
     }
 </style>
 @endpush
@@ -119,6 +183,13 @@
     
     <div class="card-body">
         @if($categories && count($categories) > 0)
+        
+        <!-- Country Change Notification -->
+        <div id="countryChangeNotification" class="country-change-notification">
+            <i class="fas fa-info-circle me-2"></i>
+            <span id="countryChangeText"></span>
+        </div>
+        
         <!-- Tabs Navigation -->
         <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
             @foreach($categories as $index => $category)
@@ -152,77 +223,104 @@
                      role="tabpanel" 
                      aria-labelledby="{{ $category }}-tab">
                     
-                    @if($category === 'company')
-                        {{-- Special layout for company settings --}}
+                    @if($category === 'general')
+                        {{-- Special layout for general settings with currency/timezone/country group --}}
                         <div class="settings-form-section">
                             <h6 class="text-muted mb-4">
-                                <i class="fas fa-building me-2"></i>
-                                Company Information
+                                <i class="fas fa-globe me-2"></i>
+                                Regional Settings
                             </h6>
                             
-                            {{-- Company Logos Section --}}
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <h6 class="fw-bold text-dark mb-3">Company Logos</h6>
-                                    <div class="company-logos">
-                                        @foreach($settingsByCategory[$category]->where('setting_type', 'file') as $setting)
-                                        <div class="logo-section">
-                                            <div class="setting-item border rounded p-3 bg-white">
-                                                <div class="setting-label">
-                                                    {{ $setting->display_key }}
-                                                    <span class="setting-type-badge bg-primary text-white ms-2">
-                                                        FILE
-                                                    </span>
-                                                </div>
-                                                @if($setting->description)
-                                                <div class="setting-description">
-                                                    {{ $setting->description }}
-                                                </div>
-                                                @endif
-                                                
-                                                <div class="file-upload-section">
-                                                    @if($setting->setting_value)
-                                                        <div class="current-file mb-3">
-                                                            <img src="{{ asset('assets/' . $setting->setting_value) }}" 
-                                                                 alt="Current {{ $setting->display_key }}" 
-                                                                 class="img-thumbnail" 
-                                                                 style="max-height: 120px; max-width: 200px;">
-                                                            <div class="small text-muted mt-2">
-                                                                <i class="fas fa-check-circle text-success me-1"></i>
-                                                                Current: {{ basename($setting->setting_value) }}
-                                                            </div>
-                                                        </div>
-                                                    @else
-                                                        <div class="no-file mb-3 text-center py-3 border-2 border-dashed rounded">
-                                                            <i class="fas fa-upload fa-2x text-muted mb-2"></i>
-                                                            <div class="text-muted">No {{ strtolower($setting->display_key) }} uploaded</div>
-                                                        </div>
-                                                    @endif
-                                                    <input type="file" 
-                                                           class="form-control" 
-                                                           name="files[{{ $setting->id }}]" 
-                                                           accept="image/*"
-                                                           onchange="previewFile(this, {{ $setting->id }})">
-                                                    <div class="small text-muted mt-1">
-                                                        <i class="fas fa-info-circle me-1"></i>
-                                                        Accepted: JPG, JPEG, PNG, SVG, GIF (Max: 2MB)
-                                                    </div>
-                                                    <div id="preview_{{ $setting->id }}" class="mt-2"></div>
-                                                </div>
-                                            </div>
+                            {{-- Currency, Timezone, and Country Group --}}
+                            <div class="currency-timezone-group">
+                                <h6 class="fw-bold text-dark mb-3">Location & Currency Configuration</h6>
+                                <div class="row">
+                                    @foreach($settingsByCategory[$category]->whereIn('setting_key', ['currency', 'time_zone', 'country']) as $setting)
+                                    <div class="col-md-4 mb-3">
+                                        <div class="setting-label">
+                                            {{ $setting->display_key }}
+                                            <span class="setting-type-badge bg-light text-muted ms-2">
+                                                {{ strtoupper($setting->setting_type) }}
+                                            </span>
                                         </div>
-                                        @endforeach
+                                        @if($setting->description)
+                                        <div class="setting-description">
+                                            {{ $setting->description }}
+                                        </div>
+                                        @endif
+                                        
+                                        <div class="setting-input-with-feedback">
+                                            @if($setting->setting_key === 'country')
+                                              <select class="form-control currency-dropdown" 
+                                                        name="settings[{{ $setting->id }}]" 
+                                                        id="currency-select">
+                                                    <option value="">-- Select Country --</option>
+                                                    @foreach(getSupportedCurrencies() as $code => $details)
+                                                        <option value="{{ $code }}" 
+                                                                {{ $setting->setting_value == $code ? 'selected' : '' }}>
+                                                            {{ $details }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                  <div class="currency-info">
+                                                    <i class="fas fa-coins me-1"></i>
+                                                    <span id="currency-info-text">{{ $setting->setting_value ?: 'No currency selected' }}</span>
+                                                </div>
+                                                
+                                               @elseif($setting->setting_key === 'time_zone')
+                                                <select class="form-control timezone-dropdown" 
+                                                        name="settings[{{ $setting->id }}]"
+                                                        id="timezone-select">
+                                                    <option value="">-- Select Timezone --</option>
+                                                    @foreach(getTimezoneList() as $timezone => $label)
+                                                        <option value="{{ $timezone }}" 
+                                                                {{ $setting->setting_value == $timezone ? 'selected' : '' }}>
+                                                            {{ $label }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                <div class="timezone-info">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    Current: <span id="current-time-{{ $setting->id }}">Loading...</span>
+                                                </div>
+                                            @elseif($setting->setting_key === 'currency')
+                                            
+                                                 <input type="text" 
+                                                       class="form-control" 
+                                                       name="settings[{{ $setting->id }}]" 
+                                                       id="country-input"
+                                                       value="{{ $setting->setting_value }}"
+                                                       readonly
+                                                       placeholder="Auto-detected">
+                                                <div class="setting-feedback">
+                                                    <i class="fas fa-robot text-muted" title="Auto-detected"></i>
+                                                </div>
+                                                <div class="currency-info">
+                                                    <i class="fas fa-flag me-1"></i>
+                                                    <span id="country-display">{{ isset($currentCountryInfo) ? $currentCountryInfo['flag'] . ' ' . $currentCountryInfo['country_name'] : 'Auto-detected' }}</span>
+                                                </div>
+                                              
+                                            @else
+                                                <input type="text" 
+                                                       class="form-control" 
+                                                       name="settings[{{ $setting->id }}]" 
+                                                       value="{{ $setting->setting_value }}"
+                                                       placeholder="Enter {{ strtolower($setting->display_key) }}">
+                                            @endif
+                                        </div>
                                     </div>
+                                    @endforeach
                                 </div>
                             </div>
 
-                            {{-- Company Details Section --}}
+                            {{-- Other General Settings --}}
                             <div class="row">
                                 <div class="col-12">
-                                    <h6 class="fw-bold text-dark mb-3">Company Details</h6>
+                                    <h6 class="fw-bold text-dark mb-3">Other General Settings</h6>
                                     <div class="company-info-grid">
-                                        @foreach($settingsByCategory[$category]->where('setting_type', '!=', 'file') as $setting)
+                                        @foreach($settingsByCategory[$category]->whereNotIn('setting_key', ['currency', 'time_zone', 'country']) as $setting)
                                         <div class="setting-item border rounded p-3 bg-white">
+                                            <!-- Standard setting display code here -->
                                             <div class="setting-label">
                                                 {{ $setting->display_key }}
                                                 <span class="setting-type-badge bg-light text-muted ms-2">
@@ -236,50 +334,16 @@
                                             @endif
                                             
                                             <div class="mt-2">
-                                                @if($setting->setting_key === 'company_address')
-                                                    <textarea class="form-control" 
-                                                              name="settings[{{ $setting->id }}]" 
-                                                              rows="3"
-                                                              placeholder="Enter complete company address">{{ $setting->setting_value }}</textarea>
-                                                @elseif($setting->setting_key === 'company_email')
-                                                    <input type="email" 
-                                                           class="form-control" 
-                                                           name="settings[{{ $setting->id }}]" 
-                                                           value="{{ $setting->setting_value }}"
-                                                           placeholder="company@example.com">
-                                                @elseif($setting->setting_key === 'company_website')
-                                                    <input type="url" 
-                                                           class="form-control" 
-                                                           name="settings[{{ $setting->id }}]" 
-                                                           value="{{ $setting->setting_value }}"
-                                                           placeholder="https://www.company.com">
-                                                @elseif($setting->setting_key === 'company_phone')
-                                                    <input type="tel" 
-                                                           class="form-control" 
-                                                           name="settings[{{ $setting->id }}]" 
-                                                           value="{{ $setting->setting_value }}"
-                                                           placeholder="+60 12-345 6789">
-                                                @elseif($setting->setting_key === 'company_pincode')
-                                                    <input type="text" 
-                                                           class="form-control" 
-                                                           name="settings[{{ $setting->id }}]" 
-                                                           value="{{ $setting->setting_value }}"
-                                                           placeholder="12345"
-                                                           maxlength="10">
-                                                @elseif($setting->setting_key === 'time_zone')
-                                                    <select class="form-control timezone-dropdown" name="settings[{{ $setting->id }}]">
-                                                        <option value="">-- Select Timezone --</option>
-                                                        @foreach(getTimezoneList() as $timezone => $label)
-                                                            <option value="{{ $timezone }}" 
-                                                                    {{ $setting->setting_value == $timezone ? 'selected' : '' }}>
-                                                                {{ $label }}
-                                                            </option>
-                                                        @endforeach
+                                                @if($setting->setting_type === 'file')
+                                                    <!-- File upload code -->
+                                                @elseif($setting->setting_key === 'date_format')
+                                                    <select class="form-control" name="settings[{{ $setting->id }}]">
+                                                        <option value="d-m-Y" {{ $setting->setting_value == 'd-m-Y' ? 'selected' : '' }}>DD-MM-YYYY</option>
+                                                        <option value="m-d-Y" {{ $setting->setting_value == 'm-d-Y' ? 'selected' : '' }}>MM-DD-YYYY</option>
+                                                        <option value="Y-m-d" {{ $setting->setting_value == 'Y-m-d' ? 'selected' : '' }}>YYYY-MM-DD</option>
+                                                        <option value="d/m/Y" {{ $setting->setting_value == 'd/m/Y' ? 'selected' : '' }}>DD/MM/YYYY</option>
+                                                        <option value="m/d/Y" {{ $setting->setting_value == 'm/d/Y' ? 'selected' : '' }}>MM/DD/YYYY</option>
                                                     </select>
-                                                    <div class="timezone-info">
-                                                        <i class="fas fa-clock me-1"></i>
-                                                        Current: <span id="current-time-{{ $setting->id }}">Loading...</span>
-                                                    </div>
                                                 @else
                                                     <input type="text" 
                                                            class="form-control" 
@@ -385,25 +449,6 @@
                                                       name="settings[{{ $setting->id }}]" 
                                                       rows="3"
                                                       placeholder="Valid JSON format">{{ $setting->setting_value }}</textarea>
-                                        @elseif($setting->setting_key === 'time_zone')
-                                            <select class="form-control timezone-dropdown" name="settings[{{ $setting->id }}]">
-                                                <option value="">-- Select Timezone --</option>
-                                                @foreach(getTimezoneList() as $timezone => $label)
-                                                    <option value="{{ $timezone }}" 
-                                                            {{ $setting->setting_value == $timezone ? 'selected' : '' }}>
-                                                        {{ $label }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            <div class="timezone-info">
-                                                <i class="fas fa-info-circle me-1"></i>
-                                                Current: <span id="current-time-{{ $setting->id }}">Loading...</span>
-                                            </div>
-                                        @elseif($setting->setting_key === 'company_address')
-                                            <textarea class="form-control" 
-                                                      name="settings[{{ $setting->id }}]" 
-                                                      rows="3"
-                                                      placeholder="Enter complete address">{{ $setting->setting_value }}</textarea>
                                         @else
                                             <input type="text" 
                                                    class="form-control" 
@@ -590,9 +635,51 @@
         });
     }
 
+    // Handle currency and timezone changes for country auto-detection
+    function updateCountryBasedOnCurrencyTimezone() {
+        const currency = $('#currency-select').val();
+        const timezone = $('#timezone-select').val();
+        
+        if (currency || timezone) {
+            // Make AJAX call to get country information
+            $.ajax({
+                url: '/settings/get-country-info',
+                method: 'GET',
+                data: {
+                    currency: currency,
+                    timezone: timezone,
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(data) {
+                    // Update country input
+                    $('#country-input').val(data.symbol);
+                    
+                    // Update country display
+                    $('#country-display').text(data.flag + ' ' + data.country_name);
+                    
+                    // Show notification
+                    $('#countryChangeText').text(`Country will be updated to ${data.flag} ${data.country_name} based on your currency and timezone selection.`);
+                    $('#countryChangeNotification').slideDown();
+                    
+                    // Update currency info
+                    $('#currency-info-text').text(currency || 'No currency selected');
+                },
+                error: function() {
+                    console.log('Could not detect country');
+                }
+            });
+        }
+    }
+
+    // Handle currency change
+    $('#currency-select').change(function() {
+        updateCountryBasedOnCurrencyTimezone();
+    });
+
     // Handle timezone change
-    $('.timezone-dropdown').change(function() {
+    $('#timezone-select').change(function() {
         updateTimezoneTime();
+        updateCountryBasedOnCurrencyTimezone();
     });
 
     // Update time every second
@@ -629,11 +716,12 @@
     }
 </script>
 @endpush
+
 @php
 function getCategoryIcon($category) {
     $icons = [
         'company' => 'building',
-        'general' => 'cog',
+        'general' => 'globe',
         'sales' => 'chart-line',
         'purchase' => 'shopping-cart',
         'service' => 'tools',
@@ -649,9 +737,6 @@ function getCategoryIcon($category) {
 }
 
 function getTimezoneList() {
-    // You can use the helper class if you create it
-    // return \App\Helpers\TimezoneHelper::getTimezoneList();
-    
     return [
         // Asia Pacific (Most Common)
         'Asia/Kuala_Lumpur' => '(GMT+08:00) Kuala Lumpur, Singapore',
@@ -705,6 +790,23 @@ function getTimezoneList() {
         'GMT' => '(GMT+00:00) Greenwich Mean Time',
     ];
 }
+function getSupportedCurrencies() {
+    return [
+        'MYR' => '🇲🇾 MYR (RM) - Malaysia',
+        'SGD' => '🇸🇬 SGD (S$) - Singapore',
+        'IDR' => '🇮🇩 IDR (Rp) - Indonesia',
+        'THB' => '🇹🇭 THB (฿) - Thailand',
+        'PHP' => '🇵🇭 PHP (₱) - Philippines',
+        'INR' => '🇮🇳 INR (₹) - India',
+        'AED' => '🇦🇪 AED (د.إ) - United Arab Emirates',
+        'USD' => '🇺🇸 USD ($) - United States',
+        'GBP' => '🇬🇧 GBP (£) - United Kingdom',
+        'EUR' => '🇪🇺 EUR (€) - European Union',
+        'JPY' => '🇯🇵 JPY (¥) - Japan',
+        'AUD' => '🇦🇺 AUD (A$) - Australia',
+        'CAD' => '🇨🇦 CAD (C$) - Canada',
+        'CNY' => '🇨🇳 CNY (¥) - China',
+    ];
+}
 @endphp
 @endsection
-

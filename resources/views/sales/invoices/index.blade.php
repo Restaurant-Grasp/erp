@@ -62,8 +62,8 @@
         <form method="GET" action="{{ route('sales.invoices.index') }}" id="filterForm">
             <div class="row g-3">
                 <div class="col-md-3">
-                    <input type="text" class="form-control" name="search" placeholder="Search invoices..." 
-                           value="{{ request('search') }}">
+                    <input type="text" class="form-control" name="search" placeholder="Search invoices..."
+                        value="{{ request('search') }}">
                 </div>
                 <div class="col-md-2">
                     <select class="form-select" name="status">
@@ -105,11 +105,15 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">All Invoices</h5>
         <div>
-            @can('sales.invoices.create')
+            @php
+            $role = auth()->user()->getRoleNames()->first();
+            $permissions = getCurrentRolePermissions($role);
+            @endphp
+            @if ($permissions->contains('name', 'sales.invoices.create'))
             <a href="{{ route('sales.invoices.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i> Create Invoice
             </a>
-            @endcan
+            @endif
         </div>
     </div>
     <div class="card-body">
@@ -137,31 +141,31 @@
                                 {{ $invoice->invoice_no }}
                             </a>
                             @if($invoice->quotation_id)
-                                <br><small class="text-muted">From Quotation</small>
+                            <br><small class="text-muted">From Quotation</small>
                             @endif
                         </td>
                         <td>{{ $invoice->invoice_date->format('d/m/Y') }}</td>
                         <td>
                             <strong>{{ $invoice->customer->company_name }}</strong>
                             @if($invoice->customer->city)
-                                <br><small class="text-muted">{{ $invoice->customer->city }}</small>
+                            <br><small class="text-muted">{{ $invoice->customer->city }}</small>
                             @endif
                         </td>
                         <td>
                             {{ $invoice->due_date->format('d/m/Y') }}
                             @if($invoice->is_overdue)
-                                <br><small class="text-danger">
-                                    {{ $invoice->due_date->diffForHumans() }}
-                                </small>
+                            <br><small class="text-danger">
+                                {{ $invoice->due_date->diffForHumans() }}
+                            </small>
                             @endif
                         </td>
                         <td>₹{{ number_format($invoice->total_amount, 2) }}</td>
                         <td>₹{{ number_format($invoice->paid_amount, 2) }}</td>
                         <td>
                             @if($invoice->balance_amount > 0)
-                                <span class="text-danger">₹{{ number_format($invoice->balance_amount, 2) }}</span>
+                            <span class="text-danger">₹{{ number_format($invoice->balance_amount, 2) }}</span>
                             @else
-                                <span class="text-success">₹0.00</span>
+                            <span class="text-success">₹0.00</span>
                             @endif
                         </td>
                         <td>
@@ -176,43 +180,46 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                @can('sales.invoices.view')
-                                <a href="{{ route('sales.invoices.show', $invoice) }}" 
-                                   class="btn btn-sm btn-outline-primary" title="View">
+                                @if ($permissions->contains('name', 'sales.invoices.view'))
+
+                                <a href="{{ route('sales.invoices.show', $invoice) }}"
+                                    class="btn btn-sm btn-outline-primary" title="View">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                @endcan
+                                @endif
 
                                 @if($invoice->status !== 'paid' && $invoice->status !== 'cancelled')
-                                    @can('sales.invoices.edit')
-                                    <a href="{{ route('sales.invoices.edit', $invoice) }}" 
-                                       class="btn btn-sm btn-outline-primary" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    @endcan
+                                @if ($permissions->contains('name', 'sales.invoices.edit'))
+
+                                <a href="{{ route('sales.invoices.edit', $invoice) }}"
+                                    class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                @endif
                                 @endif
 
                                 @if($invoice->delivery_status !== 'delivered')
-                                    <a href="{{ route('sales.delivery-orders.create', ['invoice_id' => $invoice->id]) }}" 
-                                       class="btn btn-sm btn-outline-info" title="Create Delivery Order">
-                                        <i class="fas fa-truck"></i>
-                                    </a>
+                                <a href="{{ route('sales.delivery-orders.create', ['invoice_id' => $invoice->id]) }}"
+                                    class="btn btn-sm btn-outline-info" title="Create Delivery Order">
+                                    <i class="fas fa-truck"></i>
+                                </a>
                                 @endif
+                                @if ($permissions->contains('name', 'sales.invoices.pdf'))
 
-                                @can('sales.invoices.pdf')
-                                <a href="{{ route('sales.invoices.pdf', $invoice) }}" 
-                                   class="btn btn-sm btn-outline-secondary" title="PDF">
+                                <a href="{{ route('sales.invoices.pdf', $invoice) }}"
+                                    class="btn btn-sm btn-outline-secondary" title="PDF">
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
-                                @endcan
+                                @endif
 
                                 @if($invoice->can_be_cancelled)
-                                    @can('sales.invoices.cancel')
-                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                            onclick="cancelInvoice({{ $invoice->id }})" title="Cancel">
-                                        <i class="fas fa-ban"></i>
-                                    </button>
-                                    @endcan
+                                @if ($permissions->contains('name', 'sales.invoices.cancel'))
+
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                    onclick="cancelInvoice({{ $invoice->id }})" title="Cancel">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                                @endif
                                 @endif
                             </div>
                         </td>
@@ -249,8 +256,8 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Cancellation Reason <span class="text-danger">*</span></label>
-                        <textarea name="cancellation_reason" class="form-control" rows="3" required 
-                                  placeholder="Please provide reason for cancellation..."></textarea>
+                        <textarea name="cancellation_reason" class="form-control" rows="3" required
+                            placeholder="Please provide reason for cancellation..."></textarea>
                     </div>
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle me-2"></i>
@@ -267,22 +274,18 @@
 </div>
 
 <script>
-$(document).ready(function() {
-    // Auto-submit filter form on change
-    $('#filterForm select').on('change', function() {
-        $('#filterForm').submit();
+    $(document).ready(function() {
+        // Auto-submit filter form on change
+        $('#filterForm select').on('change', function() {
+            $('#filterForm').submit();
+        });
     });
-});
 
-function cancelInvoice(invoiceId) {
-    const modal = new bootstrap.Modal(document.getElementById('cancelInvoiceModal'));
-    const form = document.getElementById('cancelInvoiceForm');
-    form.action = `/sales/invoices/${invoiceId}/cancel`;
-    modal.show();
-}
+    function cancelInvoice(invoiceId) {
+        const modal = new bootstrap.Modal(document.getElementById('cancelInvoiceModal'));
+        const form = document.getElementById('cancelInvoiceForm');
+        form.action = `/sales/invoices/${invoiceId}/cancel`;
+        modal.show();
+    }
 </script>
 @endsection
-
-
-
-

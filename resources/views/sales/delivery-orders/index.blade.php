@@ -55,11 +55,16 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">All Delivery Orders</h5>
         <div>
-            @can('sales.delivery_orders.create')
+                        @php
+            $role = auth()->user()->getRoleNames()->first();
+            $permissions = getCurrentRolePermissions($role);
+            @endphp
+            @if ($permissions->contains('name', 'sales.delivery_orders.create'))
+          
             <a href="{{ route('sales.delivery-orders.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i> Create Delivery Order
             </a>
-            @endcan
+            @endif
         </div>
     </div>
     <div class="card-body">
@@ -115,20 +120,23 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                @can('sales.delivery_orders.view')
+                                  @if ($permissions->contains('name', 'sales.delivery_orders.view'))
+ 
                                 <a href="{{ route('sales.delivery-orders.show', $deliveryOrder) }}" 
                                    class="btn btn-sm btn-outline-primary" title="View">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                @endcan
+                                @endif
 
                                 @if($deliveryOrder->status !== 'delivered')
-                                    @can('sales.delivery_orders.edit')
+                                  @if ($permissions->contains('name', 'sales.delivery_orders.edit'))
+
+                             
                                     <a href="{{ route('sales.delivery-orders.edit', $deliveryOrder) }}" 
                                        class="btn btn-sm btn-outline-primary" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    @endcan
+                                    @endif
                                 @endif
 
                                 @if($deliveryOrder->status === 'pending' || $deliveryOrder->status === 'in_transit')
@@ -141,7 +149,8 @@
                                 @endif
 
                                 @if($deliveryOrder->status !== 'delivered')
-                                    @can('sales.delivery_orders.delete')
+                                   @if ($permissions->contains('name', 'sales.delivery_orders.delete'))
+                              
                                     <form action="{{ route('sales.delivery-orders.destroy', $deliveryOrder) }}" method="POST" class="d-inline delete-form">
                                         @csrf
                                         @method('DELETE')
@@ -149,7 +158,7 @@
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
-                                    @endcan
+                                    @endif
                                 @endif
                             </div>
                         </td>

@@ -26,6 +26,11 @@ use App\Http\Controllers\IncomeStatementController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\Sales\TaxController;
 use App\Http\Controllers\Sales\QuotationController;
+use App\Http\Controllers\Sales\SalesInvoiceController;
+use App\Http\Controllers\Purchase\PurchaseOrderController;
+use App\Http\Controllers\Purchase\PurchaseInvoiceController;
+use App\Http\Controllers\Purchase\GrnController;
+use App\Http\Controllers\Purchase\PurchaseReturnController;
 use Illuminate\Http\Request;
 
 /*
@@ -81,12 +86,6 @@ Route::middleware(['auth'])->group(function () {
         })->name('index');
     });
 
-
-    Route::prefix('purchases')->name('purchases.')->group(function () {
-        Route::get('/orders', function () {
-            return view('coming-soon', ['module' => 'Purchase Orders']);
-        })->name('orders.index');
-    });
 
     Route::prefix('hrm')->name('hrm.')->group(function () {
         Route::get('/staff', function () {
@@ -183,7 +182,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('followup-templates')->name('followup-templates.')->group(function () {
         Route::get('/', [FollowUpTemplateController::class, 'index'])->name('index');
         Route::post('/', [FollowUpTemplateController::class, 'store'])->name('store');
-        Route::put('/{followupTemplate}', [FollowUpTemplateController::class, 'update'])->name('update');
+        Route::put('update/{followupTemplate}', [FollowUpTemplateController::class, 'update'])->name('update');
         Route::delete('delete/{followupTemplate}', [FollowUpTemplateController::class, 'destroy'])->name('destroy');
     })->middleware('permission:followup_templates.manage');
 
@@ -218,13 +217,22 @@ Route::middleware(['auth'])->group(function () {
     Route::get('followups/calendar/view', [FollowUpController::class, 'calendar'])
         ->name('followups.calendar');
 
-    // Follow-up Template routes
-    Route::resource('followup-templates', FollowUpTemplateController::class)->except(['show', 'create', 'edit']);
-
+    // Existing settings routes...
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');
     Route::delete('/settings/{setting}', [SettingsController::class, 'destroy'])->name('settings.destroy');
+
+    // NEW: Country auto-detection routes
+    Route::get('/settings/get-country-info', [SettingsController::class, 'getCountryInfo'])
+        ->name('settings.get-country-info');
+
+    Route::get('/settings/supported-currencies', [SettingsController::class, 'getSupportedCurrencies'])
+        ->name('settings.supported-currencies');
+
+    // AJAX endpoint for real-time country updates
+    Route::post('/settings/auto-detect-country', [SettingsController::class, 'autoDetectCountry'])
+        ->name('settings.auto-detect-country');
 
     // Chart of Accounts Routes with Permissions
     Route::prefix('chart-of-accounts')->name('chart_of_accounts.')->group(function () {
@@ -645,6 +653,94 @@ Route::middleware(['auth'])->group(function () {
         //Add quantity route
         Route::post('/add-quantity', [ProductController::class, 'addQuantity'])->name('addQuantity');
     });
+    Route::prefix('purchase')->name('purchase.')->group(function () {
+        // Purchase Orders
+        Route::prefix('orders')->name('orders.')->group(function () {
+            Route::get('/', [PurchaseOrderController::class, 'index'])->name('index');
+            Route::get('/create', [PurchaseOrderController::class, 'create'])->name('create');
+            Route::post('/', [PurchaseOrderController::class, 'store'])->name('store');
+            Route::get('/{order}', [PurchaseOrderController::class, 'show'])->name('show');
+            Route::get('/{order}/edit', [PurchaseOrderController::class, 'edit'])->name('edit');
+            Route::put('/{order}', [PurchaseOrderController::class, 'update'])->name('update');
+            Route::delete('/{order}', [PurchaseOrderController::class, 'destroy'])->name('destroy');
+
+            // Approval routes
+            Route::patch('/{order}/approve', [PurchaseOrderController::class, 'approve'])->name('approve');
+            Route::patch('/{order}/reject', [PurchaseOrderController::class, 'reject'])->name('reject');
+
+            // AJAX routes
+            Route::get('/vendor-products', [PurchaseOrderController::class, 'getVendorProducts'])->name('vendor-products');
+        });
+
+
+        // Purchase Invoices
+        Route::prefix('invoices')->name('invoices.')->group(function () {
+            Route::get('/', [PurchaseInvoiceController::class, 'index'])->name('index');
+            Route::get('/create', [PurchaseInvoiceController::class, 'create'])->name('create');
+            Route::get('/create-from-po/{order}', [PurchaseInvoiceController::class, 'createFromPo'])->name('create-from-po');
+            Route::post('/', [PurchaseInvoiceController::class, 'store'])->name('store');
+            Route::get('/{invoice}', [PurchaseInvoiceController::class, 'show'])->name('show');
+            Route::get('/{invoice}/edit', [PurchaseInvoiceController::class, 'edit'])->name('edit');
+            Route::put('/{invoice}', [PurchaseInvoiceController::class, 'update'])->name('update');
+            Route::delete('/{invoice}', [PurchaseInvoiceController::class, 'destroy'])->name('destroy');
+
+            // E-Invoice
+            Route::post('/{invoice}/submit-einvoice', [PurchaseInvoiceController::class, 'submitEInvoice'])->name('submit-einvoice');
+
+            // AJAX routes
+            Route::get('/po-items', [PurchaseInvoiceController::class, 'getPoItems'])->name('po-items');
+        });
+
+        // Goods Receipt Notes (GRN)
+        Route::prefix('grn')->name('grn.')->group(function () {
+            Route::get('/', [GrnController::class, 'index'])->name('index');
+            Route::get('/create', [GrnController::class, 'create'])->name('create');
+            Route::get('/create-from-invoice/{invoice}', [GrnController::class, 'createFromInvoice'])->name('create-from-invoice');
+            Route::post('/', [GrnController::class, 'store'])->name('store');
+            Route::get('/{grn}', [GrnController::class, 'show'])->name('show');
+            Route::get('/{grn}/edit', [GrnController::class, 'edit'])->name('edit');
+            Route::put('/{grn}', [GrnController::class, 'update'])->name('update');
+
+            // AJAX routes
+            Route::get('/invoice-items', [GrnController::class, 'getInvoiceItems'])->name('invoice-items');
+        });
+       // Purchase Returns
+        Route::prefix('returns')->name('returns.')->group(function () {
+            Route::get('/', [PurchaseReturnController::class, 'index'])->name('index');
+            Route::get('/create', [PurchaseReturnController::class, 'create'])->name('create');
+            Route::post('/', [PurchaseReturnController::class, 'store'])->name('store');
+            Route::get('/{return}', [PurchaseReturnController::class, 'show'])->name('show');
+
+            // Status updates
+            Route::patch('/{return}/approve', [PurchaseReturnController::class, 'approve'])->name('approve');
+            Route::patch('/{return}/mark-returned', [PurchaseReturnController::class, 'markReturned'])->name('mark-returned');
+            Route::patch('/{return}/mark-credited', [PurchaseReturnController::class, 'markCredited'])->name('mark-credited');
+
+            // Reports
+            Route::get('/replacement-report', [PurchaseReturnController::class, 'replacementReport'])->name('replacement-report');
+
+            // AJAX routes
+            Route::get('/grn-items', [PurchaseReturnController::class, 'getGrnItems'])->name('grn-items');
+        });
+        // Purchase Reports (placeholder for future implementation)
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/purchase-summary', function () {
+                return view('purchase.reports.purchase-summary');
+            })->name('purchase-summary')->middleware('permission:purchases.reports.view');
+
+            Route::get('/vendor-performance', function () {
+                return view('purchase.reports.vendor-performance');
+            })->name('vendor-performance')->middleware('permission:purchases.reports.view');
+
+            Route::get('/pending-approvals', function () {
+                return view('purchase.reports.pending-approvals');
+            })->name('pending-approvals')->middleware('permission:purchases.reports.view');
+
+            Route::get('/grn-status', function () {
+                return view('purchase.reports.grn-status');
+            })->name('grn-status')->middleware('permission:purchases.reports.view');
+        });
+    });
 });
 
 // Only allow access to users with roles: super_admin or hr_manager
@@ -670,10 +766,10 @@ Route::middleware(['superadminandhrmanager.access'])->group(function () {
         Route::delete('/destroy/{department}', [DepartmentController::class, 'destroy'])->name('destroy');
     });
 });
-  Route::get('taxes/for-dropdown', [App\Http\Controllers\Sales\TaxController::class, 'getTaxesForDropdown'])
-             ->name('taxes.for-dropdown');
+Route::get('taxes/for-dropdown', [App\Http\Controllers\Sales\TaxController::class, 'getTaxesForDropdown'])
+    ->name('taxes.for-dropdown');
 Route::get('quotations/get-items', [App\Http\Controllers\Sales\QuotationController::class, 'getItems'])
-             ->name('quotations.get-items');
-Route::get('/test-get-items', function(Request $request) {
+    ->name('quotations.get-items');
+Route::get('/test-get-items', function (Request $request) {
     return response()->json(['message' => 'Test route works', 'params' => $request->all()]);
 });
