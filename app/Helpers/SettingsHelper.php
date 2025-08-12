@@ -3,18 +3,47 @@
 namespace App\Helpers;
 
 use App\Models\CrmSetting;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
-
+use Illuminate\Support\Facades\Log;
 class SettingsHelper
 {
     /**
-     * Get all company settings
+     * Get setting value by category and key
+     */
+    public static function getSetting($category, $key, $default = null)
+    {
+        $cacheKey = "setting_{$category}_{$key}";      
+            $setting = DB::table('crm_settings')
+                ->where('category', $category)
+                ->where('setting_key', $key)
+                ->value('setting_value');
+        
+            return $setting ?? $default;
+     
+    }
+
+    /**
+     * Get all settings for a category
+     */
+    public static function getCategorySettings($category)
+    {
+        $cacheKey = "settings_{$category}";
+        
+        return Cache::remember($cacheKey, 3600, function () use ($category) {
+            return DB::table('crm_settings')
+                ->where('category', $category)
+                ->pluck('setting_value', 'setting_key')
+                ->toArray();
+        });
+    }
+
+    /**
+     * Get company settings (alias for general category)
      */
     public static function getCompanySettings()
     {
-        return Cache::remember('company_settings', 3600, function () {
-            return CrmSetting::where('category', 'company')->pluck('setting_value', 'setting_key')->toArray();
-        });
+        return self::getCategorySettings('general');
     }
 
     /**
@@ -22,66 +51,139 @@ class SettingsHelper
      */
     public static function getCompanySetting($key, $default = null)
     {
-        $settings = self::getCompanySettings();
-        return $settings[$key] ?? $default;
+        return self::getSetting('general', $key, $default);
+    }
+
+    /**
+     * Get sales settings
+     */
+    public static function getSalesSettings()
+    {
+        return self::getCategorySettings('sales');
+    }
+
+    /**
+     * Get terms and conditions
+     */
+    public static function getTermsAndConditions()
+    {
+        return self::getSetting('sales', 'terms_and_conditions', 'Default terms and conditions not set.');
     }
 
     /**
      * Get company logo URL
      */
-    public static function getCompanyLogo()
-    {
-        $logo = self::getCompanySetting('company_logo');
-        return $logo ? asset('assets/' . $logo) : null;
-    }
+
 
     /**
      * Get company sub logo URL
      */
     public static function getCompanySubLogo()
     {
-        $logo = self::getCompanySetting('company_sub_logo');
+        $logo = self::getSetting('general', 'sub_logo');
         return $logo ? asset('assets/' . $logo) : null;
     }
 
     /**
-     * Get complete company information
+     * Get complete company information with proper fallbacks
      */
     public static function getCompanyInfo()
     {
         $settings = self::getCompanySettings();
 
         return [
-            'name' => $settings['company_name'] ?? '',
-            'address' => $settings['company_address'] ?? '',
-            'pincode' => $settings['company_pincode'] ?? '',
-            'state' => $settings['company_state'] ?? '',
-            'country' => $settings['company_country'] ?? '',
-            'registration_number' => $settings['company_registration_number'] ?? '',
-            'phone' => $settings['company_phone'] ?? '',
-            'email' => $settings['company_email'] ?? '',
-            'website' => $settings['company_website'] ?? '',
+            'name' => $settings['name'] ?? 'Company Name Not Set',
+            'address' => $settings['address'] ?? 'Address Not Set',
+            'pincode' => $settings['pincode'] ?? 'Pincode Not Set',
+            'state' => $settings['state'] ?? 'State Not Set',
+            'country' => $settings['country'] ?? 'MY',
+            'registration_number' => $settings['registration_number'] ?? 'Registration Number Not Set',
+            'phone' => $settings['phone'] ?? 'Phone Not Set',
+            'email' => $settings['email'] ?? 'Email Not Set',
+            'website' => $settings['website'] ?? 'Website Not Set',
             'logo' => self::getCompanyLogo(),
             'sub_logo' => self::getCompanySubLogo(),
+            'currency' => $settings['currency'] ?? 'MYR',
         ];
     }
 
     /**
-     * Clear settings cache
+     * Get complete company information for reports (with better formatting)
      */
-    public static function clearCache()
+    public static function getCompanyInfoForReports()
     {
-        Cache::forget('company_settings');
-        Cache::forget('general_settings');
-        Cache::forget('all_settings');
+        $info = self::getCompanyInfo();
+        
+        // Format registration number display
+        if ($info['registration_number'] && $info['registration_number'] !== 'Registration Number Not Set') {
+            $info['registration_display'] = '(' . $info['registration_number'] . ')';
+        } else {
+            $info['registration_display'] = '';
+        }
+        
+        // Format address display
+        $addressParts = [];
+        if ($info['address'] && $info['address'] !== 'Address Not Set') {
+            $addressParts[] = $info['address'];
+        }
+        if ($info['pincode'] && $info['pincode'] !== 'Pincode Not Set' && 
+            $info['state'] && $info['state'] !== 'State Not Set') {
+            $addressParts[] = $info['pincode'] . ', ' . $info['state'];
+        }
+        $info['address_formatted'] = implode('<br>', $addressParts);
+        
+        // Format contact display
+        $contactParts = [];
+        if ($info['phone'] && $info['phone'] !== 'Phone Not Set') {
+            $contactParts[] = 'Tel: ' . $info['phone'];
+        }
+        if ($info['email'] && $info['email'] !== 'Email Not Set') {
+            $contactParts[] = 'E-mail: ' . $info['email'];
+        }
+        if ($info['website'] && $info['website'] !== 'Website Not Set') {
+            $contactParts[] = 'Visit: ' . $info['website'];
+        }
+        $info['contact_formatted'] = implode('<br>', $contactParts);
+        
+        return $info;
     }
 
     /**
-     * Get setting by category and key
+     * Get setting with currency formatting
      */
-    public static function get($category, $key, $default = null)
+    public static function getSettingCurrency($key)
     {
-        return CrmSetting::getValue($category, $key, $default);
+        $currency = self::getSetting('general', 'currency', 'MYR');
+        $country = self::getSetting('general', 'country', 'MY');
+        
+        if ($key === 'currency') {
+            return $currency;
+        }
+        
+        if ($key === 'country') {
+            return $country;
+        }
+        
+        // Return currency symbol based on currency code
+        $symbols = [
+            'MYR' => 'RM',
+            'RM' => 'RM', // For backward compatibility
+            'USD' => '$',
+            'EUR' => '€',
+            'GBP' => '£',
+            'INR' => '₹',
+            'SGD' => 'S$',
+            'AUD' => 'A$',
+            'CAD' => 'C$',
+            'JPY' => '¥',
+            'CNY' => '¥',
+            'THB' => '฿',
+            'PHP' => '₱',
+            'IDR' => 'Rp',
+            'AED' => 'د.إ'
+        ];
+        
+        return $symbols[$currency] ?? $currency;
     }
 
     /**
@@ -89,8 +191,17 @@ class SettingsHelper
      */
     public static function set($category, $key, $value, $type = 'text', $description = null)
     {
-        self::clearCache();
-        return CrmSetting::setValue($category, $key, $value, $type, $description);
+        self::clearCache($category, $key);
+        
+        return DB::table('crm_settings')->updateOrInsert(
+            ['category' => $category, 'setting_key' => $key],
+            [
+                'setting_value' => $value,
+                'setting_type' => $type,
+                'description' => $description,
+                'updated_at' => now()
+            ]
+        );
     }
 
     /**
@@ -99,7 +210,7 @@ class SettingsHelper
     public static function getCurrencyTimezoneMapping()
     {
         return [
-            // Malaysia - FIXED: Added both MYR and RM for backward compatibility
+            // Malaysia
             'MYR' => [
                 'country' => 'MY',
                 'country_name' => 'Malaysia',
@@ -230,10 +341,10 @@ class SettingsHelper
 
         // If no parameters provided, get from settings
         if (!$currency) {
-            $currency = self::get('general', 'currency', 'MYR');
+            $currency = self::getSetting('general', 'currency', 'MYR');
         }
         if (!$timezone) {
-            $timezone = self::get('general', 'time_zone', 'Asia/Kuala_Lumpur');
+            $timezone = self::getSetting('general', 'time_zone', 'Asia/Kuala_Lumpur');
         }
 
         // First, try to match by currency
@@ -284,9 +395,9 @@ class SettingsHelper
      */
     public static function getCurrentCountryInfo()
     {
-        $currency = self::get('general', 'currency', 'MYR');
-        $timezone = self::get('general', 'time_zone', 'Asia/Kuala_Lumpur');
-        $storedCountry = self::get('general', 'country', 'MY');
+        $currency = self::getSetting('general', 'currency', 'MYR');
+        $timezone = self::getSetting('general', 'time_zone', 'Asia/Kuala_Lumpur');
+        $storedCountry = self::getSetting('general', 'country', 'MY');
 
         $detectedCountry = self::autoDetectCountry($currency, $timezone);
 
@@ -316,9 +427,36 @@ class SettingsHelper
         return $currencies;
     }
 
-    public function getSettingCurrency($settingKey)
+    /**
+     * Clear settings cache
+     */
+    public static function clearCache($category = null, $key = null)
     {
-        $setting = CrmSetting::where('setting_key', $settingKey)->first();
-        return $setting ? $setting->setting_value : null;
+        if ($category && $key) {
+            Cache::forget("setting_{$category}_{$key}");
+        } elseif ($category) {
+            Cache::forget("settings_{$category}");
+        } else {
+            // Clear all settings cache
+            $categories = ['general', 'sales', 'purchase', 'service', 'subscription', 'hr', 'email', 'company'];
+            foreach ($categories as $cat) {
+                Cache::forget("settings_{$cat}");
+                // Also clear individual setting caches for this category
+                Cache::flush(); // Alternative: more targeted cache clearing if needed
+            }
+        }
+    }
+
+    /**
+     * Alias for getSetting (backward compatibility)
+     */
+    public static function get($category, $key, $default = null)
+    {
+        return self::getSetting($category, $key, $default);
+    }
+  public static function getCompanyLogo()
+    {
+        $logo = self::getSetting('general', 'logo');
+        return $logo ? asset('assets/' . $logo) : null;
     }
 }

@@ -1,7 +1,7 @@
 <?php
 
-
 namespace App\Http\Controllers\Sales;
+
 use App\Http\Controllers\Controller;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
@@ -12,9 +12,16 @@ use App\Models\Service;
 use App\Models\Package;
 use App\Models\Tax;
 use App\Models\Uom;
+use App\Models\Group;
+use App\Models\Ledger;
+use App\Services\QuotationPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\CrmSetting;
+use App\Helpers\SettingsHelper; // Add this import
+use Illuminate\Support\Facades\Log;
 
 class QuotationController extends Controller
 {
@@ -39,15 +46,15 @@ class QuotationController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('quotation_no', 'like', "%{$search}%")
-                  ->orWhere('subject', 'like', "%{$search}%")
-                  ->orWhere('reference_no', 'like', "%{$search}%")
-                  ->orWhereHas('customer', function ($q) use ($search) {
-                      $q->where('company_name', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('lead', function ($q) use ($search) {
-                      $q->where('company_name', 'like', "%{$search}%")
-                        ->orWhere('contact_person', 'like', "%{$search}%");
-                  });
+                    ->orWhere('subject', 'like', "%{$search}%")
+                    ->orWhere('reference_no', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('company_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('lead', function ($q) use ($search) {
+                        $q->where('company_name', 'like', "%{$search}%")
+                            ->orWhere('contact_person', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -81,16 +88,16 @@ class QuotationController extends Controller
     {
         $customers = Customer::where('status', 'active')->orderBy('company_name')->get();
         $leads = Lead::whereIn('lead_status', ['new', 'contacted', 'qualified', 'proposal', 'negotiation'])
-                    ->orderBy('company_name')->get();
-        
+            ->orderBy('company_name')->get();
+
         // Pre-fill data if coming from lead or customer
         $customer = null;
         $lead = null;
-        
+
         if ($request->filled('customer_id')) {
             $customer = Customer::find($request->customer_id);
         }
-        
+
         if ($request->filled('lead_id')) {
             $lead = Lead::find($request->lead_id);
         }
@@ -105,13 +112,11 @@ class QuotationController extends Controller
     {
         $validated = $request->validate([
             'quotation_date' => 'required|date',
-            'customer_id' => 'nullable|exists:customers,id',
-            'lead_id' => 'nullable|exists:leads,id',
+            'customer_id' => 'required_without:lead_id|nullable|exists:customers,id',
+            'lead_id' => 'required_without:customer_id|nullable|exists:leads,id',
             'valid_until' => 'required|date|after:quotation_date',
             'reference_no' => 'nullable|string|max:100',
             'subject' => 'nullable|string|max:500',
-            'currency' => 'required|string|max:10',
-            'exchange_rate' => 'required|numeric|min:0',
             'discount_type' => 'required|in:percentage,amount',
             'discount_value' => 'required|numeric|min:0',
             'terms_conditions' => 'nullable|string',
@@ -125,13 +130,10 @@ class QuotationController extends Controller
             'items.*.discount_value' => 'required|numeric|min:0',
             'items.*.tax_id' => 'nullable|exists:taxes,id',
             'items.*.description' => 'nullable|string'
-        ], [
-            'customer_id.required_without' => 'Either customer or lead must be selected.',
-            'lead_id.required_without' => 'Either customer or lead must be selected.'
         ]);
 
         // Validate that either customer or lead is provided
-        if (!$validated['customer_id'] && !$validated['lead_id']) {
+        if (!$validated['customer_id'] &&  !$validated['lead_id']) {
             return back()->withErrors(['customer_id' => 'Either customer or lead must be selected.'])->withInput();
         }
 
@@ -139,6 +141,7 @@ class QuotationController extends Controller
         try {
             // Create quotation
             $quotationData = $validated;
+
             unset($quotationData['items']);
             $quotationData['created_by'] = Auth::id();
             $quotationData['status'] = 'draft';
@@ -158,7 +161,7 @@ class QuotationController extends Controller
 
             DB::commit();
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('success', 'Quotation created successfully.');
+                ->with('success', 'Quotation created successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return back()->withErrors(['error' => 'Error creating quotation: ' . $e->getMessage()])->withInput();
@@ -172,7 +175,7 @@ class QuotationController extends Controller
     {
         $quotation->load([
             'customer',
-            'lead', 
+            'lead',
             'items.product',
             'items.service',
             'items.package',
@@ -195,12 +198,12 @@ class QuotationController extends Controller
     {
         if (!$quotation->can_be_edited) {
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'Quotation cannot be edited in current status.');
+                ->with('error', 'Quotation cannot be edited in current status.');
         }
 
         $customers = Customer::where('status', 'active')->orderBy('company_name')->get();
         $leads = Lead::whereIn('lead_status', ['new', 'contacted', 'qualified', 'proposal', 'negotiation'])
-                    ->orderBy('company_name')->get();
+            ->orderBy('company_name')->get();
 
         $quotation->load('items');
 
@@ -214,7 +217,7 @@ class QuotationController extends Controller
     {
         if (!$quotation->can_be_edited) {
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'Quotation cannot be edited in current status.');
+                ->with('error', 'Quotation cannot be edited in current status.');
         }
 
         $validated = $request->validate([
@@ -268,7 +271,7 @@ class QuotationController extends Controller
 
             DB::commit();
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('success', 'Quotation updated successfully.');
+                ->with('success', 'Quotation updated successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return back()->withErrors(['error' => 'Error updating quotation: ' . $e->getMessage()])->withInput();
@@ -282,21 +285,21 @@ class QuotationController extends Controller
     {
         if (!$quotation->can_be_deleted) {
             return redirect()->route('sales.quotations.index')
-                           ->with('error', 'Quotation cannot be deleted in current status.');
+                ->with('error', 'Quotation cannot be deleted in current status.');
         }
 
         DB::beginTransaction();
         try {
             $quotation->items()->delete();
             $quotation->delete();
-            
+
             DB::commit();
             return redirect()->route('sales.quotations.index')
-                           ->with('success', 'Quotation deleted successfully.');
+                ->with('success', 'Quotation deleted successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->route('sales.quotations.index')
-                           ->with('error', 'Error deleting quotation: ' . $e->getMessage());
+                ->with('error', 'Error deleting quotation: ' . $e->getMessage());
         }
     }
 
@@ -307,17 +310,17 @@ class QuotationController extends Controller
     {
         if (!$quotation->can_be_edited) {
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'Cannot create revision for quotation in current status.');
+                ->with('error', 'Cannot create revision for quotation in current status.');
         }
 
         try {
             $revision = $quotation->createRevision();
-            
+
             return redirect()->route('sales.quotations.edit', $revision)
-                           ->with('success', 'Quotation revision created successfully.');
+                ->with('success', 'Quotation revision created successfully.');
         } catch (\Exception $e) {
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'Error creating revision: ' . $e->getMessage());
+                ->with('error', 'Error creating revision: ' . $e->getMessage());
         }
     }
 
@@ -328,18 +331,101 @@ class QuotationController extends Controller
     {
         if (!$quotation->can_be_approved) {
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'Quotation cannot be approved in current status.');
+                ->with('error', 'Quotation cannot be approved in current status.');
         }
 
+        DB::beginTransaction();
         try {
+            // Pre-checks before approval
+            if ($quotation->lead_id && !$quotation->customer_id) {
+                // Check if trade debtors group exists before attempting conversion
+                $tradeDebtorGroup = Group::where('td', 1)->first();
+                if (!$tradeDebtorGroup) {
+                    throw new \Exception('Trade Debtors group not configured. Cannot convert lead to customer.');
+                }
+
+                // Check if lead still exists and is valid for conversion
+                $lead = $quotation->lead;
+                if (!$lead) {
+                    throw new \Exception('Lead not found. Cannot proceed with approval.');
+                }
+
+                // Check if lead is already converted
+                if ($lead->converted_to_customer_id) {
+                    // Use existing customer
+                    $quotation->update(['customer_id' => $lead->converted_to_customer_id]);
+                }
+            }
+
+            // Approve and convert to invoice
             $invoice = $quotation->approve(Auth::id());
-            
+
+            DB::commit();
+
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('success', 'Quotation approved and converted to invoice successfully.');
+                ->with('success', 'Quotation approved and converted to invoice successfully.');
         } catch (\Exception $e) {
+            DB::rollback();
+
+            // Log the error for debugging
+            Log::error('Quotation approval error: ' . $e->getMessage(), [
+                'quotation_id' => $quotation->id,
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'Error approving quotation: ' . $e->getMessage());
+                ->with('error', 'Error approving quotation: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Get customer details for pre-filling payment terms
+     */
+    public function getCustomerDetails(Request $request)
+    {
+        $customerId = $request->get('customer_id');
+
+        if (!$customerId) {
+            return response()->json(['error' => 'Customer ID required'], 400);
+        }
+
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return response()->json(['error' => 'Customer not found'], 404);
+        }
+
+        return response()->json([
+            'credit_days' => $customer->credit_days,
+            'credit_limit' => $customer->credit_limit,
+            'discount_percentage' => $customer->discount_percentage
+        ]);
+    }
+
+    /**
+     * Check quotation conversion readiness
+     */
+    public function checkConversionReadiness(Quotation $quotation)
+    {
+        $checks = [
+            'has_items' => $quotation->items()->count() > 0,
+            'has_customer_or_lead' => $quotation->customer_id || $quotation->lead_id,
+            'trade_debtors_configured' => Group::where('td', 1)->exists(),
+            'is_approved' => $quotation->approval_status === 'approved',
+            'not_expired' => !$quotation->is_expired,
+            'not_converted' => $quotation->status !== 'converted'
+        ];
+
+        $allChecksPass = collect($checks)->every(function ($check) {
+            return $check === true;
+        });
+
+        return response()->json([
+            'ready' => $allChecksPass,
+            'checks' => $checks,
+            'message' => $allChecksPass ? 'Ready for conversion' : 'Some requirements not met'
+        ]);
     }
 
     /**
@@ -349,7 +435,7 @@ class QuotationController extends Controller
     {
         if (!$quotation->can_be_approved) {
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'Quotation cannot be rejected in current status.');
+                ->with('error', 'Quotation cannot be rejected in current status.');
         }
 
         $validated = $request->validate([
@@ -363,7 +449,7 @@ class QuotationController extends Controller
         ]);
 
         return redirect()->route('sales.quotations.show', $quotation)
-                        ->with('success', 'Quotation rejected successfully.');
+            ->with('success', 'Quotation rejected successfully.');
     }
 
     /**
@@ -372,35 +458,14 @@ class QuotationController extends Controller
     public function send(Quotation $quotation)
     {
         // TODO: Implement email sending functionality
-        
+
         $quotation->update([
             'status' => 'sent',
             'sent_date' => now()
         ]);
 
         return redirect()->route('sales.quotations.show', $quotation)
-                        ->with('success', 'Quotation sent successfully.');
-    }
-
-    /**
-     * Generate PDF of quotation
-     */
-    public function pdf(Quotation $quotation)
-    {
-        $quotation->load([
-            'customer',
-            'lead',
-            'items.product',
-            'items.service', 
-            'items.package',
-            'items.uom',
-            'items.tax'
-        ]);
-
-        // TODO: Implement PDF generation
-        // This can be done using packages like TCPDF, DOMPDF, or Laravel Snappy
-
-        return response()->json(['message' => 'PDF generation will be implemented']);
+            ->with('success', 'Quotation sent successfully.');
     }
 
     /**
@@ -408,28 +473,27 @@ class QuotationController extends Controller
      */
     public function getItems(Request $request)
     {
-         
         $type = $request->get('type', 'product');
         $search = $request->get('search', '');
-  
+
         switch ($type) {
             case 'product':
                 $items = Product::where('is_active', 1)
-                               ->where('name', 'like', "%{$search}%")
-                               ->limit(10)
-                               ->get(['id', 'name', 'selling_price as price', 'uom_id']);
+                    ->where('name', 'like', "%{$search}%")
+                    ->limit(10)
+                    ->get(['id', 'name', 'selling_price as price', 'uom_id']);
                 break;
             case 'service':
                 $items = Service::where('status', 1)
-                               ->where('name', 'like', "%{$search}%")
-                               ->limit(10)
-                               ->get(['id', 'name', 'base_price as price']);
+                    ->where('name', 'like', "%{$search}%")
+                    ->limit(10)
+                    ->get(['id', 'name', 'base_price as price']);
                 break;
             case 'package':
                 $items = Package::where('status', 1)
-                               ->where('name', 'like', "%{$search}%")
-                               ->limit(10)
-                               ->get(['id', 'name', 'package_price as price']);
+                    ->where('name', 'like', "%{$search}%")
+                    ->limit(10)
+                    ->get(['id', 'name', 'package_price as price']);
                 break;
             default:
                 $items = collect();
@@ -472,11 +536,146 @@ class QuotationController extends Controller
 
             DB::commit();
             return redirect()->route('sales.quotations.edit', $newQuotation)
-                           ->with('success', 'Quotation duplicated successfully.');
+                ->with('success', 'Quotation duplicated successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'Error duplicating quotation: ' . $e->getMessage());
+                ->with('error', 'Error duplicating quotation: ' . $e->getMessage());
         }
+    }
+
+    public function preview(Quotation $quotation)
+    {
+        $quotation->load([
+            'customer',
+            'lead',
+            'items.product',
+            'items.service',
+            'items.package',
+            'items.uom',
+            'items.tax',
+            'createdBy'
+        ]);
+
+        return view('sales.quotations.preview', compact('quotation'));
+    }
+
+    /**
+     * Generate PDF for quotation
+     */
+    public function pdf(Quotation $quotation)
+    {
+        $quotation->load([
+            'customer',
+            'lead',
+            'items.product',
+            'items.service',
+            'items.package',
+            'items.uom',
+            'items.tax',
+            'createdBy'
+        ]);
+
+        // Get company information from settings
+        $companyInfo = $this->getCompanyInfo();
+        
+        // Get terms and conditions from settings
+        $termsConditions = SettingsHelper::getSetting('sales', 'terms_and_conditions');
+
+        $data = [
+            'quotation' => $quotation,
+            'companyInfo' => $companyInfo,
+            'termsConditions' => $termsConditions ?? $quotation->terms_conditions
+        ];
+
+        $pdf = PDF::loadView('sales.quotations.pdf', $data);
+        $pdf->setPaper('A4', 'portrait');
+        $pdf->getDomPDF()->set_option('isRemoteEnabled', true);
+
+        return $pdf->download('quotation_' . $quotation->quotation_no . '.pdf');
+    }
+
+    /**
+     * Generate print view for quotation
+     */
+    public function print(Quotation $quotation)
+    {
+        $quotation->load([
+            'customer',
+            'lead',
+            'items.product',
+            'items.service',
+            'items.package',
+            'items.uom',
+            'items.tax',
+            'createdBy'
+        ]);
+
+        // Get company information from settings
+        $companyInfo = $this->getCompanyInfo();
+       
+        // Get terms and conditions from settings
+        $termsConditions = SettingsHelper::getSetting('sales', 'terms_and_conditions');
+
+        $data = [
+            'quotation' => $quotation,
+            'companyInfo' => $companyInfo,
+            'termsConditions' => $termsConditions ?? $quotation->terms_conditions
+        ];
+
+        return view('sales.quotations.print', $data);
+    }
+
+    /**
+     * Get company information from settings for quotations
+     */
+    private function getCompanyInfo()
+    {
+        return [
+            'name' => SettingsHelper::getSetting('general', 'name', 'Company Name Not Set'),
+            'address' => SettingsHelper::getSetting('general', 'address', 'Address Not Set'),
+            'pincode' => SettingsHelper::getSetting('general', 'pincode', 'Pincode Not Set'),
+            'state' => SettingsHelper::getSetting('general', 'state', 'State Not Set'),
+            'country' => SettingsHelper::getSetting('general', 'country', 'MY'),
+            'registration_number' => SettingsHelper::getSetting('general', 'registration_number', 'Registration Number Not Set'),
+            'phone' => SettingsHelper::getSetting('general', 'phone', 'Phone Not Set'),
+            'email' => SettingsHelper::getSetting('general', 'email', 'Email Not Set'),
+            'website' => SettingsHelper::getSetting('general', 'website', 'Website Not Set'),
+            'logo' => SettingsHelper::getCompanyLogo('general', 'logo',),
+            'sub_logo' => SettingsHelper::getCompanySubLogo('general', 'sub_logo',),
+            'currency' => SettingsHelper::getSetting('general', 'currency', 'MYR'),
+        ];
+    }
+
+    /**
+     * Calculate payment terms for quotation (if needed for future use)
+     */
+    private function calculatePaymentTerms($quotation)
+    {
+        $totalAmount = $quotation->total_amount;
+        $paymentTerms = [];
+
+        // Default payment schedule (you can customize this)
+        $schedule = [
+            ['name' => 'Deposit', 'percentage' => 25, 'days_offset' => 0],
+            ['name' => 'Upon Installation', 'percentage' => 25, 'days_offset' => 15],
+            ['name' => 'Third Payment', 'percentage' => 25, 'days_offset' => 45],
+            ['name' => 'Final Payment', 'percentage' => 25, 'days_offset' => 75]
+        ];
+
+        foreach ($schedule as $index => $term) {
+            $amount = ($totalAmount * $term['percentage']) / 100;
+            $date = $quotation->quotation_date->addDays($term['days_offset']);
+            
+            $paymentTerms[] = [
+                'no' => $index + 1,
+                'item' => $term['name'],
+                'date' => $date->format('d/m/Y'),
+                'description' => '',
+                'amount' => $amount
+            ];
+        }
+
+        return $paymentTerms;
     }
 }

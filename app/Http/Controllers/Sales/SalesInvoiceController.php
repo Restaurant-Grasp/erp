@@ -116,8 +116,6 @@ class SalesInvoiceController extends Controller
             'quotation_id' => 'nullable|exists:quotations,id',
             'reference_no' => 'nullable|string|max:100',
             'po_no' => 'nullable|string|max:100',
-            'currency' => 'required|string|max:10',
-            'exchange_rate' => 'required|numeric|min:0',
             'payment_terms' => 'required|integer|min:1',
             'discount_type' => 'required|in:percentage,amount',
             'discount_value' => 'required|numeric|min:0',
@@ -140,7 +138,8 @@ class SalesInvoiceController extends Controller
             unset($invoiceData['items']);
             $invoiceData['created_by'] = Auth::id();
             $invoiceData['status'] = 'pending';
-            $invoiceData['due_date'] = now()->addDays($validated['payment_terms']);
+        
+            $invoiceData['due_date'] = now()->addDays((int) $validated['payment_terms']);
 
             $invoice = SalesInvoice::create($invoiceData);
 
@@ -224,8 +223,6 @@ class SalesInvoiceController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'reference_no' => 'nullable|string|max:100',
             'po_no' => 'nullable|string|max:100',
-            'currency' => 'required|string|max:10',
-            'exchange_rate' => 'required|numeric|min:0',
             'payment_terms' => 'required|integer|min:1',
             'discount_type' => 'required|in:percentage,amount',
             'discount_value' => 'required|numeric|min:0',
@@ -452,4 +449,5 @@ class SalesInvoiceController extends Controller
         ];
     }));
 }
+
 }

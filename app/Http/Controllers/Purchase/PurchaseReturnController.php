@@ -249,6 +249,7 @@ class PurchaseReturnController extends Controller
      */
     public function getGrnItems(Request $request)
     {
+
         $grnId = $request->grn_id;
         
         $grn = GoodsReceiptNote::with(['items.product', 'vendor'])

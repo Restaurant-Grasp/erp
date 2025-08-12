@@ -416,17 +416,6 @@
                 $permissions->contains('name', 'sales.invoices.view') ||
                 $permissions->contains('name', 'sales.delivery_orders.view'))
 
-                @php
-                $role = auth()->user()->getRoleNames()->first();
-                $permissions = getCurrentRolePermissions($role);
-                @endphp
-
-                @if (
-                $permissions->contains('name', 'sales.taxes.view') ||
-                $permissions->contains('name', 'sales.quotations.view') ||
-                $permissions->contains('name', 'sales.invoices.view') ||
-                $permissions->contains('name', 'sales.delivery_orders.view')
-                )
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center 
                     {{ request()->routeIs('sales.*') ? '' : 'collapsed' }}"
@@ -439,6 +428,7 @@
 
                     <div class="collapse {{ request()->routeIs('sales.*') ? 'show' : '' }}" id="salesMenu">
                         <ul class="nav flex-column ms-3">
+
 
                             @if ($permissions->contains('name', 'sales.taxes.view'))
                             <li class="nav-item">
@@ -478,13 +468,14 @@
                                     <i class="fas fa-truck me-2"></i> Delivery Orders
                                 </a>
                             </li>
+
                             @endif
 
                         </ul>
                     </div>
                 </li>
 
-             @endif
+                @endif
 
                 @if (
                 $permissions->contains('name', 'purchases.po.view') ||
@@ -492,10 +483,25 @@
                 $permissions->contains('name', 'purchases.grn.view') ||
                 $permissions->contains('name', 'purchases.returns.view')
                 )
+                @php
+                // List of purchase report routes
+                $purchaseReportsRoutes = [
+                'purchase.reports.purchase-summary',
+                'purchase.reports.vendor-performance',
+                'purchase.reports.pending-approvals',
+                'purchase.reports.grn-status',
+                ];
+
+                $isPurchaseReportsActive = in_array(Route::currentRouteName(), $purchaseReportsRoutes);
+                @endphp
+
                 <li class="nav-item">
+                    {{-- Main Purchases menu --}}
                     <a class="nav-link d-flex justify-content-between align-items-center 
-                                  {{ request()->routeIs('purchase.*') ? '' : 'collapsed' }}"
-                        data-bs-toggle="collapse" href="#purchaseMenu" role="button"
+              {{ request()->routeIs('purchase.*') ? '' : 'collapsed' }}"
+                        data-bs-toggle="collapse"
+                        href="#purchaseMenu"
+                        role="button"
                         aria-expanded="{{ request()->routeIs('purchase.*') ? 'true' : 'false' }}"
                         aria-controls="purchaseMenu">
                         <span><i class="fas fa-shopping-bag me-2"></i> Purchases</span>
@@ -541,33 +547,42 @@
                             </li>
                             @endif
 
+                            {{-- Reports Submenu --}}
                             @if ($permissions->contains('name', 'purchases.reports.view'))
                             <li class="nav-item">
-                                <a class="nav-link d-flex justify-content-between align-items-center collapsed"
-                                    data-bs-toggle="collapse" href="#purchaseReportsMenu" role="button"
-                                    aria-expanded="false" aria-controls="purchaseReportsMenu">
+                                <a class="nav-link d-flex justify-content-between align-items-center 
+                          {{ $isPurchaseReportsActive ? '' : 'collapsed' }}"
+                                    data-bs-toggle="collapse"
+                                    href="#purchaseReportsMenu"
+                                    role="button"
+                                    aria-expanded="{{ $isPurchaseReportsActive ? 'true' : 'false' }}"
+                                    aria-controls="purchaseReportsMenu">
                                     <span><i class="fas fa-chart-bar me-2"></i> Reports</span>
                                     <i class="fas fa-chevron-down"></i>
                                 </a>
-                                <div class="collapse" id="purchaseReportsMenu">
+                                <div class="collapse {{ $isPurchaseReportsActive ? 'show' : '' }}" id="purchaseReportsMenu">
                                     <ul class="nav flex-column ms-3">
                                         <li class="nav-item">
-                                            <a class="nav-link" href="{{ route('purchase.reports.purchase-summary') }}">
+                                            <a class="nav-link {{ request()->routeIs('purchase.reports.purchase-summary') ? 'active' : '' }}"
+                                                href="{{ route('purchase.reports.purchase-summary') }}">
                                                 <i class="fas fa-chart-pie me-2"></i> Purchase Summary
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link" href="{{ route('purchase.reports.vendor-performance') }}">
+                                            <a class="nav-link {{ request()->routeIs('purchase.reports.vendor-performance') ? 'active' : '' }}"
+                                                href="{{ route('purchase.reports.vendor-performance') }}">
                                                 <i class="fas fa-star me-2"></i> Vendor Performance
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link" href="{{ route('purchase.reports.pending-approvals') }}">
+                                            <a class="nav-link {{ request()->routeIs('purchase.reports.pending-approvals') ? 'active' : '' }}"
+                                                href="{{ route('purchase.reports.pending-approvals') }}">
                                                 <i class="fas fa-clock me-2"></i> Pending Approvals
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link" href="{{ route('purchase.reports.grn-status') }}">
+                                            <a class="nav-link {{ request()->routeIs('purchase.reports.grn-status') ? 'active' : '' }}"
+                                                href="{{ route('purchase.reports.grn-status') }}">
                                                 <i class="fas fa-clipboard-check me-2"></i> GRN Status
                                             </a>
                                         </li>
@@ -579,6 +594,7 @@
                         </ul>
                     </div>
                 </li>
+
                 @endif
                 <!-- NEW ACCOUNTS MENU -->
 

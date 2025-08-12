@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>General Ledger Report - Print</title>
     <style>
-           @media print {
+        @media print {
             body {
                 margin: 0;
                 padding: 10px;
@@ -30,11 +30,64 @@
                 page-break-after: avoid;
             }
         }
+        
         body {
             font-family: Arial, sans-serif;
             font-size: 12px;
             line-height: 1.4;
             margin: 20px;
+        }
+        
+        .company-header {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 10px;
+            gap: 20px;
+            flex-wrap: wrap;
+            text-align: left;
+        }
+
+        .company-header .logo {
+            flex-shrink: 0;
+        }
+
+        .company-header .logo img {
+            width: 120px;
+            height: 80px;
+            object-fit: contain;
+        }
+
+        .company-header .company-info {
+            flex: 1;
+            font-size: 13px;
+            line-height: 1.6;
+            max-width: 580px;
+        }
+
+        .company-header .company-info .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e16c2f;
+            margin-bottom: 5px;
+        }
+
+        .company-header .company-info .registration {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .company-header .company-info .contact-info {
+            font-size: 13px;
+        }
+
+        .company-header .company-info .tagline {
+            font-size: 11px;
+            font-style: italic;
+            color: #666;
+            margin-top: 5px;
         }
         
         .header {
@@ -62,7 +115,6 @@
         
         .ledger-section {
             margin-bottom: 40px;
-            /* page-break-inside: avoid; */
         }
         
         .ledger-header {
@@ -154,37 +206,6 @@
         .btn:hover {
             background-color: #0056b3;
         }
-        
-        /* .page-break {
-            page-break-after: always;
-        } */
-                        .company-header {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #ccc;
-    padding-bottom: 10px;
-  
-    gap: 20px;
-    flex-wrap: wrap;
-    text-align: left;
-}
-
-.company-header .logo img {
-    width: 120px;
-    height: 80px;
-}
-
-.company-header .company-info {
-    font-size: 13px;
-    line-height: 1.6;
-    max-width: 580px;
-}
-
-.company-header .company-info strong {
-    font-size: 24px;
-    color: #e16c2f;
-}
     </style>
 </head>
 <body>
@@ -193,18 +214,44 @@
         <button class="btn" onclick="window.close()">Close</button>
     </div>
     
-   <div class="company-header">
-    <div class="logo">
-        <img src="{{ asset('public/assets/logo.jpeg') }}" alt="RSK Logo">
+    <!-- Dynamic Company Header -->
+    <div class="company-header">
+        <div class="logo">
+            @if($companyInfo['logo'])
+                <img src="{{ $companyInfo['logo'] }}" alt="{{ $companyInfo['name'] }} Logo">
+            @else
+                <div style="width: 120px; height: 80px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; background-color: #f5f5f5; font-size: 10px; color: #666;">
+                    No Logo
+                </div>
+            @endif
+        </div>
+        <div class="company-info">
+            <div class="company-name">{{ $companyInfo['name'] }}</div>
+            @if($companyInfo['registration_number'] !== 'Registration Number Not Set')
+            <div class="registration">({{ $companyInfo['registration_number'] }})</div>
+            @endif
+            <div class="contact-info">
+              
+                {{ $companyInfo['address'] }}
+                @if($companyInfo['address'] !== 'Address Not Set'),@endif
+                <br>
+                @if($companyInfo['pincode'] !== 'Pincode Not Set' && $companyInfo['state'] !== 'State Not Set')
+                {{ $companyInfo['pincode'] }}, {{ $companyInfo['state'] }}<br>
+                @endif
+                @if($companyInfo['phone'] !== 'Phone Not Set')
+                <span>Tel: {{ $companyInfo['phone'] }}</span>
+                @endif
+                @if($companyInfo['email'] !== 'Email Not Set')
+                <br>E-mail: {{ $companyInfo['email'] }}
+                @endif
+                @if($companyInfo['website'] !== 'Website Not Set')
+                <br>Visit: {{ $companyInfo['website'] }}
+                @endif
+            </div>
+            <div class="tagline">IT & Business Consultant, Software & Application Development, Android Development</div>
+        </div>
     </div>
-    <div class="company-info">
-        <strong>RSK Canvas Trading</strong><br>
-        No. 8 Lot 2921, Jalan PJS 3/1, Taman Medan, 46000 Petaling Jaya,<br>
-        Selangor Darul Ehsan.<br>
-        <span>Tel: +603-7781 7434 / +603-7785 7434</span><br>
-        E-mail: sales@rsk.com.my
-    </div>
-</div>
+    
     <div class="header">
         <h2>GENERAL LEDGER REPORT</h2>
         <p>From: {{ date('d-m-Y', strtotime($fromDate)) }} To: {{ date('d-m-Y', strtotime($toDate)) }}</p>
@@ -264,7 +311,7 @@
                 </tr>
                 
                 <!-- Transactions -->
-             @if(isset($report['transactions']) && count($report['transactions']) > 0)
+                @if(isset($report['transactions']) && count($report['transactions']) > 0)
                 @foreach($report['transactions'] as $transaction)
                 <tr>
                     <td>{{ date('d-m-Y', strtotime($transaction->entry->date)) }}</td>
@@ -301,8 +348,8 @@
                     </td>
                 </tr>
                 @endforeach
-              
                 @endif
+                
                 <!-- Closing Balance -->
                 <tr class="closing-balance">
                     <td colspan="4">Closing Balance</td>
@@ -326,7 +373,7 @@
     </div>
     
     <script>
-        // Auto-print on load
+        // Auto-print on load (optional)
         window.onload = function() {
             // window.print();
         }
