@@ -66,7 +66,11 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">All Goods Receipt Notes</h5>
         <div>
-            @can('purchases.grn.create')
+                   @php
+            $role = auth()->user()->getRoleNames()->first();
+            $permissions = getCurrentRolePermissions($role);
+            @endphp
+            @if ($permissions->contains('name', 'purchases.grn.create'))
             <div class="btn-group">
                 <a href="{{ route('purchase.grn.create') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-2"></i> Create GRN
@@ -84,7 +88,7 @@
                     </a></li>
                 </ul>
             </div>
-            @endcan
+            @endif
         </div>
     </div>
     <div class="card-body">
@@ -127,7 +131,8 @@
                                 <span class="text-muted">Direct GRN</span>
                             @endif
                         </td>
-                        <td>{{ $grn->grn_date->format('d/m/Y') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($grn->grn_date)->format('d/m/Y') }}</td>
+
                         <td>
                             <span class="badge bg-primary">{{ $grn->total_items }}</span>
                         </td>
@@ -155,21 +160,23 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                @can('purchases.grn.view')
+                    
+                        @if ($permissions->contains('name', 'purchases.grn.view'))
+                            
                                 <a href="{{ route('purchase.grn.show', $grn) }}" class="btn btn-sm btn-outline-primary" 
                                    title="View">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                @endcan
-                                
-                                @can('purchases.grn.edit')
+                                @endif
+                                  @if ($permissions->contains('name', 'purchases.grn.edit'))
+                          
                                 @if($grn->status === 'draft')
                                 <a href="{{ route('purchase.grn.edit', $grn) }}" class="btn btn-sm btn-outline-primary" 
                                    title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 @endif
-                                @endcan
+                                @endif
                                 
                                 @if($grn->total_damaged_quantity > 0)
                                 <a href="{{ route('purchase.returns.index', ['grn' => $grn->id]) }}" 

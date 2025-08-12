@@ -17,6 +17,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\GeneralLedgerExport;
 use App\Exports\TrialBalanceExport;
 use App\Exports\BalanceSheetExport;
+use App\Helpers\SettingsHelper; // Add this import
 
 class ReportsController extends Controller
 {
@@ -164,11 +165,16 @@ class ReportsController extends Controller
     private function exportGeneralLedger($request, $ledgerReports, $fromDate, $toDate)
     {
         $exportType = $request->export;
+        
+        // Get company information from settings
+        $companyInfo = $this->getCompanyInfo();
+      
         $data = [
             'ledgerReports' => $ledgerReports,
             'fromDate' => $fromDate,
             'toDate' => $toDate,
-            'invoiceType' => $request->invoice_type ?? 'all'
+            'invoiceType' => $request->invoice_type ?? 'all',
+            'companyInfo' => $companyInfo // Add company info to data
         ];
         
         if ($exportType == 'pdf') {
@@ -180,6 +186,27 @@ class ReportsController extends Controller
         } elseif ($exportType == 'print') {
             return view('accounts.reports.general_ledger_print', $data);
         }
+    }
+    
+    /**
+     * Get company information from settings
+     */
+    private function getCompanyInfo()
+    {
+        return [
+            'name' => SettingsHelper::getSetting('general', 'name', 'Company Name Not Set'),
+            'address' => SettingsHelper::getSetting('general', 'address', 'Address Not Set'),
+            'pincode' => SettingsHelper::getSetting('general', 'pincode', 'Pincode Not Set'),
+            'state' => SettingsHelper::getSetting('general', 'state', 'State Not Set'),
+            'country' => SettingsHelper::getSetting('general', 'country', 'MY'),
+            'registration_number' => SettingsHelper::getSetting('general', 'registration_number', 'Registration Number Not Set'),
+            'phone' => SettingsHelper::getSetting('general', 'phone', 'Phone Not Set'),
+            'email' => SettingsHelper::getSetting('general', 'email', 'Email Not Set'),
+            'website' => SettingsHelper::getSetting('general', 'website', 'Website Not Set'),
+            'logo' => SettingsHelper::getCompanyLogo('general', 'logo'),
+            'sub_logo' => SettingsHelper::getCompanySubLogo('general', 'sub_logo'),
+            'currency' => SettingsHelper::getSetting('general', 'currency', 'MYR'),
+        ];
     }
     
     /**
@@ -213,145 +240,148 @@ class ReportsController extends Controller
 	/**
 	 * Display Trial Balance Report
 	 */
-public function trialBalance(Request $request)
-{
-    // Get active accounting year
-    $activeYear = AcYear::where('status', 1)->where('user_id', Auth::id())->first();
-    
-    if (!$activeYear) {
-        return redirect()->back()->with('error', 'No active accounting year found.');
-    }
-    
-    // Set default dates
-    $fromDate = $request->from_date ?? $activeYear->from_year_month;
-    $toDate = $request->to_date ?? date('Y-m-d');
-    
-    // Get all parent groups (parent_id = 0)
-    $parentGroups = Group::where('parent_id', 0)
-        ->with(['children.children', 'ledgers'])
-        ->orderBy('code', 'asc')
-        ->get();
-    
-    // Process groups and calculate balances
-    $trialBalanceData = [];
-    $grandTotalOpeningDebit = 0;
-    $grandTotalOpeningCredit = 0;
-    $grandTotalClosingDebit = 0;
-    $grandTotalClosingCredit = 0;
-    
-    foreach ($parentGroups as $parentGroup) {
-        $groupData = $this->processGroupForTrialBalance($parentGroup, $activeYear, $fromDate, $toDate);
+    public function trialBalance(Request $request)
+    {
+        // Get active accounting year
+        $activeYear = AcYear::where('status', 1)->where('user_id', Auth::id())->first();
         
-        // Always include parent groups (even if they have zero totals)
-        // This maintains the trial balance structure
-        $trialBalanceData[] = $groupData;
+        if (!$activeYear) {
+            return redirect()->back()->with('error', 'No active accounting year found.');
+        }
         
-        $grandTotalOpeningDebit += $groupData['totalOpeningDebit'];
-        $grandTotalOpeningCredit += $groupData['totalOpeningCredit'];
-        $grandTotalClosingDebit += $groupData['totalClosingDebit'];
-        $grandTotalClosingCredit += $groupData['totalClosingCredit'];
+        // Set default dates
+        $fromDate = $request->from_date ?? $activeYear->from_year_month;
+        $toDate = $request->to_date ?? date('Y-m-d');
+        
+        // Get all parent groups (parent_id = 0)
+        $parentGroups = Group::where('parent_id', 0)
+            ->with(['children.children', 'ledgers'])
+            ->orderBy('code', 'asc')
+            ->get();
+        
+        // Process groups and calculate balances
+        $trialBalanceData = [];
+        $grandTotalOpeningDebit = 0;
+        $grandTotalOpeningCredit = 0;
+        $grandTotalClosingDebit = 0;
+        $grandTotalClosingCredit = 0;
+        
+        foreach ($parentGroups as $parentGroup) {
+            $groupData = $this->processGroupForTrialBalance($parentGroup, $activeYear, $fromDate, $toDate);
+            
+            // Always include parent groups (even if they have zero totals)
+            // This maintains the trial balance structure
+            $trialBalanceData[] = $groupData;
+            
+            $grandTotalOpeningDebit += $groupData['totalOpeningDebit'];
+            $grandTotalOpeningCredit += $groupData['totalOpeningCredit'];
+            $grandTotalClosingDebit += $groupData['totalClosingDebit'];
+            $grandTotalClosingCredit += $groupData['totalClosingCredit'];
+        }
+        
+        // Check if trial balance is balanced (closing balances should be equal)
+        $isBalanced = abs($grandTotalClosingDebit - $grandTotalClosingCredit) < 0.01;
+        
+        // Export handling
+        if ($request->has('export')) {
+            return $this->exportTrialBalance($request, $trialBalanceData, $fromDate, $toDate, 
+                $grandTotalOpeningDebit, $grandTotalOpeningCredit,
+                $grandTotalClosingDebit, $grandTotalClosingCredit, $isBalanced);
+        }
+        
+        return view('accounts.reports.trial_balance', compact(
+            'trialBalanceData', 'fromDate', 'toDate', 'activeYear',
+            'grandTotalOpeningDebit', 'grandTotalOpeningCredit',
+            'grandTotalClosingDebit', 'grandTotalClosingCredit', 'isBalanced'
+        ));
     }
-    
-    // Check if trial balance is balanced (closing balances should be equal)
-    $isBalanced = abs($grandTotalClosingDebit - $grandTotalClosingCredit) < 0.01;
-    
-    // Export handling
-    if ($request->has('export')) {
-        return $this->exportTrialBalance($request, $trialBalanceData, $fromDate, $toDate, 
-            $grandTotalOpeningDebit, $grandTotalOpeningCredit,
-            $grandTotalClosingDebit, $grandTotalClosingCredit, $isBalanced);
+
+    private function hasTrialBalanceData($groupData)
+    {
+        // Check if group has any ledgers
+        if (!empty($groupData['ledgers'])) {
+            return true;
+        }
+        
+        // Check if group has any children with data
+        if (!empty($groupData['children'])) {
+            return true;
+        }
+        
+        // Check if group itself has non-zero totals
+        if ($groupData['totalOpeningDebit'] != 0 || 
+            $groupData['totalOpeningCredit'] != 0 || 
+            $groupData['totalClosingDebit'] != 0 || 
+            $groupData['totalClosingCredit'] != 0) {
+            return true;
+        }
+        
+        return false;
     }
-    
-    return view('accounts.reports.trial_balance', compact(
-        'trialBalanceData', 'fromDate', 'toDate', 'activeYear',
-        'grandTotalOpeningDebit', 'grandTotalOpeningCredit',
-        'grandTotalClosingDebit', 'grandTotalClosingCredit', 'isBalanced'
-    ));
-}
-private function hasTrialBalanceData($groupData)
-{
-    // Check if group has any ledgers
-    if (!empty($groupData['ledgers'])) {
-        return true;
-    }
-    
-    // Check if group has any children with data
-    if (!empty($groupData['children'])) {
-        return true;
-    }
-    
-    // Check if group itself has non-zero totals
-    if ($groupData['totalOpeningDebit'] != 0 || 
-        $groupData['totalOpeningCredit'] != 0 || 
-        $groupData['totalClosingDebit'] != 0 || 
-        $groupData['totalClosingCredit'] != 0) {
-        return true;
-    }
-    
-    return false;
-}
+
 	/**
 	 * Process group and its children for trial balance
 	 */
-private function processGroupForTrialBalance($group, $activeYear, $fromDate, $toDate, $level = 0)
-{
-    $groupData = [
-        'id' => $group->id,
-        'code' => $group->code,
-        'name' => $group->name,
-        'level' => $level,
-        'isGroup' => true,
-        'totalOpeningDebit' => 0,
-        'totalOpeningCredit' => 0,
-        'totalClosingDebit' => 0,
-        'totalClosingCredit' => 0,
-        'children' => [],
-        'ledgers' => []
-    ];
-    
-    // Process direct ledgers under this group
-    foreach ($group->ledgers as $ledger) {
-        $ledgerBalances = $this->calculateLedgerBalances($ledger, $activeYear, $fromDate, $toDate);
-        
-        // Skip ledgers where all values are zero
-        if ($ledgerBalances['openingDebit'] == 0 && 
-            $ledgerBalances['openingCredit'] == 0 && 
-            $ledgerBalances['closingDebit'] == 0 && 
-            $ledgerBalances['closingCredit'] == 0) {
-            continue; // Skip this ledger
-        }
-        
-        $groupData['ledgers'][] = [
-            'id' => $ledger->id,
-            'code' => $ledger->left_code . '/' . $ledger->right_code,
-            'name' => $ledger->name,
-            'openingDebit' => $ledgerBalances['openingDebit'],
-            'openingCredit' => $ledgerBalances['openingCredit'],
-            'closingDebit' => $ledgerBalances['closingDebit'],
-            'closingCredit' => $ledgerBalances['closingCredit']
+    private function processGroupForTrialBalance($group, $activeYear, $fromDate, $toDate, $level = 0)
+    {
+        $groupData = [
+            'id' => $group->id,
+            'code' => $group->code,
+            'name' => $group->name,
+            'level' => $level,
+            'isGroup' => true,
+            'totalOpeningDebit' => 0,
+            'totalOpeningCredit' => 0,
+            'totalClosingDebit' => 0,
+            'totalClosingCredit' => 0,
+            'children' => [],
+            'ledgers' => []
         ];
         
-        $groupData['totalOpeningDebit'] += $ledgerBalances['openingDebit'];
-        $groupData['totalOpeningCredit'] += $ledgerBalances['openingCredit'];
-        $groupData['totalClosingDebit'] += $ledgerBalances['closingDebit'];
-        $groupData['totalClosingCredit'] += $ledgerBalances['closingCredit'];
-    }
-    
-    // Process child groups recursively
-    foreach ($group->children as $childGroup) {
-        $childData = $this->processGroupForTrialBalance($childGroup, $activeYear, $fromDate, $toDate, $level + 1);
+        // Process direct ledgers under this group
+        foreach ($group->ledgers as $ledger) {
+            $ledgerBalances = $this->calculateLedgerBalances($ledger, $activeYear, $fromDate, $toDate);
+            
+            // Skip ledgers where all values are zero
+            if ($ledgerBalances['openingDebit'] == 0 && 
+                $ledgerBalances['openingCredit'] == 0 && 
+                $ledgerBalances['closingDebit'] == 0 && 
+                $ledgerBalances['closingCredit'] == 0) {
+                continue; // Skip this ledger
+            }
+            
+            $groupData['ledgers'][] = [
+                'id' => $ledger->id,
+                'code' => $ledger->left_code . '/' . $ledger->right_code,
+                'name' => $ledger->name,
+                'openingDebit' => $ledgerBalances['openingDebit'],
+                'openingCredit' => $ledgerBalances['openingCredit'],
+                'closingDebit' => $ledgerBalances['closingDebit'],
+                'closingCredit' => $ledgerBalances['closingCredit']
+            ];
+            
+            $groupData['totalOpeningDebit'] += $ledgerBalances['openingDebit'];
+            $groupData['totalOpeningCredit'] += $ledgerBalances['openingCredit'];
+            $groupData['totalClosingDebit'] += $ledgerBalances['closingDebit'];
+            $groupData['totalClosingCredit'] += $ledgerBalances['closingCredit'];
+        }
         
-        // Always include child groups (even if zero) to maintain hierarchy
-        $groupData['children'][] = $childData;
+        // Process child groups recursively
+        foreach ($group->children as $childGroup) {
+            $childData = $this->processGroupForTrialBalance($childGroup, $activeYear, $fromDate, $toDate, $level + 1);
+            
+            // Always include child groups (even if zero) to maintain hierarchy
+            $groupData['children'][] = $childData;
+            
+            $groupData['totalOpeningDebit'] += $childData['totalOpeningDebit'];
+            $groupData['totalOpeningCredit'] += $childData['totalOpeningCredit'];
+            $groupData['totalClosingDebit'] += $childData['totalClosingDebit'];
+            $groupData['totalClosingCredit'] += $childData['totalClosingCredit'];
+        }
         
-        $groupData['totalOpeningDebit'] += $childData['totalOpeningDebit'];
-        $groupData['totalOpeningCredit'] += $childData['totalOpeningCredit'];
-        $groupData['totalClosingDebit'] += $childData['totalClosingDebit'];
-        $groupData['totalClosingCredit'] += $childData['totalClosingCredit'];
+        return $groupData;
     }
-    
-    return $groupData;
-}
+
 	/**
 	 * Calculate ledger opening and closing balances
 	 */
@@ -421,6 +451,10 @@ private function processGroupForTrialBalance($group, $activeYear, $fromDate, $to
 		$grandTotalClosingDebit, $grandTotalClosingCredit, $isBalanced)
 	{
 		$exportType = $request->export;
+        
+        // Get company information from settings
+        $companyInfo = $this->getCompanyInfo();
+        
 		$data = [
 			'trialBalanceData' => $trialBalanceData,
 			'fromDate' => $fromDate,
@@ -429,7 +463,8 @@ private function processGroupForTrialBalance($group, $activeYear, $fromDate, $to
 			'grandTotalOpeningCredit' => $grandTotalOpeningCredit,
 			'grandTotalClosingDebit' => $grandTotalClosingDebit,
 			'grandTotalClosingCredit' => $grandTotalClosingCredit,
-			'isBalanced' => $isBalanced
+			'isBalanced' => $isBalanced,
+            'companyInfo' => $companyInfo // Add company info
 		];
 		
 		if ($exportType == 'pdf') {
@@ -703,13 +738,18 @@ private function processGroupForTrialBalance($group, $activeYear, $fromDate, $to
 		$totalAssets, $totalLiabilities, $totalEquity, $activeYear)
 	{
 		$exportType = $request->export;
+        
+        // Get company information from settings
+        $companyInfo = $this->getCompanyInfo();
+        
 		$data = [
 			'balanceSheetData' => $balanceSheetData,
 			'asOnDate' => $asOnDate,
 			'totalAssets' => $totalAssets,
 			'totalLiabilities' => $totalLiabilities,
 			'totalEquity' => $totalEquity,
-			'activeYear' => $activeYear
+			'activeYear' => $activeYear,
+            'companyInfo' => $companyInfo // Add company info
 		];
 		
 		if ($exportType == 'pdf') {

@@ -550,6 +550,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Quotation Management Routes
         Route::resource('quotations', App\Http\Controllers\Sales\QuotationController::class);
+
         Route::post('quotations/{quotation}/approve', [App\Http\Controllers\Sales\QuotationController::class, 'approve'])
             ->name('quotations.approve');
         Route::post('quotations/{quotation}/reject', [App\Http\Controllers\Sales\QuotationController::class, 'reject'])
@@ -560,8 +561,14 @@ Route::middleware(['auth'])->group(function () {
             ->name('quotations.revision');
         Route::post('quotations/{quotation}/duplicate', [App\Http\Controllers\Sales\QuotationController::class, 'duplicate'])
             ->name('quotations.duplicate');
-        Route::get('quotations/{quotation}/pdf', [App\Http\Controllers\Sales\QuotationController::class, 'pdf'])
-            ->name('quotations.pdf');
+        Route::get('quotations/{quotation}/pdf', [QuotationController::class, 'pdf'])->name('quotations.pdf');
+        Route::get('quotations/{quotation}/print', [QuotationController::class, 'print'])->name('quotations.print');
+        Route::get('quotations/{quotation}/preview', [QuotationController::class, 'preview'])->name('quotations.preview');
+
+        Route::post('quotations/{quotation}/convert-to-invoice', [App\Http\Controllers\Sales\QuotationController::class, 'convertToInvoice'])
+            ->name('quotations.convert-to-invoice');
+        Route::post('quotations/{quotation}/convert-lead-to-customer', [App\Http\Controllers\Sales\QuotationController::class, 'convertLeadToCustomer'])
+            ->name('quotations.convert-lead-to-customer');
 
 
         // Sales Invoice Management Routes
@@ -704,7 +711,7 @@ Route::middleware(['auth'])->group(function () {
             // AJAX routes
             Route::get('/invoice-items', [GrnController::class, 'getInvoiceItems'])->name('invoice-items');
         });
-       // Purchase Returns
+        // Purchase Returns
         Route::prefix('returns')->name('returns.')->group(function () {
             Route::get('/', [PurchaseReturnController::class, 'index'])->name('index');
             Route::get('/create', [PurchaseReturnController::class, 'create'])->name('create');
@@ -724,21 +731,24 @@ Route::middleware(['auth'])->group(function () {
         });
         // Purchase Reports (placeholder for future implementation)
         Route::prefix('reports')->name('reports.')->group(function () {
-            Route::get('/purchase-summary', function () {
-                return view('purchase.reports.purchase-summary');
-            })->name('purchase-summary')->middleware('permission:purchases.reports.view');
+            Route::get('/purchase-summary', [App\Http\Controllers\Purchase\PurchaseReportsController::class, 'purchaseSummary'])->name('purchase-summary')->middleware('permission:purchases.reports.view');
 
-            Route::get('/vendor-performance', function () {
-                return view('purchase.reports.vendor-performance');
-            })->name('vendor-performance')->middleware('permission:purchases.reports.view');
+            Route::get('/vendor-performance', [App\Http\Controllers\Purchase\PurchaseReportsController::class, 'vendorPerformance'])->name('vendor-performance')->middleware('permission:purchases.reports.view');
 
-            Route::get('/pending-approvals', function () {
-                return view('purchase.reports.pending-approvals');
-            })->name('pending-approvals')->middleware('permission:purchases.reports.view');
+            Route::get('/pending-approvals', [App\Http\Controllers\Purchase\PurchaseReportsController::class, 'pendingApprovals'])->name('pending-approvals')->middleware('permission:purchases.reports.view');
 
-            Route::get('/grn-status', function () {
-                return view('purchase.reports.grn-status');
-            })->name('grn-status')->middleware('permission:purchases.reports.view');
+            Route::get('/grn-status', [App\Http\Controllers\Purchase\PurchaseReportsController::class, 'grnStatus'])->name('grn-status')->middleware('permission:purchases.reports.view');
+
+            Route::get('/analytics-dashboard', [App\Http\Controllers\Purchase\PurchaseReportsController::class, 'analyticsDashboard'])->name('analytics-dashboard')->middleware('permission:purchases.reports.view');
+
+            // Export routes
+            Route::get('/export-purchase-summary', [App\Http\Controllers\Purchase\PurchaseReportsController::class, 'exportPurchaseSummary'])->name('export-purchase-summary')->middleware('permission:purchases.reports.view');
+
+            // AJAX routes for reports
+            Route::post('/send-bulk-reminders', function () {
+                // Implementation for bulk reminder emails
+                return response()->json(['count' => 5, 'success' => true]);
+            })->name('send-bulk-reminders');
         });
     });
 });
@@ -773,3 +783,5 @@ Route::get('quotations/get-items', [App\Http\Controllers\Sales\QuotationControll
 Route::get('/test-get-items', function (Request $request) {
     return response()->json(['message' => 'Test route works', 'params' => $request->all()]);
 });
+Route::get('/purchase/returns/grn-items', [PurchaseReturnController::class, 'getGrnItems'])
+    ->name('purchase.returns.grn-items');

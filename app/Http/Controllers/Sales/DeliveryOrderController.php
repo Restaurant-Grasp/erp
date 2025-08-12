@@ -485,4 +485,5 @@ class DeliveryOrderController extends Controller
 
         return $prefix . '-' . $year . '-' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
+    
 }

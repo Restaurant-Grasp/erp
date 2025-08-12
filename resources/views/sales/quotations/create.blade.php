@@ -41,34 +41,31 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                        <div class="col-md-3">
-                            <label for="entity_type" class="form-label">Customer Type <span class="text-danger">*</span></label>
-                            <select class="form-select @error('entity_type') is-invalid @enderror"
-                                name="entity_type" id="entity_type" required>
-                                <option value="">Select Customer Type</option>
-                                <option value="lead" {{ old('entity_type') == 'lead' || $lead ? 'selected' : '' }}>Lead</option>
-                                <option value="customer" {{ old('entity_type') == 'customer' || $customer ? 'selected' : '' }}>Customer</option>
-                            </select>
-                            @error('entity_type')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-md-3">
-                            <label for="entity_id" class="form-label">Customer<span class="text-danger">*</span></label>
-                            <select class="form-select @error('entity_id') is-invalid @enderror"
-                                name="entity_id" id="entity_id" required>
-                                <option value="">Select Customer</option>
-                                @if($lead)
-                                <option value="{{ $lead->id }}" selected>{{ $lead->lead_no }} - {{ $lead->entity_name }}</option>
-                                @endif
-                                @if($customer)
-                                <option value="{{ $customer->id }}" selected>{{ $customer->customer_code }} - {{ $customer->company_name }}</option>
-                                @endif
-                            </select>
-                            @error('entity_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                      <div class="col-md-3">
+    <label for="entity_type" class="form-label">Customer Type <span class="text-danger">*</span></label>
+    <select class="form-select @error('entity_type') is-invalid @enderror"
+        name="entity_type" id="entity_type" required>
+        <option value="">Select Customer Type</option>
+        <option value="lead" {{ old('entity_type') == 'lead' || $lead ? 'selected' : '' }}>Lead</option>
+        <option value="customer" {{ old('entity_type') == 'customer' || $customer ? 'selected' : '' }}>Customer</option>
+    </select>
+    @error('entity_type')
+    <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+</div>
+                    <div class="col-md-3">
+    <label for="entity_select" class="form-label">Customer<span class="text-danger">*</span></label>
+    <select class="form-select" name="entity_select" id="entity_select" required>
+        <option value="">Select Customer</option>
+        @if($lead)
+        <option value="{{ $lead->id }}" selected>{{ $lead->lead_no }} - {{ $lead->entity_name }}</option>
+        @endif
+        @if($customer)
+        <option value="{{ $customer->id }}" selected>{{ $customer->customer_code }} - {{ $customer->company_name }}</option>
+        @endif
+    </select>  
+ <input type="hidden" name="customer_id" id="customer_id" value="{{ $customer ? $customer->id : '' }}">
+    <input type="hidden" name="lead_id" id="lead_id" value="{{ $lead ? $lead->id : '' }}"> </div>
                         <div class="col-md-4">
                             <label class="form-label">Reference No</label>
                             <input type="text" name="reference_no" class="form-control" value="{{ old('reference_no') }}">
@@ -86,9 +83,8 @@
                         </div>
 
 
-                        <input type="hidden" name="exchange_rate" class="form-control" value="1"
-                            required min="0" step="0.0001">
-
+                    
+ <input type="hidden" name="exchange_rate" value="1">
                         <div class="col-md-3">
                             <label class="form-label">Discount Type</label>
                             <select name="discount_type" class="form-select">
@@ -280,7 +276,7 @@ function loadItems(selectElement, index) {
         taxInputs.style.display = 'none';
         // Clear input fields
         taxInputs.querySelector('.tax-rate').value = '';
-        taxInputs.querySelector('.tax-name').value = '';
+      
         
         // Load taxes if not already loaded
         if (taxSelect.children.length <= 1) {
@@ -451,85 +447,54 @@ function loadItems(selectElement, index) {
             }
         });
     });
-    document.addEventListener('DOMContentLoaded', function() {
-        // Entity type and selection handling
-        const entityTypeSelect = document.getElementById('entity_type');
-        const entityIdSelect = document.getElementById('entity_id');
-        const entityPreview = document.getElementById('entity_preview');
-        const entityDetails = document.getElementById('entity_details');
+document.getElementById('entity_type').addEventListener('change', function() {
+    const entityType = this.value;
+    const entitySelect = document.getElementById('entity_select');
+    const customerIdField = document.getElementById('customer_id');
+    const leadIdField = document.getElementById('lead_id');
+    
+    // Clear selections
+    entitySelect.innerHTML = '<option value="">Loading...</option>';
+    customerIdField.value = '';
+    leadIdField.value = '';
+    
+    if (entityType === 'customer') {
+        // Load customers
+        fetch('/api/customers') // You'll need to create this API endpoint
+            .then(response => response.json())
+            .then(data => {
+                entitySelect.innerHTML = '<option value="">Select Customer</option>';
+                data.forEach(customer => {
+                    entitySelect.innerHTML += `<option value="${customer.id}">${customer.customer_code} - ${customer.company_name}</option>`;
+                });
+            });
+    } else if (entityType === 'lead') {
+        // Load leads
+        fetch('/api/leads') // You'll need to create this API endpoint
+            .then(response => response.json())
+            .then(data => {
+                entitySelect.innerHTML = '<option value="">Select Lead</option>';
+                data.forEach(lead => {
+                    entitySelect.innerHTML += `<option value="${lead.id}">${lead.lead_no} - ${lead.company_name || lead.contact_person}</option>`;
+                });
+            });
+    }
+});
 
-        entityTypeSelect.addEventListener('change', function() {
-            const entityType = this.value;
-            entityIdSelect.innerHTML = '<option value="">Loading...</option>';
-
-            if (entityType) {
-                // Fetch entities based on type
-                fetch(`/api/${entityType}s`)
-                    .then(response => response.json())
-                    .then(data => {
-                        entityIdSelect.innerHTML = '<option value="">Select ' + entityType.charAt(0).toUpperCase() + entityType.slice(1) + '</option>';
-                        data.forEach(entity => {
-                            const option = document.createElement('option');
-                            option.value = entity.id;
-                            if (entityType === 'lead') {
-                                option.textContent = entity.lead_no + ' - ' + (entity.company_name || entity.contact_person);
-                            } else {
-                                option.textContent = entity.customer_code + ' - ' + entity.company_name;
-                            }
-                            entityIdSelect.appendChild(option);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        entityIdSelect.innerHTML = '<option value="">Error loading data</option>';
-                    });
-            } else {
-                entityIdSelect.innerHTML = '<option value="">Select Entity</option>';
-                entityPreview.style.display = 'none';
-            }
-        });
-
-        entityIdSelect.addEventListener('change', function() {
-            const entityId = this.value;
-            const entityType = entityTypeSelect.value;
-
-            if (entityId && entityType) {
-                // Fetch entity details
-                fetch(`/api/${entityType}s/${entityId}`)
-                    .then(response => response.json())
-                    .then(entity => {
-                        let html = '<table class="table table-sm">';
-
-                        if (entityType === 'lead') {
-                            html += `
-                            <tr><th>Lead No:</th><td>${entity.lead_no}</td></tr>
-                            <tr><th>Temple:</th><td>${entity.company_name || '-'}</td></tr>
-                            <tr><th>Contact:</th><td>${entity.contact_person}</td></tr>
-                            <tr><th>Email:</th><td>${entity.email || '-'}</td></tr>
-                            <tr><th>Phone:</th><td>${entity.mobile || entity.phone || '-'}</td></tr>
-                            <tr><th>Status:</th><td><span class="badge bg-primary">${entity.lead_status}</span></td></tr>
-                        `;
-                        } else {
-                            html += `
-                            <tr><th>Code:</th><td>${entity.customer_code}</td></tr>
-                            <tr><th>Temple:</th><td>${entity.company_name}</td></tr>
-                            <tr><th>Contact:</th><td>${entity.contact_person || '-'}</td></tr>
-                            <tr><th>Email:</th><td>${entity.email || '-'}</td></tr>
-                            <tr><th>Phone:</th><td>${entity.mobile || entity.phone || '-'}</td></tr>
-                        `;
-                        }
-
-                        html += '</table>';
-                        entityDetails.innerHTML = html;
-                        entityPreview.style.display = 'block';
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
-            } else {
-                entityPreview.style.display = 'none';
-            }
-        });
-    });
+// Handle entity selection
+document.getElementById('entity_select').addEventListener('change', function() {
+    const selectedValue = this.value;
+    const entityType = document.getElementById('entity_type').value;
+    const customerIdField = document.getElementById('customer_id');
+    const leadIdField = document.getElementById('lead_id');
+    
+    if (entityType === 'customer') {
+        customerIdField.value = selectedValue;
+        leadIdField.value = '';
+    } else if (entityType === 'lead') {
+        leadIdField.value = selectedValue;
+        customerIdField.value = '';
+    }
+});
 </script>
 @endsection

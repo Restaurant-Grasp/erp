@@ -72,11 +72,16 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">All Purchase Returns</h5>
         <div>
-            @can('purchases.returns.create')
+                   @php
+            $role = auth()->user()->getRoleNames()->first();
+            $permissions = getCurrentRolePermissions($role);
+            @endphp
+            @if ($permissions->contains('name', 'purchases.returns.create'))
+         
             <a href="{{ route('purchase.returns.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i> Create Return
             </a>
-            @endcan
+            @endif
             <a href="{{ route('purchase.returns.replacement-report') }}" class="btn btn-outline-info">
                 <i class="fas fa-exchange-alt me-2"></i> Replacement Report
             </a>
@@ -143,12 +148,14 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                @can('purchases.returns.view')
+            
+            @if ($permissions->contains('name', 'purchases.returns.view'))
+                           
                                 <a href="{{ route('purchase.returns.show', $return) }}" class="btn btn-sm btn-outline-primary" 
                                    title="View">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                @endcan
+                                @endif
                                 
                                 @if($return->status === 'pending')
                                 <button type="button" class="btn btn-sm btn-outline-success" 

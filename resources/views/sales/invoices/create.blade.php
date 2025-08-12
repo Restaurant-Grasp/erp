@@ -58,14 +58,15 @@
                         <div class="col-md-3">
                             <label class="form-label">Currency</label>
                             <input type="text"
-                                name="currency"
+                                name="currency_display"
                                 class="form-control"
                                 value="{{ app(\App\Helpers\SettingsHelper::class)->getSettingCurrency('currency') }}" disabled>
+                            <!-- Add hidden field for currency -->
+                            <input type="hidden" name="currency" value="{{ app(\App\Helpers\SettingsHelper::class)->getSettingCurrency('currency') }}">
                         </div>
 
-
-                        <input type="hidden" name="exchange_rate" class="form-control" value="1"
-                            required min="0" step="0.0001">
+                        <!-- Add hidden field for exchange_rate -->
+                        <input type="hidden" name="exchange_rate" value="1">
 
                         <div class="col-md-3">
                             <label class="form-label">Payment Terms (Days) <span class="text-danger">*</span></label>
@@ -78,6 +79,11 @@
                                 <option value="amount" {{ old('discount_type', 'amount') == 'amount' ? 'selected' : '' }}>Fixed Amount</option>
                                 <option value="percentage" {{ old('discount_type') == 'percentage' ? 'selected' : '' }}>Percentage</option>
                             </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Discount Value</label>
+                            <input type="number" name="discount_value" class="form-control" value="{{ old('discount_value', '0') }}"
+                                min="0" step="0.01">
                         </div>
                     </div>
 
@@ -193,7 +199,6 @@
             </div>
 
             <!-- Actions -->
-
             <div class="text-start">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save me-2"></i>Create Invoice
@@ -201,16 +206,14 @@
                 <a href="{{ route('sales.invoices.index') }}" class="btn btn-outline-secondary me-2">
                     <i class="fas fa-times me-2"></i>Cancel
                 </a>
-
             </div>
-
         </div>
     </div>
 </form>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    let itemIndex = 0;
+    let itemIndex = {{ $quotation && $quotation->items ? count($quotation->items) : 0 }};
 
 function addItem() {
     const tbody = document.getElementById('itemsTableBody');
@@ -252,7 +255,6 @@ function addItem() {
             <!-- Tax Input Fields (for Package type) -->
             <div class="tax-inputs" style="display: none;">
                 <input type="number" name="items[${itemIndex}][tax_rate]" class="form-control tax-rate mb-1" placeholder="Tax Rate %" min="0" step="0.01" onchange="calculateRowTotal(${itemIndex})">
-           
             </div>
         </td>
         <td>
@@ -269,11 +271,10 @@ function addItem() {
     loadTaxes(row.querySelector('.tax-select'));
 }
 
-
-    function removeItem(button) {
-        button.closest('tr').remove();
-        calculateTotals();
-    }
+function removeItem(button) {
+    button.closest('tr').remove();
+    calculateTotals();
+}
 
 function loadItems(selectElement, index) {
     const itemType = selectElement.value;
@@ -297,8 +298,9 @@ function loadItems(selectElement, index) {
         taxSelect.style.display = 'block';
         taxInputs.style.display = 'none';
         // Clear input fields
-        taxInputs.querySelector('.tax-rate').value = '';
-        taxInputs.querySelector('.tax-name').value = '';
+        if (taxInputs.querySelector('.tax-rate')) {
+            taxInputs.querySelector('.tax-rate').value = '';
+        }
         
         // Load taxes if not already loaded
         if (taxSelect.children.length <= 1) {
@@ -329,27 +331,26 @@ function loadItems(selectElement, index) {
         itemSelect.innerHTML = '<option value="">Select Item</option>';
     }
 }
-    function updateItemDetails(selectElement, index) {
-        const option = selectElement.selectedOptions[0];
-        if (option && option.dataset.price) {
-            const row = selectElement.closest('tr');
-            row.querySelector('.unit-price').value = option.dataset.price;
 
-            // Update UOM if available
-            const uomSelect = row.querySelector('.uom-select');
-            if (option.dataset.uom) {
-                // Load UOMs and select the one from the product
-            }
+function updateItemDetails(selectElement, index) {
+    const option = selectElement.selectedOptions[0];
+    if (option && option.dataset.price) {
+        const row = selectElement.closest('tr');
+        row.querySelector('.unit-price').value = option.dataset.price;
 
-            calculateRowTotal(index);
+        // Update UOM if available
+        const uomSelect = row.querySelector('.uom-select');
+        if (option.dataset.uom) {
+            // Load UOMs and select the one from the product
         }
-    }
 
-function loadTaxes(selectElement, itemType = 'both') {
-    // Build the URL with the item type parameter
-    const url = `/sales/invoices/taxes/for-dropdown?type=${itemType}`;
-    
-    fetch(url)
+        calculateRowTotal(index);
+    }
+}
+
+function loadTaxes(selectElement) {
+    // Use the correct route for taxes
+    fetch('/taxes/for-dropdown')
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -371,9 +372,12 @@ function loadTaxes(selectElement, itemType = 'both') {
             selectElement.innerHTML = '<option value="">Error loading taxes</option>';
         });
 }
+
 function calculateRowTotal(index) {
     const rows = document.querySelectorAll('#itemsTableBody tr');
     const row = rows[index];
+
+    if (!row) return;
 
     const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
     const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
@@ -384,10 +388,10 @@ function calculateRowTotal(index) {
     const taxRateInput = row.querySelector('.tax-rate');
     
     let taxRate = 0;
-    if (taxSelect.style.display !== 'none' && taxSelect.value) {
+    if (taxSelect && taxSelect.style.display !== 'none' && taxSelect.value) {
         // Using tax dropdown
         taxRate = parseFloat(taxSelect.selectedOptions[0]?.dataset.rate || 0);
-    } else if (taxRateInput.style.display !== 'none') {
+    } else if (taxRateInput && taxRateInput.style.display !== 'none') {
         // Using tax input field
         taxRate = parseFloat(taxRateInput.value || 0);
     }
@@ -403,7 +407,6 @@ function calculateRowTotal(index) {
     calculateTotals();
 }
 
-// Modified calculateTotals function to handle both tax types
 function calculateTotals() {
     let subtotal = 0;
     let totalTax = 0;
@@ -418,7 +421,7 @@ function calculateTotals() {
         const taxRateInput = row.querySelector('.tax-rate');
         
         let taxRate = 0;
-        if (taxSelect.style.display !== 'none' && taxSelect.value) {
+        if (taxSelect && taxSelect.style.display !== 'none' && taxSelect.value) {
             // Using tax dropdown
             taxRate = parseFloat(taxSelect.selectedOptions[0]?.dataset.rate || 0);
         } else if (taxRateInput && taxRateInput.style.display !== 'none') {
@@ -441,118 +444,53 @@ function calculateTotals() {
     document.getElementById('taxAmount').textContent = `RM ${totalTax.toFixed(2)}`;
     document.getElementById('totalAmount').textContent = `RM ${total.toFixed(2)}`;
 }
-    $(document).ready(function() {
-        // Add initial item
-        addItem();
 
-        // Customer/Lead selection validation
-        $('#customer_id, #lead_id').on('change', function() {
-            if (this.value) {
-                if (this.id === 'customer_id') {
-                    $('#lead_id').val('');
-                } else {
-                    $('#customer_id').val('');
-                }
-            }
-        });
+$(document).ready(function() {
+    @if(!$quotation)
+    // Add initial item only if not from quotation
+    addItem();
+    @else
+    // Calculate totals for quotation items
+    calculateTotals();
+    @endif
 
-        // Form validation
-        $('#quotationForm').on('submit', function(e) {
-            const hasCustomerOrLead = $('#customer_id').val() || $('#lead_id').val();
-            const hasItems = $('#itemsTableBody tr').length > 0;
+    // Form validation
+    $('#invoiceForm').on('submit', function(e) {
+        const hasCustomer = $('#customer_id').val();
+        const hasItems = $('#itemsTableBody tr').length > 0;
 
-            if (!hasCustomerOrLead) {
-                e.preventDefault();
+        if (!hasCustomer) {
+            e.preventDefault();
+            alert('Please select a customer.');
+            return false;
+        }
 
+        if (!hasItems) {
+            e.preventDefault();
+            alert('Please add at least one item.');
+            return false;
+        }
+
+        // Additional validation for manually added items
+        let hasValidItems = true;
+        $('#itemsTableBody tr').each(function() {
+            const itemType = $(this).find('.item-type').val();
+            const itemId = $(this).find('.item-select').val();
+            const quantity = $(this).find('.quantity').val();
+            const unitPrice = $(this).find('.unit-price').val();
+
+            if (!itemType || !itemId || !quantity || !unitPrice) {
+                hasValidItems = false;
                 return false;
             }
-
-            if (!hasItems) {
-                e.preventDefault();
-                alert('Please add at least one item.');
-                return false;
-            }
         });
+
+        if (!hasValidItems) {
+            e.preventDefault();
+            alert('Please complete all item details.');
+            return false;
+        }
     });
-    document.addEventListener('DOMContentLoaded', function() {
-        // Entity type and selection handling
-        const entityTypeSelect = document.getElementById('entity_type');
-        const entityIdSelect = document.getElementById('entity_id');
-        const entityPreview = document.getElementById('entity_preview');
-        const entityDetails = document.getElementById('entity_details');
-
-        entityTypeSelect.addEventListener('change', function() {
-            const entityType = this.value;
-            entityIdSelect.innerHTML = '<option value="">Loading...</option>';
-
-            if (entityType) {
-                // Fetch entities based on type
-                fetch(`/api/${entityType}s`)
-                    .then(response => response.json())
-                    .then(data => {
-                        entityIdSelect.innerHTML = '<option value="">Select ' + entityType.charAt(0).toUpperCase() + entityType.slice(1) + '</option>';
-                        data.forEach(entity => {
-                            const option = document.createElement('option');
-                            option.value = entity.id;
-                            if (entityType === 'lead') {
-                                option.textContent = entity.lead_no + ' - ' + (entity.company_name || entity.contact_person);
-                            } else {
-                                option.textContent = entity.customer_code + ' - ' + entity.company_name;
-                            }
-                            entityIdSelect.appendChild(option);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        entityIdSelect.innerHTML = '<option value="">Error loading data</option>';
-                    });
-            } else {
-                entityIdSelect.innerHTML = '<option value="">Select Entity</option>';
-                entityPreview.style.display = 'none';
-            }
-        });
-
-        entityIdSelect.addEventListener('change', function() {
-            const entityId = this.value;
-            const entityType = entityTypeSelect.value;
-
-            if (entityId && entityType) {
-                // Fetch entity details
-                fetch(`/api/${entityType}s/${entityId}`)
-                    .then(response => response.json())
-                    .then(entity => {
-                        let html = '<table class="table table-sm">';
-
-                        if (entityType === 'lead') {
-                            html += `
-                            <tr><th>Lead No:</th><td>${entity.lead_no}</td></tr>
-                            <tr><th>Temple:</th><td>${entity.company_name || '-'}</td></tr>
-                            <tr><th>Contact:</th><td>${entity.contact_person}</td></tr>
-                            <tr><th>Email:</th><td>${entity.email || '-'}</td></tr>
-                            <tr><th>Phone:</th><td>${entity.mobile || entity.phone || '-'}</td></tr>
-                            <tr><th>Status:</th><td><span class="badge bg-primary">${entity.lead_status}</span></td></tr>
-                        `;
-                        } else {
-                            html += `
-                            <tr><th>Code:</th><td>${entity.customer_code}</td></tr>
-                            <tr><th>Temple:</th><td>${entity.company_name}</td></tr>
-                            <tr><th>Contact:</th><td>${entity.contact_person || '-'}</td></tr>
-                            <tr><th>Email:</th><td>${entity.email || '-'}</td></tr>
-                            <tr><th>Phone:</th><td>${entity.mobile || entity.phone || '-'}</td></tr>
-                        `;
-                        }
-
-                        html += '</table>';
-                        entityDetails.innerHTML = html;
-                        entityPreview.style.display = 'block';
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
-            } else {
-                entityPreview.style.display = 'none';
-            }
-        });
-    });
+});
 </script>
 @endsection

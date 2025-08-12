@@ -161,7 +161,7 @@
                                 </a>
                                 @endcan
                                 
-                                @if(!$lead->is_converted)
+                                   @if(!$lead->is_converted)
                                     @can('leads.edit')
                                     <a href="{{ route('leads.edit', $lead) }}" class="btn btn-sm btn-outline-primary" 
                                        title="Edit">

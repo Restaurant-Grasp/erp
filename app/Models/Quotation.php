@@ -3,13 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Quotation extends Model
 {
-    protected $table = 'quotations';
-    
     protected $fillable = [
         'quotation_no',
         'quotation_date',
@@ -29,6 +26,7 @@ class Quotation extends Model
         'terms_conditions',
         'internal_notes',
         'status',
+        'approval_status',
         'sent_date',
         'accepted_date',
         'rejected_reason',
@@ -58,10 +56,9 @@ class Quotation extends Model
         'revision_number' => 'integer'
     ];
 
-    public function invoice()
-    {
-        return $this->belongsTo(SalesInvoice::class, 'converted_to_invoice_id');
-    }
+    /**
+     * Relationships
+     */
     public function customer()
     {
         return $this->belongsTo(Customer::class);
@@ -241,54 +238,169 @@ class Quotation extends Model
      */
     public function convertToInvoice()
     {
-        $invoice = SalesInvoice::create([
-            'invoice_date' => now()->toDateString(),
-            'customer_id' => $this->customer_id,
-            'quotation_id' => $this->id,
-            'reference_no' => $this->reference_no,
-            'currency' => $this->currency,
-            'exchange_rate' => $this->exchange_rate,
-            'subtotal' => $this->subtotal,
-            'discount_type' => $this->discount_type,
-            'discount_value' => $this->discount_value,
-            'discount_amount' => $this->discount_amount,
-            'tax_amount' => $this->tax_amount,
-            'total_amount' => $this->total_amount,
-            'payment_terms' => $this->customer->credit_days ?? 30,
-            'due_date' => now()->addDays($this->customer->credit_days ?? 30),
-            'status' => 'pending',
-            'balance_amount' => $this->total_amount,
+        DB::beginTransaction();
+        try {
+            $customerId = $this->customer_id;
+            
+            // If quotation is for a lead, convert lead to customer first
+            if (!$customerId && $this->lead_id) {
+                $customerId = $this->convertLeadToCustomer();
+            }
+            
+            if (!$customerId) {
+                throw new \Exception('No customer available for invoice creation');
+            }
+
+            // Get customer for payment terms
+            $customer = Customer::find($customerId);
+            $paymentTerms = $customer ? $customer->credit_days : 30;
+
+            $invoice = SalesInvoice::create([
+                'invoice_date' => now()->toDateString(),
+                'customer_id' => $customerId,
+                'quotation_id' => $this->id,
+                'reference_no' => $this->reference_no,
+                'currency' => $this->currency,
+                'exchange_rate' => $this->exchange_rate,
+                'subtotal' => $this->subtotal,
+                'discount_type' => $this->discount_type,
+                'discount_value' => $this->discount_value,
+                'discount_amount' => $this->discount_amount,
+                'tax_amount' => $this->tax_amount,
+                'total_amount' => $this->total_amount,
+                'payment_terms' => $paymentTerms,
+                'due_date' => now()->addDays($paymentTerms),
+                'status' => 'pending',
+                'balance_amount' => $this->total_amount,
+                'created_by' => auth()->id()
+            ]);
+
+            // Copy items
+            foreach ($this->items as $item) {
+                $invoice->items()->create([
+                    'item_type' => $item->item_type,
+                    'item_id' => $item->item_id,
+                    'description' => $item->description,
+                    'quantity' => $item->quantity,
+                    'delivered_quantity' => 0,
+                    'delivery_status' => 'not_delivered',
+                    'uom_id' => $item->uom_id,
+                    'unit_price' => $item->unit_price,
+                    'discount_type' => $item->discount_type,
+                    'discount_value' => $item->discount_value,
+                    'discount_amount' => $item->discount_amount,
+                    'tax_id' => $item->tax_id,
+                    'tax_rate' => $item->tax_rate,
+                    'tax_amount' => $item->tax_amount,
+                    'total_amount' => $item->total_amount,
+                    'sort_order' => $item->sort_order
+                ]);
+            }
+
+            // Update quotation status
+            $this->update([
+                'status' => 'converted',
+                'converted_to_invoice_id' => $invoice->id,
+                'customer_id' => $customerId // Update with the customer ID if it was converted from lead
+            ]);
+
+            DB::commit();
+            return $invoice;
+        } catch (\Exception $e) {
+            DB::rollback();
+            throw $e;
+        }
+    }
+
+    /**
+     * Convert lead to customer
+     */
+    private function convertLeadToCustomer()
+    {
+        if (!$this->lead_id || !$this->lead) {
+            throw new \Exception('No lead found for conversion');
+        }
+
+        $lead = $this->lead;
+        
+        // Check if lead is already converted to customer
+        if ($lead->converted_to_customer_id) {
+            return $lead->converted_to_customer_id;
+        }
+
+        // Check if trade debtors group exists
+        $tradeDebtorGroup = Group::where('td', 1)->first();
+        if (!$tradeDebtorGroup) {
+            throw new \Exception('Trade Debtors group not configured');
+        }
+
+        // Generate customer code
+        $customerCode = $this->generateCustomerCode();
+        
+        // Create ledger for customer
+        $ledgerName = ($lead->company_name ?: $lead->contact_person) . ' (' . $customerCode . ')';
+        $ledger = Ledger::create([
+            'group_id' => $tradeDebtorGroup->id,
+            'name' => $ledgerName,
+            'type' => 0,
+            'reconciliation' => 0,
+            'aging' => 1,
+            'credit_aging' => 0
+        ]);
+
+        // Create customer from lead data
+        $customer = Customer::create([
+            'customer_code' => $customerCode,
+            'ledger_id' => $ledger->id,
+            'company_name' => $lead->company_name ?: $lead->contact_person,
+            'contact_person' => $lead->contact_person,
+            'email' => $lead->email,
+            'phone' => $lead->phone,
+            'mobile' => $lead->mobile,
+            'address_line1' => $lead->address,
+            'city' => $lead->city,
+            'state' => $lead->state,
+            'country' => $lead->country ?: 'India',
+            'source' => 'lead_conversion', // Now a valid enum value
+            'reference_by' => 'Lead: ' . $lead->lead_no,
+            'assigned_to' => $lead->assigned_to,
+            'status' => 'active',
+            'notes' => 'Converted from lead: ' . $lead->lead_no,
+            'lead_id' => $lead->id,
             'created_by' => auth()->id()
         ]);
 
-        // Copy items
-        foreach ($this->items as $item) {
-            $invoice->items()->create([
-                'item_type' => $item->item_type,
-                'item_id' => $item->item_id,
-                'description' => $item->description,
-                'quantity' => $item->quantity,
-                'delivered_quantity' => 0,
-                'delivery_status' => 'not_delivered',
-                'uom_id' => $item->uom_id,
-                'unit_price' => $item->unit_price,
-                'discount_type' => $item->discount_type,
-                'discount_value' => $item->discount_value,
-                'discount_amount' => $item->discount_amount,
-                'tax_id' => $item->tax_id,
-                'tax_rate' => $item->tax_rate,
-                'tax_amount' => $item->tax_amount,
-                'total_amount' => $item->total_amount,
-                'sort_order' => $item->sort_order
-            ]);
-        }
-
-        // Update quotation status
-        $this->update([
-            'status' => 'converted',
-            'converted_to_invoice_id' => $invoice->id
+        // Update lead with conversion details
+        $lead->update([
+            'lead_status' => 'won',
+            'converted_to_customer_id' => $customer->id,
+            'conversion_date' => now()
         ]);
 
-        return $invoice;
+        return $customer->id;
     }
+
+    /**
+     * Generate unique customer code
+     */
+    private function generateCustomerCode()
+    {
+        $prefix = 'CU';
+        $lastCustomer = Customer::where('customer_code', 'like', $prefix . '%')
+            ->orderBy('customer_code', 'desc')
+            ->first();
+
+        if ($lastCustomer) {
+            $lastNumber = intval(substr($lastCustomer->customer_code, strlen($prefix)));
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+
+        return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+    }
+ 
+
+
+
 }

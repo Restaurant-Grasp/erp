@@ -125,3 +125,11 @@ ALTER TABLE `quotations` ADD INDEX `idx_quotations_revision` (`is_revised`);
 ALTER TABLE `sales_invoice_items` ADD INDEX `idx_invoice_items_delivery` (`delivery_status`);
 ALTER TABLE `product_serial_numbers` ADD INDEX `idx_serial_replacement` (`is_replacement`);
 ALTER TABLE `delivery_order_items` ADD INDEX `idx_do_items_status` (`delivery_status`);
+
+
+ALTER TABLE `customers` 
+MODIFY COLUMN `source` ENUM('online','reference','direct','other','lead_conversion') 
+CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'direct';
+
+
+ALTER TABLE `customers` ADD INDEX `idx_lead_conversion` (`lead_id`);
