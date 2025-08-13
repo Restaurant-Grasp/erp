@@ -423,7 +423,52 @@ class SalesInvoiceController extends Controller
 
         return response()->json($statistics);
     }
-    public function getTaxesForDropdown(Request $request)
+  
+/**
+ * Get invoice payments for modal display
+ */
+public function getPayments(SalesInvoice $invoice)
+{
+    $payments = $invoice->payments()
+                       ->with(['paymentMode.ledger', 'receivedBy', 'createdBy'])
+                       ->orderBy('payment_date', 'desc')
+                       ->get();
+
+    return response()->json([
+        'invoice' => [
+            'id' => $invoice->id,
+            'invoice_no' => $invoice->invoice_no,
+            'customer_name' => $invoice->customer->company_name,
+            'total_amount' => $invoice->total_amount,
+            'paid_amount' => $invoice->paid_amount,
+            'balance_amount' => $invoice->balance_amount,
+            'status' => $invoice->status
+        ],
+        'payments' => $payments->map(function ($payment) {
+            return [
+                'id' => $payment->id,
+                'payment_date' => $payment->payment_date->format('d/m/Y'),
+                'paid_amount' => number_format($payment->paid_amount, 2),
+                'payment_mode' => $payment->paymentMode->name,
+                'ledger_name' => $payment->paymentMode->ledger->name ?? '',
+                'received_by' => $payment->receivedBy->name,
+                'notes' => $payment->notes,
+                'file_upload' => $payment->file_upload,
+                'file_url' => $payment->file_url,
+                'created_by' => $payment->createdBy->name,
+                'created_at' => $payment->created_at->format('d/m/Y H:i'),
+                'account_migration' => $payment->account_migration
+            ];
+        }),
+        'total_paid' => $payments->sum('paid_amount'),
+        'payment_count' => $payments->count()
+    ]);
+}
+
+/**
+ * Get tax dropdown method that was missing
+ */
+public function getTaxesForDropdown(Request $request)
 {
     $itemType = $request->get('type', 'both');
     
@@ -449,5 +494,4 @@ class SalesInvoiceController extends Controller
         ];
     }));
 }
-
 }

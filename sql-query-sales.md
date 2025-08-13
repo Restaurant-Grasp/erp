@@ -133,3 +133,192 @@ CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'direct';
 
 
 ALTER TABLE `customers` ADD INDEX `idx_lead_conversion` (`lead_id`);
+
+
+
+-----------------------------------Payment Modes----------------------------------------------------
+-- Create Payment Modes Master Table
+CREATE TABLE IF NOT EXISTS `payment_modes` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `ledger_id` bigint UNSIGNED NOT NULL,
+  `description` text,
+  `status` tinyint(1) DEFAULT '1',
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_payment_modes_ledger` (`ledger_id`),
+  KEY `idx_payment_modes_status` (`status`),
+  KEY `idx_payment_modes_created_by` (`created_by`),
+  CONSTRAINT `payment_modes_ledger_fk` FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`),
+  CONSTRAINT `payment_modes_created_by_fk` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create Sales Invoice Payments Table
+CREATE TABLE IF NOT EXISTS `sales_invoice_payments` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `invoice_id` int NOT NULL,
+  `payment_date` date NOT NULL,
+  `paid_amount` decimal(14,2) NOT NULL,
+  `payment_mode_id` int NOT NULL,
+  `received_by` int NOT NULL,
+  `file_upload` varchar(255) DEFAULT NULL,
+  `notes` text,
+  `account_migration` tinyint(1) DEFAULT '0',
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_sales_payments_invoice` (`invoice_id`),
+  KEY `idx_sales_payments_date` (`payment_date`),
+  KEY `idx_sales_payments_mode` (`payment_mode_id`),
+  KEY `idx_sales_payments_received_by` (`received_by`),
+  KEY `idx_sales_payments_created_by` (`created_by`),
+  CONSTRAINT `sales_payments_invoice_fk` FOREIGN KEY (`invoice_id`) REFERENCES `sales_invoices` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `sales_payments_mode_fk` FOREIGN KEY (`payment_mode_id`) REFERENCES `payment_modes` (`id`),
+  CONSTRAINT `sales_payments_received_by_fk` FOREIGN KEY (`received_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `sales_payments_created_by_fk` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create Purchase Invoice Payments Table
+CREATE TABLE IF NOT EXISTS `purchase_invoice_payments` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `invoice_id` int NOT NULL,
+  `payment_date` date NOT NULL,
+  `paid_amount` decimal(14,2) NOT NULL,
+  `payment_mode_id` int NOT NULL,
+  `received_by` int NOT NULL,
+  `file_upload` varchar(255) DEFAULT NULL,
+  `notes` text,
+  `account_migration` tinyint(1) DEFAULT '0',
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_purchase_payments_invoice` (`invoice_id`),
+  KEY `idx_purchase_payments_date` (`payment_date`),
+  KEY `idx_purchase_payments_mode` (`payment_mode_id`),
+  KEY `idx_purchase_payments_received_by` (`received_by`),
+  KEY `idx_purchase_payments_created_by` (`created_by`),
+  CONSTRAINT `purchase_payments_invoice_fk` FOREIGN KEY (`invoice_id`) REFERENCES `purchase_invoices` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `purchase_payments_mode_fk` FOREIGN KEY (`payment_mode_id`) REFERENCES `payment_modes` (`id`),
+  CONSTRAINT `purchase_payments_received_by_fk` FOREIGN KEY (`received_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `purchase_payments_created_by_fk` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Insert Sample Payment Modes (you can adjust these based on your needs)
+INSERT INTO `payment_modes` (`name`, `ledger_id`, `description`, `status`, `created_by`) VALUES
+('Cash', 1, 'Cash payments', 1, 1),
+('Bank Transfer', 2, 'Bank transfer payments', 1, 1),
+('Cheque', 3, 'Cheque payments', 1, 1),
+('Credit Card', 4, 'Credit card payments', 1, 1),
+('Online Banking', 5, 'Online banking payments', 1, 1);
+
+-- Create triggers to update invoice status after payment
+DELIMITER $$
+
+CREATE TRIGGER `update_sales_invoice_status_after_payment` 
+AFTER INSERT ON `sales_invoice_payments` 
+FOR EACH ROW 
+BEGIN
+    DECLARE total_paid DECIMAL(14,2);
+    DECLARE invoice_total DECIMAL(14,2);
+    DECLARE new_status VARCHAR(20);
+    
+    -- Calculate total paid amount for this invoice
+    SELECT COALESCE(SUM(paid_amount), 0) INTO total_paid
+    FROM sales_invoice_payments 
+    WHERE invoice_id = NEW.invoice_id;
+    
+    -- Get invoice total amount
+    SELECT total_amount INTO invoice_total
+    FROM sales_invoices 
+    WHERE id = NEW.invoice_id;
+    
+    -- Determine new status
+    IF total_paid >= invoice_total THEN
+        SET new_status = 'paid';
+    ELSEIF total_paid > 0 THEN
+        SET new_status = 'partial';
+    ELSE
+        SET new_status = 'pending';
+    END IF;
+    
+    -- Update invoice
+    UPDATE sales_invoices 
+    SET 
+        paid_amount = total_paid,
+        balance_amount = invoice_total - total_paid,
+        status = new_status
+    WHERE id = NEW.invoice_id;
+END$$
+
+CREATE TRIGGER `update_purchase_invoice_status_after_payment` 
+AFTER INSERT ON `purchase_invoice_payments` 
+FOR EACH ROW 
+BEGIN
+    DECLARE total_paid DECIMAL(14,2);
+    DECLARE invoice_total DECIMAL(14,2);
+    DECLARE new_status VARCHAR(20);
+    
+    -- Calculate total paid amount for this invoice
+    SELECT COALESCE(SUM(paid_amount), 0) INTO total_paid
+    FROM purchase_invoice_payments 
+    WHERE invoice_id = NEW.invoice_id;
+    
+    -- Get invoice total amount
+    SELECT total_amount INTO invoice_total
+    FROM purchase_invoices 
+    WHERE id = NEW.invoice_id;
+    
+    -- Determine new status
+    IF total_paid >= invoice_total THEN
+        SET new_status = 'paid';
+    ELSEIF total_paid > 0 THEN
+        SET new_status = 'partial';
+    ELSE
+        SET new_status = 'pending';
+    END IF;
+    
+    -- Update invoice
+    UPDATE purchase_invoices 
+    SET 
+        paid_amount = total_paid,
+        balance_amount = invoice_total - total_paid,
+        status = new_status
+    WHERE id = NEW.invoice_id;
+END$$
+
+DELIMITER ;
+
+
+-- Insert new payment-related permissions
+INSERT INTO `permissions` (`id`, `name`, `guard_name`, `module`, `permission`, `description`, `created_at`, `updated_at`) VALUES
+(266, 'payment_modes.view', 'web', 'payment_modes', 'view', 'View Payment Modes', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(267, 'payment_modes.create', 'web', 'payment_modes', 'create', 'Create Payment Modes', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(268, 'payment_modes.edit', 'web', 'payment_modes', 'edit', 'Edit Payment Modes', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(269, 'payment_modes.delete', 'web', 'payment_modes', 'delete', 'Delete Payment Modes', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(270, 'sales.payments.view', 'web', 'sales.payments', 'view', 'View Sales Payments', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(271, 'sales.payments.create', 'web', 'sales.payments', 'create', 'Create Sales Payments', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(272, 'sales.payments.edit', 'web', 'sales.payments', 'edit', 'Edit Sales Payments', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(273, 'sales.payments.delete', 'web', 'sales.payments', 'delete', 'Delete Sales Payments', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(274, 'purchases.payments.view', 'web', 'purchases.payments', 'view', 'View Purchase Payments', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(275, 'purchases.payments.create', 'web', 'purchases.payments', 'create', 'Create Purchase Payments', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(276, 'purchases.payments.edit', 'web', 'purchases.payments', 'edit', 'Edit Purchase Payments', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(277, 'purchases.payments.delete', 'web', 'purchases.payments', 'delete', 'Delete Purchase Payments', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Assign new payment permissions to Super Admin roles (role_id 1 and 22)
+INSERT INTO `role_has_permissions` (`permission_id`, `role_id`) VALUES
+(266, 1), (266, 22),
+(267, 1), (267, 22),
+(268, 1), (268, 22),
+(269, 1), (269, 22),
+(270, 1), (270, 22),
+(271, 1), (271, 22),
+(272, 1), (272, 22),
+(273, 1), (273, 22),
+(274, 1), (274, 22),
+(275, 1), (275, 22),
+(276, 1), (276, 22),
+(277, 1), (277, 22);

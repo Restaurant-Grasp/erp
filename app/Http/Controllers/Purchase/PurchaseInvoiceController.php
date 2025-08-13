@@ -39,14 +39,14 @@ class PurchaseInvoiceController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('invoice_no', 'like', "%{$search}%")
-                  ->orWhere('vendor_invoice_no', 'like', "%{$search}%")
-                  ->orWhereHas('vendor', function($vendorQuery) use ($search) {
-                      $vendorQuery->where('company_name', 'like', "%{$search}%")
-                                  ->orWhere('vendor_code', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('purchaseOrder', function($poQuery) use ($search) {
-                      $poQuery->where('po_no', 'like', "%{$search}%");
-                  });
+                    ->orWhere('vendor_invoice_no', 'like', "%{$search}%")
+                    ->orWhereHas('vendor', function ($vendorQuery) use ($search) {
+                        $vendorQuery->where('company_name', 'like', "%{$search}%")
+                            ->orWhere('vendor_code', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('purchaseOrder', function ($poQuery) use ($search) {
+                        $poQuery->where('po_no', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -100,7 +100,7 @@ class PurchaseInvoiceController extends Controller
     {
         if ($order->approval_status !== 'approved') {
             return redirect()->route('purchase.orders.show', $order)
-                           ->with('error', 'Purchase Order must be approved first.');
+                ->with('error', 'Purchase Order must be approved first.');
         }
 
         $order->load(['vendor', 'items']);
@@ -254,7 +254,7 @@ class PurchaseInvoiceController extends Controller
                 $po = PurchaseOrder::find($validated['po_id']);
                 $totalReceived = $po->items->sum('received_quantity');
                 $totalOrdered = $po->items->sum('quantity');
-                
+
                 if ($totalReceived >= $totalOrdered) {
                     $po->update(['status' => 'received']);
                 } elseif ($totalReceived > 0) {
@@ -267,8 +267,7 @@ class PurchaseInvoiceController extends Controller
 
             DB::commit();
             return redirect()->route('purchase.invoices.index')
-                           ->with('success', 'Purchase Invoice created successfully.');
-
+                ->with('success', 'Purchase Invoice created successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Error creating purchase invoice: ' . $e->getMessage())->withInput();
@@ -304,7 +303,7 @@ class PurchaseInvoiceController extends Controller
         // Only allow editing if status is draft or pending
         if (!in_array($invoice->status, ['draft', 'pending'])) {
             return redirect()->route('purchase.invoices.show', $invoice)
-                           ->with('error', 'Cannot edit purchase invoice with current status.');
+                ->with('error', 'Cannot edit purchase invoice with current status.');
         }
 
         $invoice->load(['items', 'vendor']);
@@ -325,7 +324,7 @@ class PurchaseInvoiceController extends Controller
         // Only allow updating if status is draft or pending
         if (!in_array($invoice->status, ['draft', 'pending'])) {
             return redirect()->route('purchase.invoices.show', $invoice)
-                           ->with('error', 'Cannot update purchase invoice with current status.');
+                ->with('error', 'Cannot update purchase invoice with current status.');
         }
 
         $validated = $request->validate([
@@ -438,8 +437,7 @@ class PurchaseInvoiceController extends Controller
 
             DB::commit();
             return redirect()->route('purchase.invoices.index')
-                           ->with('success', 'Purchase Invoice updated successfully.');
-
+                ->with('success', 'Purchase Invoice updated successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Error updating purchase invoice: ' . $e->getMessage())->withInput();
@@ -454,7 +452,7 @@ class PurchaseInvoiceController extends Controller
         // Only allow deleting if status is draft or pending
         if (!in_array($invoice->status, ['draft', 'pending'])) {
             return redirect()->route('purchase.invoices.index')
-                           ->with('error', 'Cannot delete purchase invoice with current status.');
+                ->with('error', 'Cannot delete purchase invoice with current status.');
         }
 
         DB::beginTransaction();
@@ -477,11 +475,11 @@ class PurchaseInvoiceController extends Controller
 
             DB::commit();
             return redirect()->route('purchase.invoices.index')
-                           ->with('success', 'Purchase Invoice deleted successfully.');
+                ->with('success', 'Purchase Invoice deleted successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->route('purchase.invoices.index')
-                           ->with('error', 'Error deleting purchase invoice: ' . $e->getMessage());
+                ->with('error', 'Error deleting purchase invoice: ' . $e->getMessage());
         }
     }
 
@@ -491,11 +489,11 @@ class PurchaseInvoiceController extends Controller
     public function getPoItems(Request $request)
     {
         $poId = $request->po_id;
-        
+
         $po = PurchaseOrder::with(['items.product', 'items.service', 'items.uom'])
-                          ->where('id', $poId)
-                          ->where('approval_status', 'approved')
-                          ->first();
+            ->where('id', $poId)
+            ->where('approval_status', 'approved')
+            ->first();
 
         if (!$po) {
             return response()->json(['error' => 'Purchase Order not found or not approved'], 404);
@@ -506,9 +504,9 @@ class PurchaseInvoiceController extends Controller
                 'id' => $item->id,
                 'item_type' => $item->item_type,
                 'item_id' => $item->item_id,
-                'item_name' => $item->item_type === 'product' 
-                              ? $item->product->name 
-                              : $item->service->name,
+                'item_name' => $item->item_type === 'product'
+                    ? $item->product->name
+                    : $item->service->name,
                 'description' => $item->description,
                 'quantity' => $item->quantity,
                 'received_quantity' => $item->received_quantity,
@@ -550,8 +548,48 @@ class PurchaseInvoiceController extends Controller
     {
         // Empty function for future e-invoice integration
         // Will be implemented when e-invoice system integration is explained
-        
+
         return redirect()->route('purchase.invoices.show', $invoice)
-                       ->with('info', 'E-Invoice submission will be implemented soon.');
+            ->with('info', 'E-Invoice submission will be implemented soon.');
+    }
+    /**
+     * Get invoice payments for modal display
+     */
+    public function getPayments(PurchaseInvoice $invoice)
+    {
+        $payments = $invoice->payments()
+            ->with(['paymentMode.ledger', 'receivedBy', 'createdBy'])
+            ->orderBy('payment_date', 'desc')
+            ->get();
+
+        return response()->json([
+            'invoice' => [
+                'id' => $invoice->id,
+                'invoice_no' => $invoice->invoice_no,
+                'vendor_name' => $invoice->vendor->company_name,
+                'total_amount' => $invoice->total_amount,
+                'paid_amount' => $invoice->paid_amount,
+                'balance_amount' => $invoice->balance_amount,
+                'status' => $invoice->status
+            ],
+            'payments' => $payments->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'payment_date' => $payment->payment_date->format('d/m/Y'),
+                    'paid_amount' => number_format($payment->paid_amount, 2),
+                    'payment_mode' => $payment->paymentMode->name,
+                    'ledger_name' => $payment->paymentMode->ledger->name ?? '',
+                    'received_by' => $payment->receivedBy->name,
+                    'notes' => $payment->notes,
+                    'file_upload' => $payment->file_upload,
+                    'file_url' => $payment->file_url,
+                    'created_by' => $payment->createdBy->name,
+                    'created_at' => $payment->created_at->format('d/m/Y H:i'),
+                    'account_migration' => $payment->account_migration
+                ];
+            }),
+            'total_paid' => $payments->sum('paid_amount'),
+            'payment_count' => $payments->count()
+        ]);
     }
 }

@@ -97,7 +97,7 @@
                         <th width="100">Status</th>
                         <th width="80">Type</th>
                         <th width="100">Received %</th>
-                        <th width="150">Actions</th>
+                        <th width="200">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -174,6 +174,23 @@
                                 </a>
                                 @endif
                                 @endif
+
+                                <!-- Payment Button - Show only for pending, partial, overdue -->
+                                @if(in_array($invoice->status, ['pending', 'partial', 'overdue']) && $permissions->contains('name', 'purchases.payments.create'))
+                                <button type="button" class="btn btn-sm btn-outline-success" 
+                                        onclick="openPaymentModal({{ $invoice->id }})" title="Add Payment">
+                                    <i class="fas fa-credit-card"></i>
+                                </button>
+                                @endif
+
+                                <!-- View Payments Button -->
+                                @if($invoice->paid_amount > 0 && $permissions->contains('name', 'purchases.payments.view'))
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        onclick="viewPayments({{ $invoice->id }})" title="View Payments">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                                @endif
+
                                @if ($permissions->contains('name', 'purchases.grn.create'))
 
                             
@@ -266,6 +283,128 @@
     </div>
 </div>
 
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">Add Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="paymentForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Invoice No:</label>
+                            <span id="modalInvoiceNo" class="fw-bold"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Vendor:</label>
+                            <span id="modalVendorName" class="fw-bold"></span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Total Amount:</label>
+                            <span id="modalTotalAmount" class="fw-bold text-primary"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Paid Amount:</label>
+                            <span id="modalPaidAmount" class="fw-bold text-success"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Balance Amount:</label>
+                            <span id="modalBalanceAmount" class="fw-bold text-danger"></span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Payment Date <span class="text-danger">*</span></label>
+                            <input type="date" name="payment_date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Paid Amount <span class="text-danger">*</span></label>
+                            <input type="number" name="paid_amount" class="form-control" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Payment Mode <span class="text-danger">*</span></label>
+                            <select name="payment_mode_id" class="form-select" required>
+                                <option value="">Select Payment Mode</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Received By <span class="text-danger">*</span></label>
+                            <select name="received_by" class="form-select" required>
+                                <option value="">Select User</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Upload File (Optional)</label>
+                            <input type="file" name="file_upload" class="form-control" 
+                                   accept=".jpeg,.png,.jpg,.gif,.pdf,.docx,.doc">
+                            <small class="text-muted">Supported formats: Images, PDF, DOCX, DOC (Max: 10MB)</small>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Notes</label>
+                            <textarea name="notes" class="form-control" rows="3" placeholder="Payment notes..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Record Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Payments Modal -->
+<div class="modal fade" id="viewPaymentsModal" tabindex="-1" aria-labelledby="viewPaymentsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewPaymentsModalLabel">Payment History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Invoice No:</label>
+                        <span id="viewModalInvoiceNo" class="fw-bold"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Vendor:</label>
+                        <span id="viewModalVendorName" class="fw-bold"></span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped" id="paymentsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Payment Mode</th>
+                                <th>Received By</th>
+                                <th>Notes</th>
+                                <th>File</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Payments will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
 $(document).ready(function() {
     // Delete confirmation
@@ -283,5 +422,161 @@ $(document).ready(function() {
         $('#filterForm').submit();
     });
 });
+
+let currentInvoiceId = null;
+
+function openPaymentModal(invoiceId) {
+    currentInvoiceId = invoiceId;
+    
+    // Fetch payment form data
+    $.get(`/purchase/invoices/${invoiceId}/payments/create`)
+        .done(function(data) {
+            // Populate invoice details
+            $('#modalInvoiceNo').text(data.invoice.invoice_no);
+            $('#modalVendorName').text(data.invoice.vendor_name);
+            $('#modalTotalAmount').text('MYR ' + parseFloat(data.invoice.total_amount).toFixed(2));
+            $('#modalPaidAmount').text('MYR ' + parseFloat(data.invoice.paid_amount).toFixed(2));
+            $('#modalBalanceAmount').text('MYR ' + parseFloat(data.invoice.balance_amount).toFixed(2));
+            
+            // Set max amount for payment
+            $('input[name="paid_amount"]').attr('max', data.invoice.balance_amount);
+            
+            // Populate payment modes
+            const paymentModeSelect = $('select[name="payment_mode_id"]');
+            paymentModeSelect.empty().append('<option value="">Select Payment Mode</option>');
+            data.payment_modes.forEach(mode => {
+                paymentModeSelect.append(`<option value="${mode.id}">${mode.name} (${mode.ledger_name})</option>`);
+            });
+            
+            // Populate users
+            const userSelect = $('select[name="received_by"]');
+            userSelect.empty().append('<option value="">Select User</option>');
+            data.users.forEach(user => {
+                userSelect.append(`<option value="${user.id}">${user.name}</option>`);
+            });
+            
+            // Reset form
+            $('#paymentForm')[0].reset();
+            $('input[name="payment_date"]').val(new Date().toISOString().split('T')[0]);
+            
+            // Show modal
+            $('#paymentModal').modal('show');
+        })
+        .fail(function(xhr) {
+            alert('Error loading payment form: ' + xhr.responseJSON.error);
+        });
+}
+
+function viewPayments(invoiceId) {
+    $.get(`/purchase/invoices/${invoiceId}/payments`)
+        .done(function(data) {
+            // Populate invoice details
+            $('#viewModalInvoiceNo').text(data.invoice.invoice_no);
+            $('#viewModalVendorName').text(data.invoice.vendor_name);
+            
+            // Populate payments table
+            const tbody = $('#paymentsTable tbody');
+            tbody.empty();
+            
+            if (data.payments.length === 0) {
+                tbody.append(`
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">No payments found</td>
+                    </tr>
+                `);
+            } else {
+                data.payments.forEach(payment => {
+                    const fileLink = payment.file_upload ? 
+                        `<a href="${payment.file_url}" target="_blank" class="btn btn-sm btn-outline-info">
+                            <i class="fas fa-download"></i>
+                        </a>` : '-';
+                    
+                    tbody.append(`
+                        <tr>
+                            <td>${payment.payment_date}</td>
+                            <td>MYR ${payment.paid_amount}</td>
+                            <td>${payment.payment_mode}<br><small class="text-muted">${payment.ledger_name}</small></td>
+                            <td>${payment.received_by}</td>
+                            <td>${payment.notes || '-'}</td>
+                            <td>${fileLink}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="editPayment(${payment.id})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deletePayment(${payment.id})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            }
+            
+            $('#viewPaymentsModal').modal('show');
+        })
+        .fail(function(xhr) {
+            alert('Error loading payments: ' + xhr.responseJSON.error);
+        });
+}
+
+// Handle payment form submission
+$('#paymentForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    $.ajax({
+        url: `/purchase/invoices/${currentInvoiceId}/payments`,
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    })
+    .done(function(data) {
+        $('#paymentModal').modal('hide');
+        alert('Payment recorded successfully!');
+        location.reload(); // Refresh page to show updated amounts
+    })
+    .fail(function(xhr) {
+        const errors = xhr.responseJSON.errors;
+        if (errors) {
+            let errorMessage = 'Validation errors:\n';
+            Object.keys(errors).forEach(key => {
+                errorMessage += `${key}: ${errors[key].join(', ')}\n`;
+            });
+            alert(errorMessage);
+        } else {
+            alert('Error: ' + xhr.responseJSON.error);
+        }
+    });
+});
+
+function editPayment(paymentId) {
+    // Implementation for edit payment
+    alert('Edit payment functionality to be implemented');
+}
+
+function deletePayment(paymentId) {
+    if (confirm('Are you sure you want to delete this payment?')) {
+        $.ajax({
+            url: `/purchase/invoices/${currentInvoiceId}/payments/${paymentId}`,
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        })
+        .done(function(data) {
+            alert('Payment deleted successfully!');
+            $('#viewPaymentsModal').modal('hide');
+            location.reload();
+        })
+        .fail(function(xhr) {
+            alert('Error: ' + xhr.responseJSON.error);
+        });
+    }
+}
 </script>
 @endsection
