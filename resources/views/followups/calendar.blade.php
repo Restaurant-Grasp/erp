@@ -241,6 +241,8 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         events: @json($events),
         eventClick: function(info) {
+            // Prevent default navigation
+            info.jsEvent.preventDefault();
             showEventDetails(info.event);
         },
         dateClick: function(info) {
@@ -309,7 +311,11 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         
         $('#eventDetails').html(html);
-        $('#viewDetailsBtn').attr('href', event.url);
+        
+        // Set the URL for the View Full Details button using the followup_id
+        const followupUrl = `/followups/${props.followup_id}`;
+        $('#viewDetailsBtn').attr('href', followupUrl);
+        
         $('#eventModal').modal('show');
     }
     
@@ -372,8 +378,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         title: response.follow_up.subject,
                         start: response.follow_up.scheduled_date,
                         color: getPriorityColor(response.follow_up.priority),
-                        url: '/followups/' + response.follow_up.id,
                         extendedProps: {
+                            followup_id: response.follow_up.id,
                             type: response.follow_up.follow_up_type,
                             entity: response.follow_up.entity_name,
                             entity_type: response.follow_up.entity_type,
