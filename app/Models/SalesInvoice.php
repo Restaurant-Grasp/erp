@@ -275,4 +275,8 @@ class SalesInvoice extends Model
         
         return $this;
     }
+    public function payments()
+{
+    return $this->hasMany(SalesInvoicePayment::class, 'invoice_id');
+}
 }

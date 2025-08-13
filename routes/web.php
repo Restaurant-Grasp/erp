@@ -784,3 +784,61 @@ Route::get('/test-get-items', function (Request $request) {
 });
 Route::get('/purchase/returns/grn-items', [PurchaseReturnController::class, 'getGrnItems'])
     ->name('purchase.returns.grn-items');
+
+// Payment Modes Master Routes
+Route::prefix('payment-modes')->name('payment-modes.')->middleware('auth')->group(function () {
+    Route::get('/', [App\Http\Controllers\PaymentModeController::class, 'index'])->name('index')
+        ->middleware('permission:payment_modes.view');
+    Route::get('/create', [App\Http\Controllers\PaymentModeController::class, 'create'])->name('create')
+        ->middleware('permission:payment_modes.create');
+    Route::post('/', [App\Http\Controllers\PaymentModeController::class, 'store'])->name('store')
+        ->middleware('permission:payment_modes.create');
+    Route::get('/{paymentMode}/edit', [App\Http\Controllers\PaymentModeController::class, 'edit'])->name('edit')
+        ->middleware('permission:payment_modes.edit');
+    Route::put('/{paymentMode}', [App\Http\Controllers\PaymentModeController::class, 'update'])->name('update')
+        ->middleware('permission:payment_modes.edit');
+    Route::delete('/{paymentMode}', [App\Http\Controllers\PaymentModeController::class, 'destroy'])->name('destroy')
+        ->middleware('permission:payment_modes.delete');
+    
+    // AJAX route for dropdown
+    Route::get('/active-payment-modes', [App\Http\Controllers\PaymentModeController::class, 'getActivePaymentModes'])
+        ->name('active-payment-modes');
+});
+
+Route::prefix('sales/invoices/{invoice}/payments')->middleware('auth')->group(function () {
+    Route::get('/', [App\Http\Controllers\Sales\SalesPaymentController::class, 'index'])->name('sales.payments.index');
+    Route::get('/create', [App\Http\Controllers\Sales\SalesPaymentController::class, 'create'])->name('sales.payments.create');
+    Route::post('/', [App\Http\Controllers\Sales\SalesPaymentController::class, 'store'])->name('sales.payments.store');
+    Route::get('/{payment}', [App\Http\Controllers\Sales\SalesPaymentController::class, 'show'])->name('sales.payments.show');
+    Route::put('/{payment}', [App\Http\Controllers\Sales\SalesPaymentController::class, 'update'])->name('sales.payments.update');
+    Route::delete('/{payment}', [App\Http\Controllers\Sales\SalesPaymentController::class, 'destroy'])->name('sales.payments.destroy');
+});
+
+
+// Purchase Payment Routes
+Route::prefix('purchase/invoices/{invoice}/payments')->name('purchases.payments.')->middleware('auth')->group(function () {
+    Route::get('/', [App\Http\Controllers\Purchase\PurchasePaymentController::class, 'index'])->name('index')
+        ->middleware('permission:purchases.payments.view');
+    Route::get('/create', [App\Http\Controllers\Purchase\PurchasePaymentController::class, 'create'])->name('create')
+        ->middleware('permission:purchases.payments.create');
+    Route::post('/', [App\Http\Controllers\Purchase\PurchasePaymentController::class, 'store'])->name('store')
+        ->middleware('permission:purchases.payments.create');
+    Route::get('/{payment}', [App\Http\Controllers\Purchase\PurchasePaymentController::class, 'show'])->name('show')
+        ->middleware('permission:purchases.payments.view');
+    Route::put('/{payment}', [App\Http\Controllers\Purchase\PurchasePaymentController::class, 'update'])->name('update')
+        ->middleware('permission:purchases.payments.edit');
+    Route::delete('/{payment}', [App\Http\Controllers\Purchase\PurchasePaymentController::class, 'destroy'])->name('destroy')
+        ->middleware('permission:purchases.payments.delete');
+});
+
+// Add these methods to existing Sales and Purchase Invoice Controllers
+
+// In Sales module routes, add:
+Route::get('/sales/invoices/{invoice}/payments', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'getPayments'])
+    ->name('sales.invoices.get-payments')
+    ->middleware('permission:sales.payments.view');
+
+// In Purchase module routes, add:
+Route::get('/purchase/invoices/{invoice}/payments', [App\Http\Controllers\Purchase\PurchaseInvoiceController::class, 'getPayments'])
+    ->name('purchase.invoices.get-payments')
+    ->middleware('permission:purchases.payments.view');
