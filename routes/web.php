@@ -120,6 +120,8 @@ Route::middleware(['auth'])->group(function () {
     // Lead CRUD Routes
     Route::resource('leads', LeadController::class);
 
+    Route::post('leads/{lead}/documents', [LeadController::class, 'uploadDocument'])
+        ->name('leads.documents.upload');
     // Lead Conversion Routes
     Route::get('leads/{lead}/convert', [LeadController::class, 'convertToCustomer'])
         ->name('leads.convert')
@@ -138,9 +140,6 @@ Route::middleware(['auth'])->group(function () {
         ->name('leads.documents.delete')
         ->middleware('permission:leads.edit');
 
-    Route::post('leads/{lead}/documents', [LeadController::class, 'uploadDocument'])
-        ->name('leads.documents.upload')
-        ->middleware('permission:leads.edit');
 
     // Lead Activity Routes
     Route::post('leads/{lead}/activities', [LeadController::class, 'storeActivity'])

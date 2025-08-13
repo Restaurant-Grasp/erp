@@ -56,7 +56,7 @@ class QuotationItem extends Model
 
     public function package()
     {
-        return $this->belongsTo(Package::class, 'item_id')->where('item_type', 'package');
+        return $this->belongsTo(Package::class, 'item_id');
     }
 
     public function uom()

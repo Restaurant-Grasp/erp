@@ -76,7 +76,7 @@ class LeadController extends Controller
     {
         $templeCategories = TempleCategory::where('status', 1)->orderBy('name')->get();
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
-        
+
         return view('leads.create', compact('templeCategories', 'staff'));
     }
 
@@ -109,16 +109,16 @@ class LeadController extends Controller
             $validated['created_by'] = Auth::id();
             $validated['lead_status'] = 'new';
             $validated['country'] = 'India'; // Default for temple management
-            
+
             $lead = Lead::create($validated);
 
             // Handle document uploads
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $document) {
-                    $this->uploadDocument($lead, $document);
+                    $this->storeDocument($lead, $document);
                 }
             }
-
+ 
             // Create initial activity
             LeadActivity::create([
                 'lead_id' => $lead->id,
@@ -166,7 +166,7 @@ class LeadController extends Controller
 
         $templeCategories = TempleCategory::where('status', 1)->orderBy('name')->get();
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
-        
+
         return view('leads.edit', compact('lead', 'templeCategories', 'staff'));
     }
 
@@ -209,7 +209,7 @@ class LeadController extends Controller
             // Handle document uploads
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $document) {
-                    $this->uploadDocument($lead, $document);
+                    $this->storeDocument($lead, $document);
                 }
             }
 
@@ -265,7 +265,7 @@ class LeadController extends Controller
 
         // Get the trade debtor group for customer ledger creation
         $tradeDebtorGroup = Group::where('td', 1)->first();
-        
+
         if (!$tradeDebtorGroup) {
             return redirect()->route('leads.show', $lead)
                 ->with('error', 'Trade Debtors group not configured. Please configure accounting groups first.');
@@ -302,7 +302,7 @@ class LeadController extends Controller
             $existingLedgersCount = Ledger::where('group_id', $tradeDebtorGroup->id)->count();
             $rightCodeNumber = $existingLedgersCount + 1;
 
- 
+
             $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
 
             while (Ledger::where('right_code', $rightCode)->exists()) {
@@ -310,11 +310,11 @@ class LeadController extends Controller
                 $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
             }
             $leftCode = str_pad($tradeDebtorGroup->id, 4, '0', STR_PAD_LEFT);
-            
+
             // Create ledger
             $companyName = $lead->company_name ?: $lead->contact_person;
             $ledgerName = $companyName . ' (' . $customerCode . ')';
-            
+
             $ledger = Ledger::create([
                 'group_id' => $tradeDebtorGroup->id,
                 'name' => $ledgerName,
@@ -379,12 +379,38 @@ class LeadController extends Controller
     /**
      * Upload a document for the lead.
      */
-    private function uploadDocument(Lead $lead, $file)
+    public function uploadDocument(Request $request, Lead $lead)
+    {
+        // Validate the request
+        $request->validate([
+            'documents' => 'required|array|min:1',
+            'documents.*' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240'
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $uploadedCount = 0;
+
+            foreach ($request->file('documents') as $document) {
+                $this->storeDocument($lead, $document);
+                $uploadedCount++;
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', "{$uploadedCount} document(s) uploaded successfully.");
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()->with('error', 'Error uploading documents: ' . $e->getMessage());
+        }
+    }
+
+    private function storeDocument(Lead $lead, $file)
     {
         $originalName = $file->getClientOriginalName();
         $fileName = time() . '_' . str_replace(' ', '_', $originalName);
         $filePath = $file->storeAs('leads/' . $lead->id, $fileName, 'public');
 
+        // Create database record
         LeadDocument::create([
             'lead_id' => $lead->id,
             'document_name' => $originalName,
@@ -394,6 +420,8 @@ class LeadController extends Controller
             'file_type' => $file->getMimeType(),
             'uploaded_by' => Auth::id()
         ]);
+
+        return true;
     }
 
     /**
@@ -406,7 +434,7 @@ class LeadController extends Controller
         }
 
         $filePath = Storage::disk('public')->path($document->file_path);
-        
+
         if (!file_exists($filePath)) {
             return redirect()->back()->with('error', 'File not found.');
         }
@@ -479,16 +507,16 @@ class LeadController extends Controller
     public function search(Request $request)
     {
         $query = $request->get('q');
-        
-        $leads = Lead::where(function($q) use ($query) {
+
+        $leads = Lead::where(function ($q) use ($query) {
             $q->where('lead_no', 'like', "%{$query}%")
-              ->orWhere('company_name', 'like', "%{$query}%")
-              ->orWhere('contact_person', 'like', "%{$query}%");
+                ->orWhere('company_name', 'like', "%{$query}%")
+                ->orWhere('contact_person', 'like', "%{$query}%");
         })
-        ->where('lead_status', '!=', 'lost')
-        ->whereNull('converted_to_customer_id')
-        ->limit(10)
-        ->get(['id', 'lead_no', 'company_name', 'contact_person']);
+            ->where('lead_status', '!=', 'lost')
+            ->whereNull('converted_to_customer_id')
+            ->limit(10)
+            ->get(['id', 'lead_no', 'company_name', 'contact_person']);
 
         return response()->json($leads);
     }
