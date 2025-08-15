@@ -8,122 +8,145 @@ use Illuminate\Database\Eloquent\Model;
 class Entry extends Model
 {
     use HasFactory;
-    
-    protected $table = 'entries';
-    
+
     protected $fillable = [
-        'entrytype_id',
+        'entry_code',
         'number',
+        'entrytype_id',
         'date',
         'dr_total',
         'cr_total',
-        'narration',
-        'inv_id',
+        'notes',
         'inv_type',
-        'fund_id',
-        'payment',
-        'paid_to',
-        'entry_code',
-        'status',
-        'cheque_no',
-        'cheque_date',
-        'return_date',
-        'extra_charge',
-        'collection_date',
-        'created_by',
-        'updated_at'
+        'inv_id'
     ];
-    
+
     protected $casts = [
         'date' => 'date',
-        'cheque_date' => 'date',
-        'return_date' => 'date',
-        'collection_date' => 'date',
         'dr_total' => 'decimal:2',
-        'cr_total' => 'decimal:2',
-        'extra_charge' => 'decimal:2'
+        'cr_total' => 'decimal:2'
     ];
-    
+
     /**
-     * Get the entry type name
+     * Get the entry items for this entry
+     */
+    public function items()
+    {
+        return $this->hasMany(EntryItem::class);
+    }
+
+    /**
+     * Get the entry type
+     */
+    // public function entryType()
+    // {
+    //     return $this->belongsTo(EntryType::class, 'entrytype_id');
+    // }
+
+    /**
+     * Get the source invoice/payment based on inv_type
+     */
+    public function getSourceAttribute()
+    {
+        switch ($this->inv_type) {
+            case 1: // Sales Invoice
+                return SalesInvoice::find($this->inv_id);
+            case 2: // Purchase Invoice
+                return PurchaseInvoice::find($this->inv_id);
+            case 3: // Sales Payment
+                return SalesInvoicePayment::find($this->inv_id);
+            case 4: // Purchase Payment
+                return PurchaseInvoicePayment::find($this->inv_id);
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Get entry type name
      */
     public function getEntryTypeNameAttribute()
     {
         $types = [
             1 => 'Receipt',
-            2 => 'Payment',
+            2 => 'Payment', 
             3 => 'Contra',
             4 => 'Journal',
             5 => 'Credit Note',
             6 => 'Inventory Journal'
         ];
-        
+
         return $types[$this->entrytype_id] ?? 'Unknown';
     }
-    
+
     /**
-     * Get the entry items
+     * Get source type name
      */
-    public function entryItems()
+    public function getSourceTypeNameAttribute()
     {
-        return $this->hasMany(EntryItem::class, 'entry_id');
+        $types = [
+            1 => 'Sales Invoice',
+            2 => 'Purchase Invoice',
+            3 => 'Sales Payment',
+            4 => 'Purchase Payment'
+        ];
+
+        return $types[$this->inv_type] ?? 'Manual Entry';
     }
-    
-    /**
-     * Get the fund
-     */
-    public function fund()
-    {
-        return $this->belongsTo(Fund::class, 'fund_id');
-    }
-    
-    /**
-     * Get the creator
-     */
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-    
-    /**
-     * Get debit items
-     */
-    public function debitItems()
-    {
-        return $this->hasMany(EntryItem::class, 'entry_id')->where('dc', 'D');
-    }
-    
-    /**
-     * Get credit items
-     */
-    public function creditItems()
-    {
-        return $this->hasMany(EntryItem::class, 'entry_id')->where('dc', 'C');
-    }
-    
+
     /**
      * Check if entry is balanced
      */
-    public function isBalanced()
+    public function getIsBalancedAttribute()
     {
         return abs($this->dr_total - $this->cr_total) < 0.01;
     }
-    
+
     /**
-     * Get the payment status
+     * Scope for entries by type
      */
-    public function getPaymentStatusAttribute()
+    public function scopeByType($query, $entryTypeId)
     {
-        if ($this->payment == 'CHEQUE') {
-            if ($this->return_date) {
-                return 'Returned';
-            } elseif ($this->collection_date) {
-                return 'Cleared';
-            } else {
-                return 'Pending';
-            }
-        }
-        
-        return 'Completed';
+        return $query->where('entrytype_id', $entryTypeId);
+    }
+
+    /**
+     * Scope for entries by source type
+     */
+    public function scopeBySourceType($query, $invType)
+    {
+        return $query->where('inv_type', $invType);
+    }
+
+    /**
+     * Scope for entries in date range
+     */
+    public function scopeInDateRange($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('date', [$startDate, $endDate]);
+    }
+
+    /**
+     * Scope for journal entries
+     */
+    public function scopeJournal($query)
+    {
+        return $query->where('entrytype_id', 4);
+    }
+
+    /**
+     * Scope for receipt entries
+     */
+    public function scopeReceipt($query)
+    {
+        return $query->where('entrytype_id', 1);
+    }
+
+    /**
+     * Scope for payment entries
+     */
+    public function scopePayment($query)
+    {
+        return $query->where('entrytype_id', 2);
     }
 }

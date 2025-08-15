@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class SalesInvoice extends Model
 {
     protected $table = 'sales_invoices';
-    
+
     protected $fillable = [
         'invoice_no',
         'invoice_date',
@@ -82,19 +82,6 @@ class SalesInvoice extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function entry()
-    {
-        return $this->belongsTo(Entry::class, 'entry_id');
-    }
-
-    /**
-     * Scopes
-     */
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
-
     public function scopePartial($query)
     {
         return $query->where('status', 'partial');
@@ -105,11 +92,7 @@ class SalesInvoice extends Model
         return $query->where('status', 'paid');
     }
 
-    public function scopeOverdue($query)
-    {
-        return $query->where('due_date', '<', now())
-                    ->whereIn('status', ['pending', 'partial']);
-    }
+
 
     /**
      * Accessors
@@ -137,12 +120,6 @@ class SalesInvoice extends Model
         ];
         return $badges[$this->e_invoice_status] ?? 'secondary';
     }
-
-    public function getIsOverdueAttribute()
-    {
-        return $this->due_date && $this->due_date->isPast() && in_array($this->status, ['pending', 'partial']);
-    }
-
     public function getDeliveryStatusAttribute()
     {
         $totalItems = $this->items->count();
@@ -168,33 +145,6 @@ class SalesInvoice extends Model
         return $badges[$this->delivery_status] ?? 'secondary';
     }
 
-    public function getCanBeCancelledAttribute()
-    {
-        return $this->status !== 'cancelled' && $this->paid_amount == 0;
-    }
-
-    /**
-     * Calculate totals
-     */
-    public function calculateTotals()
-    {
-        $subtotal = $this->items->sum(function ($item) {
-            return $item->quantity * $item->unit_price - $item->discount_amount;
-        });
-
-        $taxAmount = $this->items->sum('tax_amount');
-        $totalAmount = $subtotal + $taxAmount;
-
-        $this->update([
-            'subtotal' => $subtotal,
-            'tax_amount' => $taxAmount,
-            'total_amount' => $totalAmount,
-            'balance_amount' => $totalAmount - $this->paid_amount
-        ]);
-
-        return $this;
-    }
-
     /**
      * Update delivery status based on items
      */
@@ -202,7 +152,7 @@ class SalesInvoice extends Model
     {
         foreach ($this->items as $item) {
             $deliveredQty = $item->deliveryOrderItems->sum('delivered_quantity');
-            
+
             if ($deliveredQty == 0) {
                 $item->update(['delivery_status' => 'not_delivered']);
             } elseif ($deliveredQty >= $item->quantity) {
@@ -220,40 +170,6 @@ class SalesInvoice extends Model
 
         return $this;
     }
-
-    /**
-     * Cancel invoice
-     */
-    public function cancel()
-    {
-        if (!$this->can_be_cancelled) {
-            throw new \Exception('Invoice cannot be cancelled as payments have been made.');
-        }
-
-        $this->update(['status' => 'cancelled']);
-
-        // TODO: Reverse accounting entries
-        $this->reverseAccountingEntries();
-
-        return $this;
-    }
-
-    /**
-     * Submit to e-invoice system
-     */
-    public function submitToEInvoice()
-    {
-        // TODO: Implement e-invoice submission
-        // This will be implemented based on Malaysia e-invoice API requirements
-        
-        $this->update([
-            'e_invoice_status' => 'submitted',
-            'e_invoice_submission_date' => now()
-        ]);
-
-        return $this;
-    }
-
     /**
      * Create accounting entries
      */
@@ -261,7 +177,7 @@ class SalesInvoice extends Model
     {
         // TODO: Implement accounting integration
         // This will create journal entries for the invoice
-        
+
         return $this;
     }
 
@@ -272,11 +188,155 @@ class SalesInvoice extends Model
     {
         // TODO: Implement accounting reversal
         // This will reverse journal entries when invoice is cancelled
-        
+
         return $this;
     }
+
+
+    /**
+     * Get the payments for this invoice
+     */
     public function payments()
-{
-    return $this->hasMany(SalesInvoicePayment::class, 'invoice_id');
-}
+    {
+        return $this->hasMany(SalesInvoicePayment::class, 'invoice_id');
+    }
+
+    /**
+     * Get the accounting entry for this invoice
+     */
+    public function entry()
+    {
+        return $this->hasOne(Entry::class, 'inv_id')->where('inv_type', 1);
+    }
+
+    /**
+     * Check if invoice can receive payments
+     */
+    public function getCanReceivePaymentsAttribute()
+    {
+        return in_array($this->status, ['pending', 'partial']) && $this->balance_amount > 0;
+    }
+
+    /**
+     * Calculate and update invoice totals based on items
+     */
+    public function calculateTotals()
+    {
+        $subtotal = 0;
+        $totalTax = 0;
+        $totalDiscount = 0;
+
+        foreach ($this->items as $item) {
+            $lineTotal = $item->quantity * $item->unit_price;
+            $subtotal += $lineTotal;
+
+            // Calculate item discount
+            $itemDiscount = 0;
+            if ($item->discount_value > 0) {
+                if ($item->discount_type === 'percentage') {
+                    $itemDiscount = ($lineTotal * $item->discount_value) / 100;
+                } else {
+                    $itemDiscount = $item->discount_value;
+                }
+            }
+            $totalDiscount += $itemDiscount;
+
+            // Calculate item tax (on amount after discount)
+            $taxableAmount = $lineTotal - $itemDiscount;
+            if ($item->tax_rate > 0) {
+                $itemTax = ($taxableAmount * $item->tax_rate) / 100;
+                $totalTax += $itemTax;
+
+                // Update item tax amount
+                $item->update(['tax_amount' => $itemTax]);
+            }
+
+            // Update item total
+            $item->update([
+                'discount_amount' => $itemDiscount,
+                'total_amount' => $taxableAmount + ($item->tax_amount ?? 0)
+            ]);
+        }
+
+        // Calculate invoice level discount
+        $invoiceDiscount = 0;
+        if ($this->discount_value > 0) {
+            if ($this->discount_type === 'percentage') {
+                $invoiceDiscount = ($subtotal * $this->discount_value) / 100;
+            } else {
+                $invoiceDiscount = $this->discount_value;
+            }
+        }
+
+        $totalAmount = $subtotal - $totalDiscount - $invoiceDiscount + $totalTax;
+        $balanceAmount = $totalAmount - $this->paid_amount;
+
+        $this->update([
+            'subtotal' => $subtotal,
+            'discount_amount' => $totalDiscount + $invoiceDiscount,
+            'tax_amount' => $totalTax,
+            'total_amount' => $totalAmount,
+            'balance_amount' => $balanceAmount
+        ]);
+    }
+
+    /**
+     * Scope for overdue invoices
+     */
+    public function scopeOverdue($query)
+    {
+        return $query->where('due_date', '<', now())
+            ->whereIn('status', ['pending', 'partial']);
+    }
+
+    /**
+     * Scope for pending invoices
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    /**
+     * Check if invoice is overdue
+     */
+    public function getIsOverdueAttribute()
+    {
+        return $this->due_date < now() && in_array($this->status, ['pending', 'partial']);
+    }
+
+    /**
+     * Check if invoice can be cancelled
+     */
+    public function getCanBeCancelledAttribute()
+    {
+        return $this->paid_amount == 0 && in_array($this->status, ['pending', 'draft']);
+    }
+
+    /**
+     * Cancel the invoice
+     */
+    public function cancel()
+    {
+        if (!$this->can_be_cancelled) {
+            throw new \Exception('Invoice cannot be cancelled as payments have been made.');
+        }
+
+        $this->update(['status' => 'cancelled']);
+
+        // TODO: Reverse accounting entries if needed
+    }
+
+    /**
+     * Submit to e-invoice system (placeholder)
+     */
+    public function submitToEInvoice()
+    {
+        // Placeholder for e-invoice submission
+        $this->update([
+            'e_invoice_status' => 'submitted',
+            'e_invoice_submission_date' => now(),
+            'e_invoice_uuid' => 'UUID' . uniqid()
+        ]);
+    }
 }

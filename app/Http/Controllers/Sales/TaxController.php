@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
+use function Illuminate\Log\log;
+
 class TaxController extends Controller
 {
     public function __construct()
@@ -158,17 +160,18 @@ class TaxController extends Controller
     public function getTaxesForDropdown(Request $request)
     {
 
-        $itemType = $request->get('item_type', 'both');
-
+        $itemType = $request->get('type');
         $query = Tax::active();
 
-        if ($itemType !== 'both') {
-            if ($itemType === 'product') {
-                $query->forProducts();
-            } elseif ($itemType === 'service') {
-                $query->forServices();
-            }
+        if ($itemType === 'product') {
+            $query->forProducts();
+        } elseif ($itemType === 'service') {
+            $query->forServices();
+        } elseif ($itemType === 'both') {
+            $query->forProducts();
+            $query->forServices();
         }
+
 
         $taxes = $query->orderBy('name')->get(['id', 'name', 'percent']);
 

@@ -120,15 +120,18 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            {{-- Service Types --}}
-            <div class="card mt-4">
+        <div class="col-md-4">
+            {{-- Business Information --}}
+            <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Service Types</h5>
+                    <h5 class="mb-0">Business Information</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        @foreach($serviceTypes as $serviceType)
+                    <div class="mb-3">
+                        <label class="form-label">Service Type</label>
+                         @foreach($serviceTypes as $serviceType)
                         <div class="col-md-4 mb-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="service_types[]"
@@ -140,28 +143,6 @@
                             </div>
                         </div>
                         @endforeach
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            {{-- Business Information --}}
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Business Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Category</label>
-                        <select name="category_id" class="form-select">
-                            <option value="">Select Category</option>
-                            @foreach($categories as $category)
-                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
-                            </option>
-                            @endforeach
-                        </select>
                     </div>
 
                     <div class="mb-3">

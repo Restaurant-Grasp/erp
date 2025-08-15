@@ -138,7 +138,6 @@
                                             <option value="">Select</option>
                                             <option value="product" {{ $item->item_type == 'product' ? 'selected' : '' }}>Product</option>
                                             <option value="service" {{ $item->item_type == 'service' ? 'selected' : '' }}>Service</option>
-                                            <option value="package" {{ $item->item_type == 'package' ? 'selected' : '' }}>Package</option>
                                         </select>
                                     </td>
                                     <td>
@@ -361,9 +360,7 @@
             taxInputs.querySelector('.tax-rate').value = '';
             
             // Load taxes if not already loaded
-            if (taxSelect.children.length <= 1) {
-                loadTaxes(taxSelect);
-            }
+         loadTaxes(taxSelect, itemType);
         }
 
         if (itemType === 'service' || itemType === 'product') {
@@ -406,8 +403,9 @@
         }
     }
 
-    function loadTaxes(selectElement) {
-        fetch('/taxes/for-dropdown')
+ function loadTaxes(selectElement, itemType = 'both') {
+        // Fix: Use the correct route name
+        fetch(`/taxes/for-dropdown?type=${itemType}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

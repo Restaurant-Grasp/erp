@@ -60,8 +60,7 @@
                         @endif
                     </dd>
 
-                    <dt class="col-sm-5">Category:</dt>
-                    <dd class="col-sm-7">{{ $customer->category->name ?? '-' }}</dd>
+          
 
                     <dt class="col-sm-5">Source:</dt>
                     <dd class="col-sm-7">{{ ucfirst($customer->source) }}</dd>

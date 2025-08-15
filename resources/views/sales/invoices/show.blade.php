@@ -106,7 +106,13 @@
                                 @foreach($invoice->items as $item)
                                 <tr>
                                     <td>
-                                        <strong>{{ $item->item_name }}</strong>
+                                        <strong> @if($item->item_type === 'product')
+    {{ $item->product->name }}
+@elseif($item->item_type === 'service')
+    {{ $item->service->name }}
+@elseif($item->item_type === 'package')
+    {{ $item->package->name }}
+@endif</strong>
                                         @if($item->description)
                                             <br><small class="text-muted">{{ $item->description }}</small>
                                         @endif
@@ -118,7 +124,7 @@
                                     <td>{{ $item->delivered_quantity }}</td>
                                     <td>₹{{ number_format($item->unit_price, 2) }}</td>
                                     <td>{{ $item->discount_value }}%</td>
-                                    <td>{{ $item->tax ? $item->tax->display_name : 'No Tax' }}</td>
+                                    <td>{{ $item->tax ? $item->tax->percent : 'No Tax' }}</td>
                                     <td>₹{{ number_format($item->total_amount, 2) }}</td>
                                 </tr>
                                 @endforeach

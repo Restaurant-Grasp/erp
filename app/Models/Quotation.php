@@ -145,7 +145,7 @@ class Quotation extends Model
 
     public function getIsExpiredAttribute()
     {
-        return $this->valid_until && $this->valid_until->isPast() && $this->status !== 'converted';
+        return $this->valid_until && $this->status !== 'converted';
     }
 
     public function getCanBeEditedAttribute()

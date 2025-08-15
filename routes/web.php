@@ -32,6 +32,8 @@ use App\Http\Controllers\Purchase\PurchaseInvoiceController;
 use App\Http\Controllers\Purchase\GrnController;
 use App\Http\Controllers\Purchase\PurchaseReturnController;
 use Illuminate\Http\Request;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\PackageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -79,13 +81,31 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('vendors', VendorController::class);
     Route::get('vendors/search', [VendorController::class, 'search'])->name('vendors.search');
 
-
+Route::get('packages/get-services', [PackageController::class, 'getServices'])->name('get-services');
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', function () {
             return view('coming-soon', ['module' => 'Products']);
         })->name('index');
     });
+    Route::prefix('service')->name('service.')->group(function () {
+        Route::get('/tickets', function () {
+            return view('coming-soon', ['module' => 'Service Tickets']);
+        })->name('tickets.index');
 
+        Route::get('/amc', function () {
+            return view('coming-soon', ['module' => 'AMC Contracts']);
+        })->name('amc.index');
+        Route::get('/index', [ServiceController::class, 'serviceIndex'])->name('index');
+        Route::get('/create', [ServiceController::class, 'serviceCreate'])->name('create');
+        Route::post('/store', [ServiceController::class, 'serviceStore'])->name('store');
+        Route::get('/edit/{service}', [ServiceController::class, 'serviceEdit'])->name('edit');
+        Route::put('/update/{service}', [ServiceController::class, 'serviceUpdate'])->name('update');
+        Route::delete('/destroy/{service}', [ServiceController::class, 'serviceDestroy'])->name('destroy');
+
+        // AJAX Routes
+        Route::get('/get-by-type', [ServiceController::class, 'getServicesByType'])->name('get-by-type');
+        Route::get('/get-details', [ServiceController::class, 'getServiceDetails'])->name('get-details');
+    });
 
     Route::prefix('hrm')->name('hrm.')->group(function () {
         Route::get('/staff', function () {
@@ -99,16 +119,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/attendance', function () {
             return view('coming-soon', ['module' => 'Attendance']);
         })->name('attendance.index');
-    });
-
-    Route::prefix('service')->name('service.')->group(function () {
-        Route::get('/tickets', function () {
-            return view('coming-soon', ['module' => 'Service Tickets']);
-        })->name('tickets.index');
-
-        Route::get('/amc', function () {
-            return view('coming-soon', ['module' => 'AMC Contracts']);
-        })->name('amc.index');
     });
 
     Route::prefix('reports')->name('reports.')->group(function () {
@@ -313,7 +323,23 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/details', [ChartOfAccountsController::class, 'getGroupDetails'])
             ->middleware('permission:chart_of_accounts.view_ledger_details');
     });
+    Route::prefix('packages')->name('packages.')->group(function () {
+        Route::get('/', [PackageController::class, 'index'])->name('index');
+        Route::get('/create', [PackageController::class, 'create'])->name('create');
+        Route::post('/', [PackageController::class, 'store'])->name('store');
+        Route::get('/{package}', [PackageController::class, 'show'])->name('show');
+        Route::get('/{package}/edit', [PackageController::class, 'edit'])->name('edit');
+        Route::put('/{package}', [PackageController::class, 'update'])->name('update');
+        Route::delete('/{package}', [PackageController::class, 'destroy'])->name('destroy');
 
+        // Duplicate package
+        Route::post('/{package}/duplicate', [PackageController::class, 'duplicate'])->name('duplicate');
+
+        // AJAX Routes for dynamic loading
+        Route::get('/get-services', [PackageController::class, 'getServices'])->name('get-services');
+        Route::get('/get-products', [PackageController::class, 'getProducts'])->name('get-products');
+        Route::post('/calculate-totals', [PackageController::class, 'calculateTotals'])->name('calculate-totals');
+    });
     // Accounts Menu Routes (already exist, just add permissions where missing)
     Route::prefix('accounts')->name('accounts.')->group(function () {
 
@@ -775,6 +801,7 @@ Route::middleware(['superadminandhrmanager.access'])->group(function () {
         Route::delete('/destroy/{department}', [DepartmentController::class, 'destroy'])->name('destroy');
     });
 });
+
 Route::get('taxes/for-dropdown', [App\Http\Controllers\Sales\TaxController::class, 'getTaxesForDropdown'])
     ->name('taxes.for-dropdown');
 Route::get('quotations/get-items', [App\Http\Controllers\Sales\QuotationController::class, 'getItems'])
@@ -799,7 +826,7 @@ Route::prefix('payment-modes')->name('payment-modes.')->middleware('auth')->grou
         ->middleware('permission:payment_modes.edit');
     Route::delete('/{paymentMode}', [App\Http\Controllers\PaymentModeController::class, 'destroy'])->name('destroy')
         ->middleware('permission:payment_modes.delete');
-    
+
     // AJAX route for dropdown
     Route::get('/active-payment-modes', [App\Http\Controllers\PaymentModeController::class, 'getActivePaymentModes'])
         ->name('active-payment-modes');

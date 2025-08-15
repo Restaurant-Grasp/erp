@@ -83,7 +83,7 @@
                         <div class="col-md-3">
                             <label class="form-label">Discount Value</label>
                             <input type="number" name="discount_value" class="form-control" value="{{ old('discount_value', '0') }}"
-                                min="0" step="0.01">
+                                min="0" step="0.01" id="discount_value">
                         </div>
                     </div>
 
@@ -157,7 +157,7 @@
                                     </td>
                                     <td>
                                         <input type="hidden" name="items[{{ $index }}][tax_id]" value="{{ $item->tax_id }}">
-                                        {{ $item->tax ? $item->tax->display_name : 'No Tax' }}
+                                        {{ $item->tax ? $item->tax->percent : 'No Tax' }}
                                     </td>
                                     <td>
                                         <span class="row-total">{{ app(\App\Helpers\SettingsHelper::class)->getSettingCurrency('country') }} {{ number_format($item->total_amount, 2) }}</span>
@@ -213,7 +213,7 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    let itemIndex = {{ $quotation && $quotation->items ? count($quotation->items) : 0 }};
+let itemIndex = {{ $quotation && $quotation->items ? count($quotation->items) : 0 }};
 
 function addItem() {
     const tbody = document.getElementById('itemsTableBody');
@@ -224,7 +224,7 @@ function addItem() {
                 <option value="">Select</option>
                 <option value="product">Product</option>
                 <option value="service">Service</option>
-                <option value="package">Package</option>
+                
             </select>
         </td>
         <td>
@@ -258,7 +258,7 @@ function addItem() {
             </div>
         </td>
         <td>
-            <span class="row-total">{{ app(\App\Helpers\SettingsHelper::class)->getSettingCurrency('country') }} 0.00</span>
+            <span class="row-total">RM 0.00</span>
         </td>
         <td>
             <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem(this)">
@@ -268,6 +268,8 @@ function addItem() {
     `;
     tbody.appendChild(row);
     itemIndex++;
+    
+    // Load taxes for the new row
     loadTaxes(row.querySelector('.tax-select'));
 }
 
@@ -303,12 +305,10 @@ function loadItems(selectElement, index) {
         }
         
         // Load taxes if not already loaded
-        if (taxSelect.children.length <= 1) {
-            loadTaxes(taxSelect);
-        }
+        loadTaxes(taxSelect, itemType);
     }
 
-    if (itemType === 'service' || itemType === 'product') {
+    if (itemType === 'service' || itemType === 'product' || itemType === 'package') {
         // Load items based on type
         fetch(`/quotations/get-items?type=${itemType}`)
             .then(response => {
@@ -348,9 +348,9 @@ function updateItemDetails(selectElement, index) {
     }
 }
 
-function loadTaxes(selectElement) {
+function loadTaxes(selectElement, itemType = 'both') {
     // Use the correct route for taxes
-    fetch('/taxes/for-dropdown')
+    fetch(`/taxes/for-dropdown?type=${itemType}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -364,7 +364,7 @@ function loadTaxes(selectElement) {
             
             data.forEach(tax => {
                 const selected = tax.id == currentValue ? 'selected' : '';
-                selectElement.innerHTML += `<option value="${tax.id}" data-rate="${tax.percent}" ${selected}>${tax.name} (${tax.percent}%)</option>`;
+                selectElement.innerHTML += `<option value="${tax.id}" data-rate="${tax.percent}" ${selected}>${tax.percent} (${tax.percent}%)</option>`;
             });
         })
         .catch(error => {
@@ -373,6 +373,7 @@ function loadTaxes(selectElement) {
         });
 }
 
+// CORRECTED: Calculate row total
 function calculateRowTotal(index) {
     const rows = document.querySelectorAll('#itemsTableBody tr');
     const row = rows[index];
@@ -381,7 +382,7 @@ function calculateRowTotal(index) {
 
     const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
     const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
-    const discountValue = parseFloat(row.querySelector('.discount-value').value) || 0;
+    const itemDiscountValue = parseFloat(row.querySelector('.discount-value').value) || 0;
     
     // Check if using tax dropdown or input fields
     const taxSelect = row.querySelector('.tax-select');
@@ -396,25 +397,36 @@ function calculateRowTotal(index) {
         taxRate = parseFloat(taxRateInput.value || 0);
     }
 
+    // STEP 1: Calculate line total
     const lineTotal = quantity * unitPrice;
-    const discountAmount = (lineTotal * discountValue) / 100;
-    const afterDiscount = lineTotal - discountAmount;
-    const taxAmount = (afterDiscount * taxRate) / 100;
-    const rowTotal = afterDiscount + taxAmount;
+    
+    // STEP 2: Apply item-level discount (percentage)
+    const itemDiscountAmount = (lineTotal * itemDiscountValue) / 100;
+    const afterItemDiscount = lineTotal - itemDiscountAmount;
+    
+    // STEP 3: Calculate tax on the amount after item discount
+    const taxAmount = (afterItemDiscount * taxRate) / 100;
+    
+    // STEP 4: Row total (after item discount + tax)
+    const rowTotal = afterItemDiscount + taxAmount;
 
+    // Update row display
     row.querySelector('.row-total').textContent = `RM ${rowTotal.toFixed(2)}`;
 
+    // Recalculate overall totals
     calculateTotals();
 }
 
+// CORRECTED: Calculate overall totals
 function calculateTotals() {
-    let subtotal = 0;
-    let totalTax = 0;
+    let subtotalAfterItemDiscounts = 0; // Subtotal after item discounts
+    let totalTax = 0;                   // Sum of all tax amounts
 
+    // STEP 1: Calculate totals from all line items
     document.querySelectorAll('#itemsTableBody tr').forEach((row, index) => {
         const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
         const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
-        const discountValue = parseFloat(row.querySelector('.discount-value').value) || 0;
+        const itemDiscountValue = parseFloat(row.querySelector('.discount-value').value) || 0;
         
         // Check if using tax dropdown or input fields
         const taxSelect = row.querySelector('.tax-select');
@@ -422,27 +434,61 @@ function calculateTotals() {
         
         let taxRate = 0;
         if (taxSelect && taxSelect.style.display !== 'none' && taxSelect.value) {
-            // Using tax dropdown
             taxRate = parseFloat(taxSelect.selectedOptions[0]?.dataset.rate || 0);
         } else if (taxRateInput && taxRateInput.style.display !== 'none') {
-            // Using tax input field
             taxRate = parseFloat(taxRateInput.value || 0);
         }
 
+        // Calculate for this line
         const lineTotal = quantity * unitPrice;
-        const discountAmount = (lineTotal * discountValue) / 100;
-        const afterDiscount = lineTotal - discountAmount;
-        const taxAmount = (afterDiscount * taxRate) / 100;
+        const itemDiscountAmount = (lineTotal * itemDiscountValue) / 100;
+        const afterItemDiscount = lineTotal - itemDiscountAmount;
+        const taxAmount = (afterItemDiscount * taxRate) / 100;
 
-        subtotal += afterDiscount;
+        // Add to running totals
+        subtotalAfterItemDiscounts += afterItemDiscount;
         totalTax += taxAmount;
     });
 
-    const total = subtotal + totalTax;
+    // STEP 2: Apply invoice-level discount
+    const invoiceDiscountType = document.querySelector('select[name="discount_type"]')?.value || 'amount';
+    const invoiceDiscountValue = parseFloat(document.querySelector('#discount_value')?.value || 0);
+    
+    let invoiceDiscountAmount = 0;
+    if (invoiceDiscountValue > 0) {
+        if (invoiceDiscountType === 'percentage') {
+            // Apply percentage discount to subtotal after item discounts
+            invoiceDiscountAmount = (subtotalAfterItemDiscounts * invoiceDiscountValue) / 100;
+        } else {
+            // Apply fixed amount discount
+            invoiceDiscountAmount = invoiceDiscountValue;
+        }
+    }
 
-    document.getElementById('subtotalAmount').textContent = `RM ${subtotal.toFixed(2)}`;
+    // STEP 3: Calculate final amounts
+    const finalSubtotal = subtotalAfterItemDiscounts - invoiceDiscountAmount;
+    const grandTotal = finalSubtotal + totalTax;
+
+    // STEP 4: Update display
+    // Show subtotal after all discounts but before tax
+    document.getElementById('subtotalAmount').textContent = `RM ${finalSubtotal.toFixed(2)}`;
     document.getElementById('taxAmount').textContent = `RM ${totalTax.toFixed(2)}`;
-    document.getElementById('totalAmount').textContent = `RM ${total.toFixed(2)}`;
+    document.getElementById('totalAmount').textContent = `RM ${grandTotal.toFixed(2)}`;
+}
+
+// Initialize discount change listeners
+function initializeDiscountListener() {
+    const discountValueInput = document.querySelector('#discount_value');
+    const discountTypeSelect = document.querySelector('select[name="discount_type"]');
+    
+    if (discountValueInput) {
+        discountValueInput.addEventListener('input', calculateTotals);
+        discountValueInput.addEventListener('change', calculateTotals);
+    }
+    
+    if (discountTypeSelect) {
+        discountTypeSelect.addEventListener('change', calculateTotals);
+    }
 }
 
 $(document).ready(function() {
@@ -453,6 +499,9 @@ $(document).ready(function() {
     // Calculate totals for quotation items
     calculateTotals();
     @endif
+
+    // Initialize discount listeners
+    initializeDiscountListener();
 
     // Form validation
     $('#invoiceForm').on('submit', function(e) {

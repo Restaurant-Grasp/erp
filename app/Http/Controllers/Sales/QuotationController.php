@@ -134,6 +134,7 @@ class QuotationController extends Controller
 
         // Validate that either customer or lead is provided
         if (!$validated['customer_id'] &&  !$validated['lead_id']) {
+           
             return back()->withErrors(['customer_id' => 'Either customer or lead must be selected.'])->withInput();
         }
 
@@ -148,9 +149,9 @@ class QuotationController extends Controller
             $quotationData['approval_status'] = 'pending';
 
             $quotation = Quotation::create($quotationData);
-
+            $items = $quotationData['items'] ?? [];
             // Create quotation items
-            foreach ($validated['items'] as $index => $itemData) {
+           foreach ($items as $index => $itemData) {
                 $itemData['quotation_id'] = $quotation->id;
                 $itemData['sort_order'] = $index + 1;
                 QuotationItem::create($itemData);
@@ -260,7 +261,9 @@ class QuotationController extends Controller
             $quotation->items()->delete();
 
             // Create new items
-            foreach ($validated['items'] as $index => $itemData) {
+            $items = $quotationData['items'] ?? [];
+            // Create quotation items
+           foreach ($items as $index => $itemData) {
                 $itemData['quotation_id'] = $quotation->id;
                 $itemData['sort_order'] = $index + 1;
                 QuotationItem::create($itemData);
@@ -678,4 +681,5 @@ class QuotationController extends Controller
 
         return $paymentTerms;
     }
+    
 }
