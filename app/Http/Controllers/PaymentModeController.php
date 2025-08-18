@@ -35,8 +35,7 @@ class PaymentModeController extends Controller
     public function create()
     {
         // Get ledgers with type = 1 (Bank/Cash accounts)
-        $ledgers = Ledger::where('type', 1)
-                        ->orderBy('name')
+        $ledgers = Ledger::orderBy('name')
                         ->get();
 
         return view('master.payment_modes.create', compact('ledgers'));
@@ -69,9 +68,7 @@ class PaymentModeController extends Controller
     public function edit(PaymentMode $paymentMode)
     {
         // Get ledgers with type = 1 (Bank/Cash accounts)
-        $ledgers = Ledger::where('type', 1)
-                        ->where('status', 1)
-                        ->orderBy('name')
+        $ledgers = Ledger::orderBy('name')
                         ->get();
 
         return view('master.payment_modes.edit', compact('paymentMode', 'ledgers'));
