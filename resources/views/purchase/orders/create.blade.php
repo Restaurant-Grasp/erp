@@ -3,6 +3,17 @@
 @section('title', 'Create Purchase Order')
 
 @section('content')
+<style>
+#itemsTable{
+	width: 130%;
+}
+.card-body .table-responsive{
+	overflow-x: scroll;
+}
+.input-group-sm>.form-select{
+	padding-right: 0rem;
+}
+</style>
 <div class="page-header">
     <h1 class="page-title">Create Purchase Order</h1>
     <nav aria-label="breadcrumb">
@@ -100,12 +111,12 @@
                                 <tr>
                                     <th width="120">Type</th>
                                     <th width="200">Item</th>
-                                    <th>Description</th>
-                                    <th width="100">Qty</th>
-                                    <th width="80">UOM</th>
+                                    <th width="250">Description</th>
+                                    <th width="80">Qty</th>
+                                    <th width="90">UOM</th>
                                     <th width="120">Unit Price</th>
-                                    <th width="120">Discount</th>
-                                    <th width="80">Tax %</th>
+                                    <th width="180">Discount</th>
+                                    <th width="90">Tax %</th>
                                     <th width="120">Total</th>
                                     <th width="50">Action</th>
                                 </tr>
