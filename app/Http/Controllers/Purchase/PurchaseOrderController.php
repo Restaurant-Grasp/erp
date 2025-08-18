@@ -8,7 +8,7 @@ use App\Models\PurchaseOrderItem;
 use App\Models\Vendor;
 use App\Models\Product;
 use App\Models\Service;
-use App\Models\UOM;
+use App\Models\Uom;
 use App\Models\Tax;
 use App\Models\ProductVendor;
 use App\Models\PurchaseInvoiceItem;
@@ -86,7 +86,7 @@ class PurchaseOrderController extends Controller
         $vendors = Vendor::where('status', 'active')->orderBy('company_name')->get();
         $products = Product::where('is_active', 1)->orderBy('name')->get();
         $services = Service::where('status', 1)->orderBy('name')->get();
-        $uoms = UOM::where('status', 1)->orderBy('name')->get();
+        $uoms = Uom::where('status', 1)->orderBy('name')->get();
         $taxes = Tax::where('status', 1)->orderBy('name')->get();
 
         return view('purchase.orders.create', compact('vendors', 'products', 'services', 'uoms', 'taxes'));
@@ -262,7 +262,7 @@ class PurchaseOrderController extends Controller
         $vendors = Vendor::where('status', 'active')->orderBy('company_name')->get();
         $products = Product::where('is_active', 1)->orderBy('name')->get();
         $services = Service::where('status', 1)->orderBy('name')->get();
-        $uoms = UOM::where('status', 1)->orderBy('name')->get();
+        $uoms = Uom::where('status', 1)->orderBy('name')->get();
         $taxes = Tax::where('status', 1)->orderBy('name')->get();
 
         return view('purchase.orders.edit', compact('order', 'vendors', 'products', 'services', 'uoms', 'taxes'));

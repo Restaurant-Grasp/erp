@@ -11,7 +11,7 @@ use App\Models\Vendor;
 use App\Models\Product;
 use App\Models\ProductSerialNumber;
 use App\Models\Staff;
-use App\Models\UOM;
+use App\Models\Uom;
 use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnItem;
 use Illuminate\Http\Request;
@@ -84,7 +84,7 @@ class GrnController extends Controller
         $vendors = Vendor::where('status', 'active')->orderBy('company_name')->get();
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
         $products = Product::where('is_active', 1)->orderBy('name')->get();
-        $uoms = UOM::where('status', 1)->orderBy('name')->get();
+        $uoms = Uom::where('status', 1)->orderBy('name')->get();
 
         return view('purchase.grn.create', compact('vendors', 'staff', 'products', 'uoms'));
     }
@@ -96,7 +96,7 @@ class GrnController extends Controller
     {
         $invoice->load(['vendor', 'items.product', 'items.uom', 'purchaseOrder']);
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
-        $uoms = UOM::where('status', 1)->orderBy('name')->get();
+        $uoms = Uom::where('status', 1)->orderBy('name')->get();
         return view('purchase.grn.create-from-invoice', compact('invoice', 'staff','uoms'));
     }
 
@@ -289,7 +289,7 @@ class GrnController extends Controller
         $vendors = Vendor::where('status', 'active')->orderBy('company_name')->get();
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
         $products = Product::where('is_active', 1)->orderBy('name')->get();
-        $uoms = UOM::where('status', 1)->orderBy('name')->get();
+        $uoms = Uom::where('status', 1)->orderBy('name')->get();
 
         // Get existing serial numbers
         $serialNumbers = ProductSerialNumber::where('grn_id', $grn->id)

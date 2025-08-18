@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Models;
 use App\Models\Brand;
+use App\Models\Product;
 use App\Models\Uom;
 use App\Models\Warehouse;
 use Illuminate\Support\Facades\DB;

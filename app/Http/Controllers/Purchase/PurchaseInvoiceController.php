@@ -9,7 +9,7 @@ use App\Models\PurchaseOrder;
 use App\Models\Vendor;
 use App\Models\Product;
 use App\Models\Service;
-use App\Models\UOM;
+use App\Models\Uom;
 use App\Models\Tax;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -87,7 +87,7 @@ class PurchaseInvoiceController extends Controller
         $vendors = Vendor::where('status', 'active')->orderBy('company_name')->get();
         $products = Product::where('is_active', 1)->orderBy('name')->get();
         $services = Service::where('status', 1)->orderBy('name')->get();
-        $uoms = UOM::where('status', 1)->orderBy('name')->get();
+        $uoms = Uom::where('status', 1)->orderBy('name')->get();
         $taxes = Tax::where('status', 1)->orderBy('name')->get();
 
         return view('purchase.invoices.create', compact('vendors', 'products', 'services', 'uoms', 'taxes'));
@@ -104,7 +104,7 @@ class PurchaseInvoiceController extends Controller
         }
 
         $order->load(['vendor', 'items']);
-        $uoms = UOM::where('status', 1)->orderBy('name')->get();
+        $uoms = Uom::where('status', 1)->orderBy('name')->get();
         $taxes = Tax::where('status', 1)->orderBy('name')->get();
 
         return view('purchase.invoices.create-from-po', compact('order', 'uoms', 'taxes'));
@@ -310,7 +310,7 @@ class PurchaseInvoiceController extends Controller
         $vendors = Vendor::where('status', 'active')->orderBy('company_name')->get();
         $products = Product::where('is_active', 1)->orderBy('name')->get();
         $services = Service::where('status', 1)->orderBy('name')->get();
-        $uoms = UOM::where('status', 1)->orderBy('name')->get();
+        $uoms = Uom::where('status', 1)->orderBy('name')->get();
         $taxes = Tax::where('status', 1)->orderBy('name')->get();
 
         return view('purchase.invoices.edit', compact('invoice', 'vendors', 'products', 'services', 'uoms', 'taxes'));
