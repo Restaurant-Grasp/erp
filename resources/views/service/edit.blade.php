@@ -98,10 +98,11 @@
                             <span class="input-group-text">RM</span>
                             <input type="number" name="base_price" class="form-control @error('base_price') is-invalid @enderror" 
                                    value="{{ old('base_price', $service->base_price) }}" step="0.01" min="0">
-                        </div>
-                        @error('base_price')
+                          @error('base_price')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
+                                </div>
+                     
                     </div>
                 </div>
             </div>
