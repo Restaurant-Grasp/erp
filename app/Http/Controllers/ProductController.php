@@ -128,6 +128,7 @@ class ProductController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required',
+            'ledger_id' => 'required',
             'brand_id' => 'required',
             'model_id' => 'required',
             'uom_id' => 'required',
@@ -180,6 +181,7 @@ class ProductController extends Controller
             'brand_id' => 'required',
             'model_id' => 'required',
             'uom_id' => 'required',
+            'ledger_id' => 'required',
         ]);
         DB::beginTransaction();
 
