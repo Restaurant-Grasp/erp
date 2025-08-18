@@ -68,7 +68,6 @@ class TaxController extends Controller
         })
         ->orderBy('name')
         ->get();
-
         return view('sales.taxes.create', compact('ledgers'));
     }
 
@@ -109,12 +108,15 @@ class TaxController extends Controller
     public function edit(Tax $tax)
     {
         // Get tax liability ledgers
-        $taxLiabilityGroup = Group::where('name', 'like', '%tax%')->first();
-        $ledgers = collect();
+        $ledgers = Ledger::where(function($query) {
 
-        if ($taxLiabilityGroup) {
-            $ledgers = Ledger::where('group_id', $taxLiabilityGroup->id)->orderBy('name')->get();
-        }
+            $query->whereBetween(DB::raw('CAST(left_code AS UNSIGNED)'), [2000, 2999])
+
+                  ->orWhereBetween(DB::raw('CAST(left_code AS UNSIGNED)'), [5000, 6999]);
+
+        })
+        ->orderBy('name')
+        ->get();
 
         return view('sales.taxes.edit', compact('tax', 'ledgers'));
     }
