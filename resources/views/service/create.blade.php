@@ -6,15 +6,7 @@
         <h5>Create Service</h5>
     </div>
     <div class="card-body">
-        @if ($errors->any())
-            <div class="alert alert-danger">
-                <ul class="mb-0">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+      
 
         <form method="POST" action="{{ route('service.store') }}">
             @csrf
@@ -24,7 +16,7 @@
                     <div class="mb-3">
                         <label class="form-label">Name <span class="text-danger">*</span></label>
                         <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" 
-                               value="{{ old('name') }}" required>
+                               value="{{ old('name') }}">
                         @error('name')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -48,7 +40,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Service Type <span class="text-danger">*</span></label>
-                        <select name="service_type_id" class="form-select @error('service_type_id') is-invalid @enderror" required>
+                        <select name="service_type_id" class="form-select @error('service_type_id') is-invalid @enderror">
                             <option value="">-- Select Service Type --</option>
                             @foreach($serviceTypes as $type)
                             <option value="{{ $type->id }}" {{ old('service_type_id') == $type->id ? 'selected' : '' }}>
@@ -65,7 +57,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Revenue Ledger <span class="text-danger">*</span></label>
-                        <select name="ledger_id" class="form-select @error('ledger_id') is-invalid @enderror" required>
+                        <select name="ledger_id" class="form-select @error('ledger_id') is-invalid @enderror">
                             <option value="">-- Select Revenue Ledger --</option>
                             @foreach($ledgers as $ledger)
                             <option value="{{ $ledger->id }}" {{ old('ledger_id') == $ledger->id ? 'selected' : '' }}>
@@ -85,7 +77,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Item Type <span class="text-danger">*</span></label>
-                        <select name="item_type" class="form-select @error('item_type') is-invalid @enderror" required>
+                        <select name="item_type" class="form-select @error('item_type') is-invalid @enderror">
                             <option value="">-- Select Item Type --</option>
                             <option value="service" {{ old('item_type') == 'service' ? 'selected' : '' }}>Service</option>
                             <option value="product" {{ old('item_type') == 'product' ? 'selected' : '' }}>Product</option>
@@ -102,7 +94,7 @@
                         <div class="input-group">
                             <span class="input-group-text">RM</span>
                             <input type="number" name="base_price" class="form-control @error('base_price') is-invalid @enderror" 
-                                   value="{{ old('base_price') }}" step="0.01" min="0" required>
+                                   value="{{ old('base_price') }}" step="0.01" min="0">
                         </div>
                         @error('base_price')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -115,7 +107,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Billing Cycle <span class="text-danger">*</span></label>
-                        <select name="billing_cycle" class="form-select @error('billing_cycle') is-invalid @enderror" required>
+                        <select name="billing_cycle" class="form-select @error('billing_cycle') is-invalid @enderror">
                             <option value="">-- Select Billing Cycle --</option>
                             <option value="one-time" {{ old('billing_cycle') == 'one-time' ? 'selected' : '' }}>One Time</option>
                             <option value="monthly" {{ old('billing_cycle') == 'monthly' ? 'selected' : '' }}>Monthly</option>
