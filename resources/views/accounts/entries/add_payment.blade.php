@@ -13,7 +13,7 @@
             </ol>
         </nav>
 
-        <form method="POST" action="{{ route('accounts.payment.store') }}" id="paymentForm" onsubmit="return validateAndSubmit()">
+        <form method="POST" action="{{ route('accounts.payment.store') }}" id="paymentForm" onsubmit="return validateAndSubmit()" novalidate>
             @csrf
             
             <!-- Header Card -->
@@ -50,29 +50,38 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label class="form-label">Date <span class="text-danger">*</span></label>
-                                <input type="date" name="date" class="form-control" 
+                                <input type="date" name="date" class="form-control @error('date') is-invalid @enderror" 
                                        value="{{ old('date', date('Y-m-d')) }}" required>
+                                        @error('date')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                             </div>
                         </div>
                         
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label class="form-label">Entry Code <span class="text-danger">*</span></label>
-                                <input type="text" name="entry_code" class="form-control" readonly
+                                <input type="text" name="entry_code" class="form-control @error('entry_code') is-invalid @enderror" readonly
                                        value="{{ old('entry_code', $entryCode) }}" required>
+                                        @error('entry_code')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                             </div>
                         </div>
                         
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label class="form-label">Fund <span class="text-danger">*</span></label>
-                                <select name="fund_id" class="form-control" required>
+                                <select name="fund_id" class="form-control @error('fund_id') is-invalid @enderror" required>
                                     @foreach($funds as $fund)
                                         <option value="{{ $fund->id }}" {{ old('fund_id', 1) == $fund->id ? 'selected' : '' }}>
                                             {{ $fund->name }}{{ $fund->code ? ' (' . $fund->code . ')' : '' }}
                                         </option>
                                     @endforeach
                                 </select>
+                                           @error('fund_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                             </div>
                         </div>
                     </div>
@@ -81,18 +90,21 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label class="form-label">Payment Mode <span class="text-danger">*</span></label>
-                                <select name="payment_mode" class="form-control" id="paymentMode" required>
+                                <select name="payment_mode" class="form-control @error('payment_mode') is-invalid @enderror" id="paymentMode" required>
                                     <option value="CASH" {{ old('payment_mode') == 'CASH' ? 'selected' : '' }}>Cash</option>
                                     <option value="CHEQUE" {{ old('payment_mode') == 'CHEQUE' ? 'selected' : '' }}>Cheque</option>
                                     <option value="ONLINE" {{ old('payment_mode') == 'ONLINE' ? 'selected' : '' }}>Online Transfer</option>
                                 </select>
+                                     @error('payment_mode')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                             </div>
                         </div>
                         
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label class="form-label">Bank/Cash Account <span class="text-danger">*</span></label>
-                                <select name="credit_account" class="form-control" required>
+                                <select name="credit_account" class="form-control @error('credit_account') is-invalid @enderror" required>
                                     <option value="">Select Account</option>
                                     @foreach($bankLedgers as $ledger)
                                         <option value="{{ $ledger->id }}" {{ old('credit_account') == $ledger->id ? 'selected' : '' }}>
@@ -100,14 +112,20 @@
                                         </option>
                                     @endforeach
                                 </select>
+                                     @error('credit_account')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                             </div>
                         </div>
                         
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label class="form-label">Paid To <span class="text-danger">*</span></label>
-                                <input type="text" name="paid_to" class="form-control" 
+                                <input type="text" name="paid_to" class="form-control  @error('paid_to') is-invalid @enderror" 
                                        value="{{ old('paid_to') }}" required placeholder="Enter payee name">
+                                                 @error('paid_to')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                             </div>
                         </div>
                     </div>
@@ -128,7 +146,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Discount Account <span class="text-danger">*</span></label>
-                                <select name="discount_ledger" class="form-control">
+                                <select name="discount_ledger" class="form-control @error('discount_ledger') is-invalid @enderror">
                                     <option value="">Select Discount Account</option>
                                     @foreach($debitLedgers as $ledger)
                                         @if(substr($ledger->left_code, 0, 1) == '4' || substr($ledger->left_code, 0, 1) == '8')
@@ -138,6 +156,9 @@
                                         @endif
                                     @endforeach
                                 </select>
+                                 @error('discount_ledger')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -145,8 +166,11 @@
                                 <label class="form-label">Discount Amount <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text">RM</span>
-                                    <input type="number" name="discount_amount" class="form-control" id="discountAmount"
+                                    <input type="number" name="discount_amount" class="form-control @error('discount_amount') is-invalid @enderror" id="discountAmount"
                                            step="0.01" min="0" placeholder="0.00">
+                                                 @error('discount_amount')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                                 </div>
                             </div>
                         </div>
@@ -171,8 +195,11 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Cheque Date</label>
-                                <input type="date" name="cheque_date" class="form-control" 
+                                <input type="date" name="cheque_date" class="form-control  @error('cheque_date') is-invalid @enderror" 
                                        value="{{ old('cheque_date') }}">
+                                        @error('cheque_date')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                             </div>
                         </div>
                     </div>
@@ -188,15 +215,21 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Transaction Number</label>
-                                <input type="text" name="transaction_no" class="form-control" 
+                                <input type="text" name="transaction_no" class="form-control @error('transaction_no') is-invalid @enderror" 
                                        value="{{ old('transaction_no') }}" placeholder="Enter transaction number">
+                                          @error('transaction_no')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Transaction Date</label>
-                                <input type="date" name="transaction_date" class="form-control" 
+                                <input type="date" name="transaction_date" class="form-control @error('transaction_date') is-invalid @enderror" 
                                        value="{{ old('transaction_date') }}">
+                                          @error('transaction_date')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                             </div>
                         </div>
                     </div>
@@ -266,8 +299,11 @@
                     <h6 class="mb-0">Payment Description</h6>
                 </div>
                 <div class="card-body">
-                    <textarea name="narration" class="form-control" rows="3" 
+                    <textarea name="narration" class="form-control @error('narration') is-invalid @enderror" rows="3" 
                               placeholder="Enter payment description or purpose">{{ old('narration') }}</textarea>
+                              @error('narration')
+            <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
                 </div>
             </div>
             
@@ -355,11 +391,13 @@ $(document).ready(function() {
                         <option value="">Select Account</option>
                         ${ledgerOptions}
                     </select>
+                    <option value="">Select Account</option>
                 </td>
                 <td>
                     <div class="input-group">
                         <input type="number" name="items[${itemIndex}][amount]" class="form-control item-amount" 
                                step="0.01" min="0.01" required placeholder="0.00">
+                               <option value="">Select Account</option>
                     </div>
                 </td>
                 <td>
@@ -488,6 +526,138 @@ $(document).ready(function() {
     // Initialize tooltips
     $('[title]').tooltip();
 });
+$('#discountCheck').change(function() {
+        if ($(this).is(':checked')) {
+            $('#discountSection').show();
+            $('select[name="discount_ledger"]').attr('required', true);
+            $('input[name="discount_amount"]').attr('required', true);
+        } else {
+            $('#discountSection').hide();
+            $('select[name="discount_ledger"]').removeAttr('required');
+            $('input[name="discount_amount"]').removeAttr('required');
+            // Clear discount field errors
+            $('select[name="discount_ledger"], input[name="discount_amount"]').next('.error').remove();
+        }
+    });
+
+      $(document).on('input', 'input', function() {
+        $(this).next('.error').remove();
+    });
+    $(document).on('change', 'select', function() {
+        $(this).next('.error').remove();
+    });
+// Clear inline errors when user edits fields
+$(document).on('input', 'input', function () { clearFieldError($(this)); });
+$(document).on('change', 'select', function () { clearFieldError($(this)); });
+
+$('#paymentForm').on('submit', function (e) {
+  $('.error').remove(); // remove previous inline error spans
+  let valid = true;
+
+  // ---- Basic required fields ----
+  valid = requireField($('input[name="date"]'), 'Date is required') && valid;
+  valid = requireField($('input[name="entry_code"]'), 'Entry Code is required') && valid;
+  valid = requireField($('select[name="fund_id"]'), 'Fund is required') && valid;            // FIX: select, not input
+  valid = requireField($('select[name="payment_mode"]'), 'Payment Mode is required') && valid;
+  valid = requireField($('select[name="credit_account"]'), 'Bank/Cash Account is required') && valid;
+  valid = requireField($('input[name="paid_to"]'), 'Paid To is required') && valid;
+
+  // ---- Mode-specific fields ----
+  const mode = $('#paymentMode').val();
+  if (mode === 'CHEQUE') {
+    // FIX: cheque requires cheque_no + cheque_date (not transaction_no)
+    valid = requireField($('input[name="cheque_no"]'), 'Cheque Number is required') && valid;
+    valid = requireField($('input[name="cheque_date"]'), 'Cheque Date is required') && valid;
+  } else if (mode === 'ONLINE') {
+    valid = requireField($('#onlineDetails input[name="transaction_no"]'), 'Transaction Number is required') && valid;
+    valid = requireField($('input[name="transaction_date"]'), 'Transaction Date is required') && valid;
+  }
+
+  // ---- Discount (when enabled) ----
+  const discountOn = $('#discountCheck').is(':checked');
+  const $discountLedger = $('select[name="discount_ledger"]');
+  const $discountAmount = $('#discountAmount');
+  let discount = 0;
+
+  if (discountOn) {
+    valid = requireField($discountLedger, 'Discount Account is required') && valid;
+
+    discount = parseFloat($discountAmount.val());
+    if (isNaN(discount) || discount <= 0) {
+      showFieldError($discountAmount, 'Discount Amount must be greater than 0');
+      valid = false;
+    }
+  }
+
+  // ---- Payment items ----
+  const $rows = $('#paymentItemsTable tbody tr.payment-item');
+  if ($rows.length === 0) {
+    $('#paymentItemsTable').after('<span class="text-danger error d-block mt-2">Please add at least one item</span>');
+    valid = false;
+  } else {
+    $rows.each(function () {
+      const $ledger = $(this).find('.item-ledger');
+      const $amount = $(this).find('.item-amount');
+
+      if (!$ledger.val()) {
+        showFieldError($ledger, 'Account is required');
+        valid = false;
+      }
+
+      const amt = parseFloat($amount.val());
+      if (isNaN(amt) || amt <= 0) {
+        showFieldError($amount, 'Amount must be greater than 0');
+        valid = false;
+      }
+    });
+  }
+
+  // ---- Totals sanity: discount cannot exceed items total ----
+  const itemsTotal = $('#paymentItemsTable tbody .item-amount').toArray()
+    .reduce((sum, el) => sum + (parseFloat($(el).val()) || 0), 0);
+
+  if (discountOn && discount > itemsTotal) {
+    showFieldError($discountAmount, 'Discount cannot exceed total amount');
+    valid = false;
+  }
+
+  if (!valid) e.preventDefault();
+});
+
+// --- Helpers ---
+function requireField($el, msg) {
+  // Works for input/select/textarea; treats empty string as invalid
+  const val = ($el.val() || '').toString().trim();
+  if (!val) {
+    showFieldError($el, msg);
+    return false;
+  }
+  return true;
+}
+
+function showFieldError($el, msg) {
+  const $err = $('<span class="text-danger error"></span>').text(msg);
+  // If there's an input-group, place error after the group; else after element
+  if ($el.closest('.input-group').length) {
+    $el.closest('.input-group').after($err);
+  } else {
+    $el.after($err);
+  }
+}
+
+function clearFieldError($el) {
+  // Remove only the error directly following this field or its input-group
+  const $group = $el.closest('.input-group');
+  if ($group.length) {
+    const $next = $group.next('.error');
+    if ($next.length) $next.remove();
+  } else {
+    const $next = $el.next('.error');
+    if ($next.length) $next.remove();
+  }
+}
+
+
 </script>
 @endpush
 @endsection
