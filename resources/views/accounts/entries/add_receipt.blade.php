@@ -4,10 +4,9 @@
 
 @push('styles')
 <style>
-
     .section-header {
         background: #00a551;
-         color:white;
+        color: white;
     }
 
     .conditional-section {
@@ -63,10 +62,12 @@
         gap: 10px;
         padding: 37px;
     }
-.form-control[readonly] {
+
+    .form-control[readonly] {
 
         background-color: #e9ecef;
-}
+    }
+
     .form-check-modern input[type="checkbox"] {
         width: 18px;
         height: 18px;
@@ -79,7 +80,8 @@
         cursor: pointer;
     }
 
-    .form-control:focus, .form-select:focus {
+    .form-control:focus,
+    .form-select:focus {
         border-color: var(--primary-green);
         box-shadow: 0 0 0 0.2rem rgba(0, 165, 81, 0.15);
     }
@@ -100,17 +102,24 @@
     }
 
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     @media (max-width: 768px) {
         .modern-card-body {
             padding: 16px;
         }
-        
- 
-        
+
+
+
         .btn-modern {
             width: 100%;
             justify-content: center;
@@ -121,7 +130,7 @@
 @endpush
 
 <div class="page-header">
-  
+
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="fas fa-home me-2"></i>Home</a></li>
@@ -131,87 +140,104 @@
     </nav>
 </div>
 
-<form method="POST" action="{{ route('accounts.receipt.store') }}" id="receiptForm" onsubmit="return disableSubmitButton()">
+<form method="POST" action="{{ route('accounts.receipt.store') }}" id="receiptForm" onsubmit="return disableSubmitButton()" novalidate>
     @csrf
-    
+
     <!-- Display Errors -->
     @if($errors->any())
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <ul class="mb-0">
             @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
+            <li>{{ $error }}</li>
             @endforeach
         </ul>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
-    
+
     @if(session('error'))
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         {{ session('error') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
-    
+
     <!-- Main Information Card -->
     <div class="card">
         <div class="card-header">
             <h5>Add Receipt Voucher</h5>
-            
+
         </div>
         <div class="card-body">
             <!-- Basic Information -->
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">Date <span class="text-danger">*</span></label>
-                    <input type="date" name="date" class="form-control" 
-                           value="{{ old('date', date('Y-m-d')) }}" required>
+                    <input type="date" name="date" class="form-control @error('date') is-invalid @enderror"
+                        value="{{ old('date', date('Y-m-d')) }}" required>
+                    @error('date')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
-                   <div class="col-md-4">
+                <div class="col-md-4">
                     <label class="form-label">Receipt Mode <span class="text-danger">*</span></label>
-                    <select name="payment_mode" class="form-select" id="paymentMode" required>
+                    <select name="payment_mode" class="form-select @error('payment_mode') is-invalid @enderror" id="paymentMode" required>
                         <option value="CASH" {{ old('payment_mode') == 'CASH' ? 'selected' : '' }}>Cash</option>
                         <option value="CHEQUE" {{ old('payment_mode') == 'CHEQUE' ? 'selected' : '' }}>Cheque</option>
                         <option value="ONLINE" {{ old('payment_mode') == 'ONLINE' ? 'selected' : '' }}>Online</option>
                     </select>
+                    @error('payment_mode')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="col-md-5">
-                  
-                <label class="form-label">Debit A/C <span class="text-danger">*</span></label>
-                    <select name="debit_account" class="form-select" required>
+
+                    <label class="form-label">Debit A/C <span class="text-danger">*</span></label>
+                    <select name="debit_account" class="form-select @error('debit_account') is-invalid @enderror" required>
                         <option value="">Select Bank/Cash Account</option>
                         @foreach($bankLedgers as $ledger)
-                            <option value="{{ $ledger->id }}" {{ old('debit_account') == $ledger->id ? 'selected' : '' }}>
-                                {{ $ledger->left_code }}/{{ $ledger->right_code }} - {{ $ledger->name }}
-                            </option>
+                        <option value="{{ $ledger->id }}" {{ old('debit_account') == $ledger->id ? 'selected' : '' }}>
+                            {{ $ledger->left_code }}/{{ $ledger->right_code }} - {{ $ledger->name }}
+                        </option>
                         @endforeach
                     </select>
+                    @error('debit_account')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
-             
-               
             </div>
 
             <div class="row g-3 mt-2">
                 <div class="col-md-3">
                     <label class="form-label">Entry Code <span class="text-danger">*</span></label>
-                    <input type="text" name="entry_code" class="form-control" class="entry_code"
-                           value="{{ old('entry_code', $entryCode) }}" readonly required>
+                    <input type="text" name="entry_code" class="form-control @error('entry_code') is-invalid @enderror"
+                        value="{{ old('entry_code', $entryCode) }}" readonly required>
+                    @error('entry_code')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
-                 <div class="col-md-3">
+                <div class="col-md-3">
                     <label class="form-label">Fund <span class="text-danger">*</span></label>
-                    <select name="fund_id" class="form-select" required>
+                    <select name="fund_id" class="form-select @error('fund_id') is-invalid @enderror" required>
                         @foreach($funds as $fund)
-                            <option value="{{ $fund->id }}" {{ old('fund_id', 1) == $fund->id ? 'selected' : '' }}>
-                                {{ $fund->name }}{{ $fund->code ? ' (' . $fund->code . ')' : '' }}
-                            </option>
+                        <option value="{{ $fund->id }}" {{ old('fund_id', 1) == $fund->id ? 'selected' : '' }}>
+                            {{ $fund->name }}{{ $fund->code ? ' (' . $fund->code . ')' : '' }}
+                        </option>
                         @endforeach
                     </select>
+                    @error('fund_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Received From <span class="text-danger">*</span></label>
-                    <input type="text" name="received_from" class="form-control" 
-                           value="{{ old('received_from') }}" placeholder="Enter payer name" required>
+                    <input type="text" name="received_from" class="form-control @error('received_from') is-invalid @enderror"
+                        value="{{ old('received_from') }}" placeholder="Enter payer name" required>
+                    @error('received_from')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
+
                 <div class="col-md-3">
                     <div class="form-check-modern">
                         <input type="checkbox" class="form-check-input" id="discountCheck">
@@ -224,64 +250,80 @@
             <div class="row g-3 mt-3" id="discountSection" style="display: none;">
                 <div class="col-md-6">
                     <label class="form-label">Discount Account <span class="text-danger">*</span></label>
-                    <select name="discount_ledger" class="form-select">
+                    <select name="discount_ledger" class="form-select @error('discount_ledger') is-invalid @enderror">
                         <option value="">Select Discount Account</option>
                         @foreach($creditLedgers as $ledger)
-                            @if(substr($ledger->left_code, 0, 1) == '5' || substr($ledger->left_code, 0, 1) == '6')
-                                <option value="{{ $ledger->id }}">
-                                    {{ $ledger->left_code }}/{{ $ledger->right_code }} - {{ $ledger->name }}
-                                </option>
-                            @endif
+                        @if(substr($ledger->left_code, 0, 1) == '5' || substr($ledger->left_code, 0, 1) == '6')
+                        <option value="{{ $ledger->id }}" {{ old('discount_ledger') == $ledger->id ? 'selected' : '' }}>
+                            {{ $ledger->left_code }}/{{ $ledger->right_code }} - {{ $ledger->name }}
+                        </option>
+                        @endif
                         @endforeach
                     </select>
+                    @error('discount_ledger')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
+
                 <div class="col-md-6">
                     <label class="form-label">Discount Amount <span class="text-danger">*</span></label>
-                    <input type="number" name="discount_amount" class="form-control" id="discountAmount"
-                           step="0.01" min="0" value="0.00">
+                    <input type="number" name="discount_amount" class="form-control @error('discount_amount') is-invalid @enderror"
+                        id="discountAmount" step="0.01" min="0" value="{{ old('discount_amount', '0.00') }}">
+                    @error('discount_amount')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
         </div>
     </div>
-<br>
+    <br>
     <!-- Payment Details (Conditional) -->
     <div class="card conditional-section fade-in" id="chequeDetails" style="display: none;">
         <div class="section-header card-header">
-      
+
             Cheque Details
         </div>
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label">Cheque Number</label>
-                    <input type="text" name="cheque_no" class="form-control" 
-                           value="{{ old('cheque_no') }}" placeholder="Enter cheque number">
+                    <label class="form-label">Cheque Date</label>
+                    <input type="date" name="cheque_date" class="form-control @error('cheque_date') is-invalid @enderror"
+                        value="{{ old('cheque_date') }}">
+                    @error('cheque_date')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Cheque Date</label>
-                    <input type="date" name="cheque_date" class="form-control" 
-                           value="{{ old('cheque_date') }}">
+                    <label class="form-label">Transaction Number</label>
+                    <input type="text" name="transaction_no" class="form-control @error('transaction_no') is-invalid @enderror"
+                        value="{{ old('transaction_no') }}" placeholder="Enter transaction number">
+                    @error('transaction_no')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
         </div>
     </div>
-<br>
+    <br>
     <div class="card conditional-section fade-in" id="onlineDetails" style="display: none;">
         <div class="section-header conditional-header">
-         
+
             Online Transaction Details
         </div>
         <div class="conditional-body">
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">Transaction Number</label>
-                    <input type="text" name="transaction_no" class="form-control" 
-                           value="{{ old('transaction_no') }}" placeholder="Enter transaction number">
+                    <input type="text" name="transaction_no" class="form-control"
+                        value="{{ old('transaction_no') }}" placeholder="Enter transaction number">
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Transaction Date</label>
-                    <input type="date" name="transaction_date" class="form-control" 
-                           value="{{ old('transaction_date') }}">
+                    <input type="date" name="transaction_date" class="form-control @error('transaction_date') is-invalid @enderror"
+                        value="{{ old('transaction_date') }}">
+                    @error('transaction_date')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
         </div>
@@ -293,89 +335,93 @@
             Receipt Details
         </div>
         <div class="cared-body px-4">
-        <div class="table">
-            <table class="table table-borderless mb-0" id="receiptItemsTable">
-                <thead>
-                    <tr>
-                        <th style="width: 5%">#</th>
-                        <th style="width: 45%">Account</th>
-                        <th style="width: 20%">Amount</th>
-                        <th style="width: 25%">Details</th>
-                        <th style="width: 5%">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="receipt-item">
-                        <td>
-                            <button type="button" class="btn-icon btn btn-danger btn-sm remove-item">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </td>
-                        <td>
-                            <select name="items[0][ledger_id]" class="form-select  item-ledger" required>
-                                <option value="">Select Account</option>
-                                @foreach($creditLedgers as $ledger)
+            <div class="table">
+                <table class="table table-borderless mb-0" id="receiptItemsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%">#</th>
+                            <th style="width: 45%">Account</th>
+                            <th style="width: 20%">Amount</th>
+                            <th style="width: 25%">Details</th>
+                            <th style="width: 5%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="receipt-item">
+                            <td>
+                                <button type="button" class="btn-icon btn btn-danger btn-sm remove-item">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </td>
+                            <td>
+                                <select name="items[0][ledger_id]" class="form-select  item-ledger" required>
+                                    <option value="">Select Account</option>
+                                    @foreach($creditLedgers as $ledger)
                                     <option value="{{ $ledger->id }}">
                                         {{ $ledger->left_code }}/{{ $ledger->right_code }} - {{ $ledger->name }}
                                     </option>
-                                @endforeach
-                            </select>
-                        </td>
-                        <td>
-                            <input type="number" name="items[0][amount]" class="form-control item-amount" 
-                                   step="0.01" min="0.01" placeholder="0.00" required>
-                        </td>
-                        <td>
-                            <input type="text" name="items[0][details]" class="form-control" 
-                                   placeholder="Optional details">
-                        </td>
-                        <td>
-                            <button type="button" class="btn-icon btn btn-success btn-sm add-item">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr style="background: var(--light-green);">
-                        <th colspan="2" class="text-end">Total Amount:</th>
-                        <th id="itemsTotal">0.00</th>
-                        <th colspan="2"></th>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+                                    @endforeach
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" name="items[0][amount]" class="form-control item-amount"
+                                    step="0.01" min="0.01" placeholder="0.00" required>
+                            </td>
+                            <td>
+                                <input type="text" name="items[0][details]" class="form-control"
+                                    placeholder="Optional details">
+                            </td>
+                            <td>
+                                <button type="button" class="btn-icon btn btn-success btn-sm add-item">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: var(--light-green);">
+                            <th colspan="2" class="text-end">Total Amount:</th>
+                            <th id="itemsTotal">0.00</th>
+                            <th colspan="2"></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
         </div>
     </div>
-<br>
+    <br>
     <!-- Narration -->
     <div class="card">
         <div class="card-header section-header">
-       
+
             Receipt Particulars
         </div>
         <div class="card-body px-4">
 
-        
-        <textarea name="narration" class="form-control" rows="3" 
-                  placeholder="Enter receipt description">{{ old('narration') }}</textarea>
-    </div></div>
-<br>
+
+            <textarea name="narration" class="form-control @error('narration') is-invalid @enderror" rows="3"
+                placeholder="Enter receipt description">{{ old('narration') }}</textarea>
+            @error('narration')
+            <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+    </div>
+    <br>
     <!-- Amount in Words -->
     <div class="card">
-           <div class="card-header section-header">
-       Amount in Words
-        
+        <div class="card-header section-header">
+            Amount in Words
+
         </div>
         <div class="amount-display px-5 py-3" id="amountInWords">
             <div style="font-size: 20px; margin-bottom: 8px;">RM 0.00</div>
             <div style="font-size: 16px; opacity: 0.9;">ZERO ONLY</div>
         </div>
     </div>
-<br>
+    <br>
     <!-- Action Buttons -->
     <div class="d-flex gap-3  mb-4">
-           <button type="submit" class="btn btn-primary" id="submitBtn">
+        <button type="submit" class="btn btn-primary" id="submitBtn">
             <i class="fas fa-save"></i>
             Save Receipt
         </button>
@@ -383,15 +429,15 @@
             <i class="fas fa-times"></i>
             Cancel
         </a>
-     
+
     </div>
 
     <!-- Hidden template for ledger options -->
     <select id="ledgerTemplate" class="d-none">
         @foreach($creditLedgers as $ledger)
-            <option value="{{ $ledger->id }}">
-                {{ $ledger->left_code }}@if($ledger->left_code && $ledger->right_code)/@endif{{ $ledger->right_code }} - {{ $ledger->name }}
-            </option>
+        <option value="{{ $ledger->id }}">
+            {{ $ledger->left_code }}@if($ledger->left_code && $ledger->right_code)/@endif{{ $ledger->right_code }} - {{ $ledger->name }}
+        </option>
         @endforeach
     </select>
 </form>
@@ -401,52 +447,52 @@
 
 @push('scripts')
 <script>
-$(document).ready(function() {
+    $(document).ready(function() {
 
-    let itemIndex = 0;
-    
-    // Payment mode change handler
-    $('#paymentMode').change(function() {
-        const mode = $(this).val();
-        $('.conditional-section').hide();
-        
-        if (mode === 'CHEQUE') {
-            $('#chequeDetails').show().addClass('fade-in');
-            $('#chequeDetails input').prop('required', true);
-            $('#onlineDetails input').prop('required', false);
-        } else if (mode === 'ONLINE') {
-            $('#onlineDetails').show().addClass('fade-in');
-            $('#onlineDetails input').prop('required', true);
-            $('#chequeDetails input').prop('required', false);
-        } else {
-            $('#chequeDetails input, #onlineDetails input').prop('required', false);
-        }
-    });
-    
-    // Discount checkbox handler
-    $('#discountCheck').change(function() {
-        if ($(this).is(':checked')) {
-            $('#discountSection').show().addClass('fade-in');
-            $('select[name="discount_ledger"]').attr('required', true);
-            $('input[name="discount_amount"]').attr('required', true);
-            
-            if ($('#discountAmount').val() === '' || $('#discountAmount').val() === '0') {
-                $('#discountAmount').val('0.00');
+        let itemIndex = 0;
+
+        // Payment mode change handler
+        $('#paymentMode').change(function() {
+            const mode = $(this).val();
+            $('.conditional-section').hide();
+
+            if (mode === 'CHEQUE') {
+                $('#chequeDetails').show().addClass('fade-in');
+                $('#chequeDetails input').prop('required', true);
+                $('#onlineDetails input').prop('required', false);
+            } else if (mode === 'ONLINE') {
+                $('#onlineDetails').show().addClass('fade-in');
+                $('#onlineDetails input').prop('required', true);
+                $('#chequeDetails input').prop('required', false);
+            } else {
+                $('#chequeDetails input, #onlineDetails input').prop('required', false);
             }
-        } else {
-            $('#discountSection').hide();
-            $('#discountAmount').val('0.00');
-            calculateTotal();
-            $('select[name="discount_ledger"]').removeAttr('required');
-            $('input[name="discount_amount"]').removeAttr('required');
-        }
-    });
-    
-    // Add item handler
-    $(document).on('click', '.add-item', function() {
-        itemIndex++;
-        const ledgerOptions = $('#ledgerTemplate').html();
-        const newRow = `
+        });
+
+        // Discount checkbox handler
+        $('#discountCheck').change(function() {
+            if ($(this).is(':checked')) {
+                $('#discountSection').show().addClass('fade-in');
+                $('select[name="discount_ledger"]').attr('required', true);
+                $('input[name="discount_amount"]').attr('required', true);
+
+                if ($('#discountAmount').val() === '' || $('#discountAmount').val() === '0') {
+                    $('#discountAmount').val('0.00');
+                }
+            } else {
+                $('#discountSection').hide();
+                $('#discountAmount').val('0.00');
+                calculateTotal();
+                $('select[name="discount_ledger"]').removeAttr('required');
+                $('input[name="discount_amount"]').removeAttr('required');
+            }
+        });
+
+        // Add item handler
+        $(document).on('click', '.add-item', function() {
+            itemIndex++;
+            const ledgerOptions = $('#ledgerTemplate').html();
+            const newRow = `
             <tr class="receipt-item fade-in">
                 <td>
                     <button type="button" class="btn-icon btn btn-danger btn-sm remove-item">
@@ -458,10 +504,12 @@ $(document).ready(function() {
                         <option value="">Select Account</option>
                         ${ledgerOptions}
                     </select>
+                     <span class="error text-danger larger"></span>
                 </td>
                 <td>
                     <input type="number" name="items[${itemIndex}][amount]" class="form-control item-amount" 
                            step="0.01" min="0.01" placeholder="0.00" required>
+                            <span class="error text-danger larger"></span>
                 </td>
                 <td>
                     <input type="text" name="items[${itemIndex}][details]" class="form-control" 
@@ -470,129 +518,229 @@ $(document).ready(function() {
                 <td></td>
             </tr>
         `;
-        $('#receiptItemsTable tbody').append(newRow);
-        $('#receiptItemsTable tbody tr:last .item-ledger').select2({
-            theme: 'bootstrap-5',
-            width: '100%'
+            $('#receiptItemsTable tbody').append(newRow);
+            $('#receiptItemsTable tbody tr:last .item-ledger').select2({
+                theme: 'bootstrap-5',
+                width: '100%'
+            });
         });
-    });
-    
-    // Remove item handler
-    $(document).on('click', '.remove-item', function() {
-        if ($('#receiptItemsTable tbody tr').length > 1) {
-            $(this).closest('tr').remove();
+
+        // Remove item handler
+        $(document).on('click', '.remove-item', function() {
+            if ($('#receiptItemsTable tbody tr').length > 1) {
+                $(this).closest('tr').remove();
+                calculateTotal();
+            }
+        });
+
+        // Calculate total on amount change
+        $(document).on('input change keyup', '.item-amount, #discountAmount', function() {
             calculateTotal();
-        }
-    });
-    
-    // Calculate total on amount change
-    $(document).on('input change keyup', '.item-amount, #discountAmount', function() {
-        calculateTotal();
-    });
-    
-    // Calculate total function
-    function calculateTotal() {
-        let total = 0;
-        $('.item-amount').each(function() {
-            const value = parseFloat($(this).val()) || 0;
-            total += value;
         });
-        
-        let discount = parseFloat($('#discountAmount').val()) || 0;
-        let finalTotal = total - discount;
-        
-        $('#itemsTotal').text(total.toFixed(2));
-        updateAmountInWords(finalTotal);
-    }
-    
-    // Update amount in words
-    function updateAmountInWords(amount) {
-        const words = numberToWords(amount);
-        $('#amountInWords').html(`
+
+        // Calculate total function
+        function calculateTotal() {
+            let total = 0;
+            $('.item-amount').each(function() {
+                const value = parseFloat($(this).val()) || 0;
+                total += value;
+            });
+
+            let discount = parseFloat($('#discountAmount').val()) || 0;
+            let finalTotal = total - discount;
+
+            $('#itemsTotal').text(total.toFixed(2));
+            updateAmountInWords(finalTotal);
+        }
+
+        // Update amount in words
+        function updateAmountInWords(amount) {
+            const words = numberToWords(amount);
+            $('#amountInWords').html(`
             <div style="font-size: 24px; margin-bottom: 8px;">RM ${amount.toFixed(2)}</div>
             <div style="font-size: 16px; opacity: 0.9;">${words}</div>
         `);
-    }
-    
-    // Number to words conversion
-    function numberToWords(amount) {
-        if (amount === 0) return 'ZERO ONLY';
-        
-        const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'];
-        const teens = ['TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
-        const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
-        const thousands = ['', 'THOUSAND', 'MILLION', 'BILLION'];
-
-        function convert_hundreds(num) {
-            let str = '';
-            if (num > 99) {
-                str += ones[Math.floor(num / 100)] + ' HUNDRED ';
-                num %= 100;
-            }
-            if (num > 9 && num < 20) {
-                str += teens[num - 10] + ' ';
-            } else {
-                if (num >= 20) {
-                    str += tens[Math.floor(num / 10)] + ' ';
-                }
-                if (num % 10 > 0) {
-                    str += ones[num % 10] + ' ';
-                }
-            }
-            return str.trim();
         }
 
-        function convert_whole_number(num) {
-            let word = '';
-            let i = 0;
-            while (num > 0) {
-                const rem = num % 1000;
-                if (rem > 0) {
-                    word = convert_hundreds(rem) + ' ' + thousands[i] + ' ' + word;
+        // Number to words conversion
+        function numberToWords(amount) {
+            if (amount === 0) return 'ZERO ONLY';
+
+            const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'];
+            const teens = ['TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+            const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
+            const thousands = ['', 'THOUSAND', 'MILLION', 'BILLION'];
+
+            function convert_hundreds(num) {
+                let str = '';
+                if (num > 99) {
+                    str += ones[Math.floor(num / 100)] + ' HUNDRED ';
+                    num %= 100;
                 }
-                num = Math.floor(num / 1000);
-                i++;
+                if (num > 9 && num < 20) {
+                    str += teens[num - 10] + ' ';
+                } else {
+                    if (num >= 20) {
+                        str += tens[Math.floor(num / 10)] + ' ';
+                    }
+                    if (num % 10 > 0) {
+                        str += ones[num % 10] + ' ';
+                    }
+                }
+                return str.trim();
             }
-            return word.trim();
+
+            function convert_whole_number(num) {
+                let word = '';
+                let i = 0;
+                while (num > 0) {
+                    const rem = num % 1000;
+                    if (rem > 0) {
+                        word = convert_hundreds(rem) + ' ' + thousands[i] + ' ' + word;
+                    }
+                    num = Math.floor(num / 1000);
+                    i++;
+                }
+                return word.trim();
+            }
+
+            const ringgit = Math.floor(amount);
+            const sen = Math.round((amount % 1) * 100);
+
+            const ringgitWords = convert_whole_number(ringgit);
+            const senWords = sen > 0 ? ' AND ' + convert_hundreds(sen) + ' SEN' : '';
+
+            return `RINGGIT ${ringgitWords}${senWords} ONLY`;
         }
 
-        const ringgit = Math.floor(amount);
-        const sen = Math.round((amount % 1) * 100);
+        // Handle discount amount focus/blur
+        const discountInput = document.getElementById('discountAmount');
 
-        const ringgitWords = convert_whole_number(ringgit);
-        const senWords = sen > 0 ? ' AND ' + convert_hundreds(sen) + ' SEN' : '';
+        discountInput.addEventListener('focus', function() {
+            if (this.value === '0.00') {
+                this.value = '';
+            }
+        });
 
-        return `RINGGIT ${ringgitWords}${senWords} ONLY`;
+        discountInput.addEventListener('blur', function() {
+            if (this.value === '') {
+                this.value = '0.00';
+            }
+        });
+    });
+
+    // Form submission with loading state
+    function disableSubmitButton() {
+        const form = document.getElementById('receiptForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (form.checkValidity()) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            return true;
+        }
+        return false;
     }
-    
-    // Handle discount amount focus/blur
-    const discountInput = document.getElementById('discountAmount');
-    
-    discountInput.addEventListener('focus', function() {
-        if (this.value === '0.00') {
-            this.value = '';
+
+       $('#discountCheck').change(function() {
+        if ($(this).is(':checked')) {
+            $('#discountSection').show();
+            $('select[name="discount_ledger"]').attr('required', true);
+            $('input[name="discount_amount"]').attr('required', true);
+        } else {
+            $('#discountSection').hide();
+            $('select[name="discount_ledger"]').removeAttr('required');
+            $('input[name="discount_amount"]').removeAttr('required');
+            // Clear discount field errors
+            $('select[name="discount_ledger"], input[name="discount_amount"]').next('.error').remove();
         }
     });
 
-    discountInput.addEventListener('blur', function() {
-        if (this.value === '') {
-            this.value = '0.00';
-        }
+      $(document).on('input', 'input', function() {
+        $(this).next('.error').remove();
     });
+    $(document).on('change', 'select', function() {
+        $(this).next('.error').remove();
+    });
+$('#receiptForm').on('submit', function (e) {
+    $('.error').text(''); // clear old messages
+    let valid = true;
+
+    // Basic required fields
+    valid &= requireField($('input[name="date"]'), 'Date is required');
+    valid &= requireField($('select[name="payment_mode"]'), 'Payment Mode is required');
+    valid &= requireField($('select[name="debit_account"]'), 'Debit Account is required');
+    valid &= requireField($('input[name="received_from"]'), 'Received From is required');
+
+    // Conditional fields
+    if ($('#paymentMode').val() === 'CHEQUE') {
+        valid &= requireField($('input[name="cheque_date"]'), 'Cheque Date is required');
+        valid &= requireField($('#chequeDetails input[name="transaction_no"]'), 'Transaction Number is required');
+    }
+    if ($('#paymentMode').val() === 'ONLINE') {
+        valid &= requireField($('#onlineDetails input[name="transaction_no"]'), 'Transaction Number is required');
+        valid &= requireField($('input[name="transaction_date"]'), 'Transaction Date is required');
+    }
+
+    // Discount fields (if enabled)
+    if ($('#discountCheck').is(':checked')) {
+        valid &= requireField($('select[name="discount_ledger"]'), 'Discount Account is required');
+        const discVal = parseFloat($('#discountAmount').val());
+        if (isNaN(discVal) || discVal <= 0) {
+            showFieldError($('#discountAmount'), 'Discount Amount must be greater than 0');
+            valid = false;
+        }
+    }
+
+    // Receipt items validation
+    const $rows = $('#receiptItemsTable tbody tr.receipt-item');
+    if ($rows.length === 0) {
+        $('#receiptItemsTable').after('<span class="text-danger error d-block mt-2">Please add at least one item</span>');
+        valid = false;
+    } else {
+        $rows.each(function () {
+            const $ledger = $(this).find('.item-ledger');
+            const $amount = $(this).find('.item-amount');
+
+            if (!$ledger.val()) {
+                showFieldError($ledger, 'Account is required');
+                valid = false;
+            }
+            const amt = parseFloat($amount.val());
+            if (isNaN(amt) || amt <= 0) {
+                showFieldError($amount, 'Amount must be greater than 0');
+                valid = false;
+            }
+        });
+    }
+
+    // Totals sanity check: discount cannot exceed total items
+    const itemsTotal = $('#receiptItemsTable tbody .item-amount').toArray()
+        .reduce((sum, el) => sum + (parseFloat($(el).val()) || 0), 0);
+    const discount = parseFloat($('#discountAmount').val()) || 0;
+    if ($('#discountCheck').is(':checked') && discount > itemsTotal) {
+        showFieldError($('#discountAmount'), 'Discount cannot exceed total amount');
+        valid = false;
+    }
+
+    if (!valid) e.preventDefault();
 });
 
-// Form submission with loading state
-function disableSubmitButton() {
-    const form = document.getElementById('receiptForm');
-    const submitBtn = document.getElementById('submitBtn');
-
-    if (form.checkValidity()) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        return true;
+// --- Helpers ---
+function requireField($el, msg) {
+    if (!$el.val()) {
+        showFieldError($el, msg);
+        return false;
     }
-    return false;
+    return true;
 }
+function showFieldError($el, msg) {
+    const $err = $el.next('.error').length
+        ? $el.next('.error')
+        : $('<span class="text-danger error"></span>').insertAfter($el);
+    $err.text(msg);
+}
+
 </script>
 
 @endpush
