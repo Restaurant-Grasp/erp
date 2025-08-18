@@ -33,7 +33,7 @@ class ProductController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:100',
-            'code' => 'required|string|max:50|unique:categories,code',
+            'code' => 'nullable|string|max:50|unique:categories,code',
             'parent_id' => 'nullable|exists:categories,id',
         ]);
         DB::beginTransaction();
@@ -70,7 +70,7 @@ class ProductController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:100',
-            'code' => 'required|string|max:50|unique:categories,code,' . $categories->id,
+            'code' => 'nullable|string|max:50|unique:categories,code,' . $categories->id,
             'parent_id' => 'nullable|exists:categories,id|not_in:' . $categories->id,
         ]);
         DB::beginTransaction();

@@ -50,7 +50,7 @@
             @endif
 
             <div class="mb-3">
-                <label>Code <span class="text-danger">*</span></label>
+                <label>Code </label>
                 <input type="text" name="code" class="form-control @error('code') is-invalid @enderror" value="{{ old('code', $category->code) }}">
                 @error('code')
                     <div class="text-danger mt-1">{{ $message }}</div>
