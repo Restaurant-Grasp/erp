@@ -302,9 +302,9 @@
                 @endif
 
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('payment-modes.*') || request()->routeIs('service.*') ? '' : 'collapsed' }}"
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('payment-modes.*') || request()->routeIs('temple-categories.*')|| request()->routeIs('service.*') ? '' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#masterMenu" role="button"
-                        aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('payment-modes.*') || request()->routeIs('service.*') ? 'true' : 'false' }}"
+                        aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('temple-categories.*') || request()->routeIs('payment-modes.*') || request()->routeIs('service.*') ? 'true' : 'false' }}"
                         aria-controls="masterMenu">
                         <span><i class="fas fa-tools me-2"></i> Master</span>
                         <i class="fas fa-chevron-down"></i>
@@ -385,16 +385,16 @@
 
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('temple-categories.*') ? 'active' : '' }}"
+                                    href="{{ route('temple-categories.index') }}">
+                                    <i class="fas fa-place-of-worship"></i> Business Categories
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </li>
 
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('temple-categories.*') ? 'active' : '' }}"
-                        href="{{ route('temple-categories.index') }}">
-                        <i class="fas fa-place-of-worship"></i> Temple Categories
-                    </a>
-                </li>
 
 
                 <li class="nav-item">
@@ -650,14 +650,14 @@
                                 </a>
                             </li>
                             @endif
-                           
+
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('receipt.*') ? 'active' : '' }}"
                                     href="{{ route('accounts.receipt.list') }}">
                                     <i class="fas fa-receipt me-2"></i> Receipt
                                 </a>
                             </li>
-                         
+
 
 
                             {{-- Payment Vouchers --}}

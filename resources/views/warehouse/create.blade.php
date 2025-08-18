@@ -10,11 +10,14 @@
             @csrf
             <div class="mb-3">
                 <label>Name <span class="text-danger">*</span></label>
-                <input type="text" name="name" class="form-control" required>
+                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}">
+                            @error('name')
+                <div class="text-danger mt-1">{{ $message }}</div>
+                @enderror
             </div>
             <div class="mb-3">
                 <label>Description</label>
-                <textarea name="description" class="form-control" rows="3"></textarea>
+                <textarea name="description" class="form-control" rows="3">{{ old('description') }}</textarea>
             </div>
             <div class="mb-3 form-check">
                 <input type="checkbox" name="is_active" class="form-check-input" id="activeCheck">
