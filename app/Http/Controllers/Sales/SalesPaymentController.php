@@ -59,7 +59,6 @@ class SalesPaymentController extends Controller
         }
 
         $paymentModes = PaymentMode::where('status', 1)
-                                  ->where('type', 'receipt')
                                   ->orderBy('name')
                                   ->get();
 
