@@ -108,14 +108,11 @@ class FollowUpController extends Controller
                 'end' => $followUp->scheduled_date->addHour()->toIso8601String(),
                 'color' => $this->getPriorityColor($followUp->priority),
                 'extendedProps' => [
-					'followup_id' => $followUp->id,  // Add this for the view button
-					'type' => $followUp->follow_up_type,
-					'entity' => $followUp->entity_name,
-					'entity_type' => $followUp->lead_id ? 'Lead' : 'Customer',
-					'status' => $followUp->status,
-					'priority' => $followUp->priority,
-					'assigned_to' => $followUp->assignedTo ? $followUp->assignedTo->name : null
-				]
+                    'type' => $followUp->follow_up_type,
+                    'entity' => $followUp->entity_name,
+                    'status' => $followUp->status,
+                    'priority' => $followUp->priority
+                ]
             ];
         });
 

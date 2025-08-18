@@ -70,7 +70,6 @@ class PaymentModeController extends Controller
     {
         // Get ledgers with type = 1 (Bank/Cash accounts)
         $ledgers = Ledger::where('type', 1)
-                        ->where('status', 1)
                         ->orderBy('name')
                         ->get();
 

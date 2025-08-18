@@ -140,7 +140,7 @@ class CustomerController extends Controller
                 $rightCodeNumber++;
                 $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
             }
-            $leftCode = str_pad($tradeDebtorGroup->code, 4, '0', STR_PAD_LEFT);
+            $leftCode = str_pad($tradeDebtorGroup->id, 4, '0', STR_PAD_LEFT);
 
             // Create ledger for customer
             $ledgerName = $validated['company_name'] . ' (' . $customerCode . ')';

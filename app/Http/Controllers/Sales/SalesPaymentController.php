@@ -7,105 +7,89 @@ use App\Models\SalesInvoice;
 use App\Models\SalesInvoicePayment;
 use App\Models\PaymentMode;
 use App\Models\User;
+use App\Services\AccountMigrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class SalesPaymentController extends Controller
 {
-    public function __construct()
+    protected $accountMigrationService;
+
+    public function __construct(AccountMigrationService $accountMigrationService)
     {
         $this->middleware('permission:sales.payments.view')->only(['index', 'show']);
         $this->middleware('permission:sales.payments.create')->only(['create', 'store']);
         $this->middleware('permission:sales.payments.edit')->only(['edit', 'update']);
         $this->middleware('permission:sales.payments.delete')->only('destroy');
+        
+        $this->accountMigrationService = $accountMigrationService;
     }
 
     /**
-     * Display payments for a specific invoice
+     * Display a listing of payments for an invoice
      */
     public function index(SalesInvoice $invoice)
     {
         $payments = $invoice->payments()
                            ->with(['paymentMode', 'receivedBy', 'createdBy'])
                            ->orderBy('payment_date', 'desc')
-                           ->get();
+                           ->paginate(15);
 
-        return response()->json([
-            'invoice' => $invoice,
-            'payments' => $payments,
-            'total_paid' => $payments->sum('paid_amount'),
-            'remaining_balance' => $invoice->balance_amount
-        ]);
+        return view('sales.payments.index', compact('invoice', 'payments'));
     }
 
     /**
-     * Show payment form
+     * Show the form for creating a new payment
      */
     public function create(SalesInvoice $invoice)
     {
-   
         // Check if invoice can receive payments
-        if (!in_array($invoice->status, ['pending', 'partial', 'overdue'])) {
-            return response()->json(['error' => 'Invoice cannot receive payments in current status.'], 400);
+        if ($invoice->status === 'paid' || $invoice->status === 'cancelled') {
+            return redirect()->route('sales.invoices.show', $invoice)
+                           ->with('error', 'Cannot add payment to invoice with current status.');
         }
 
-        $paymentModes = PaymentMode::with('ledger')->where('status', 1)->orderBy('name')->get();
-        $users = User::where('is_active', '1')->orderBy('name')->get();
+        if ($invoice->balance_amount <= 0) {
+            return redirect()->route('sales.invoices.show', $invoice)
+                           ->with('error', 'Invoice is already fully paid.');
+        }
 
-        return response()->json([
-            'invoice' => [
-                'id' => $invoice->id,
-                'invoice_no' => $invoice->invoice_no,
-                'customer_name' => $invoice->customer->company_name,
-                'total_amount' => $invoice->total_amount,
-                'paid_amount' => $invoice->paid_amount,
-                'balance_amount' => $invoice->balance_amount
-            ],
-            'payment_modes' => $paymentModes->map(function ($mode) {
-                return [
-                    'id' => $mode->id,
-                    'name' => $mode->name,
-                    'ledger_name' => $mode->ledger->name ?? ''
-                ];
-            }),
-            'users' => $users->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name
-                ];
-            })
-        ]);
+        $paymentModes = PaymentMode::where('status', 1)
+                                  ->where('type', 'receipt')
+                                  ->orderBy('name')
+                                  ->get();
+
+        $users = User::where('status', 1)->orderBy('name')->get();
+
+        return view('sales.payments.create', compact('invoice', 'paymentModes', 'users'));
     }
 
     /**
-     * Store a new payment
+     * Store a newly created payment
      */
     public function store(Request $request, SalesInvoice $invoice)
     {
-        // Check if invoice can receive payments
-        if (!in_array($invoice->status, ['pending', 'partial', 'overdue'])) {
-            return response()->json(['error' => 'Invoice cannot receive payments in current status.'], 400);
-        }
-
         $validated = $request->validate([
             'payment_date' => 'required|date|before_or_equal:today',
             'paid_amount' => 'required|numeric|min:0.01|max:' . $invoice->balance_amount,
             'payment_mode_id' => 'required|exists:payment_modes,id',
             'received_by' => 'required|exists:users,id',
-            'file_upload' => 'nullable|file|mimes:jpeg,png,jpg,gif,pdf,docx,doc|max:10240', // 10MB max
-            'notes' => 'nullable|string|max:1000'
+            'notes' => 'nullable|string|max:1000',
+            'file_upload' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048'
         ]);
 
         DB::beginTransaction();
         try {
             // Handle file upload
-            $fileName = null;
+            $filePath = null;
             if ($request->hasFile('file_upload')) {
                 $file = $request->file('file_upload');
-                $fileName = time() . '_' . $file->getClientOriginalName();
-                $file->storeAs('payments', $fileName, 'public');
+                $filename = 'payment_' . time() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('payments/sales', $filename, 'public');
             }
 
             // Create payment record
@@ -115,32 +99,35 @@ class SalesPaymentController extends Controller
                 'paid_amount' => $validated['paid_amount'],
                 'payment_mode_id' => $validated['payment_mode_id'],
                 'received_by' => $validated['received_by'],
-                'file_upload' => $fileName,
                 'notes' => $validated['notes'],
-                'account_migration' => 0, // Will be updated after account migration
-                'created_by' => Auth::id()
+                'file_upload' => $filePath,
+                'created_by' => Auth::id(),
             ]);
 
-            // Account migration (empty method for now)
-            $this->accountMigration($payment);
+            // Migrate to accounting system
+            try {
+                $this->accountMigrationService->migrateSalesInvoicePayment($payment);
+            } catch (\Exception $e) {
+                // Log error but don't fail the payment creation
+                Log::error("Failed to migrate sales payment {$payment->id} to accounting: " . $e->getMessage());
+            }
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment recorded successfully.',
-                'payment' => $payment->load(['paymentMode', 'receivedBy', 'createdBy'])
-            ]);
+            return redirect()->route('sales.invoices.show', $invoice)
+                           ->with('success', 'Payment recorded successfully.');
 
         } catch (\Exception $e) {
             DB::rollback();
             
-            // Delete uploaded file if exists
-            if ($fileName) {
-                Storage::disk('public')->delete('payments/' . $fileName);
+            // Delete uploaded file if payment creation failed
+            if ($filePath && Storage::disk('public')->exists($filePath)) {
+                Storage::disk('public')->delete($filePath);
             }
-
-            return response()->json(['error' => 'Error recording payment: ' . $e->getMessage()], 500);
+            
+            return redirect()->back()
+                           ->with('error', 'Error recording payment: ' . $e->getMessage())
+                           ->withInput();
         }
     }
 
@@ -149,13 +136,9 @@ class SalesPaymentController extends Controller
      */
     public function show(SalesInvoice $invoice, SalesInvoicePayment $payment)
     {
-        if ($payment->invoice_id !== $invoice->id) {
-            return response()->json(['error' => 'Payment not found for this invoice.'], 404);
-        }
-
-        $payment->load(['paymentMode.ledger', 'receivedBy', 'createdBy']);
-
-        return response()->json($payment);
+        $payment->load(['paymentMode', 'receivedBy', 'createdBy']);
+        
+        return view('sales.payments.show', compact('invoice', 'payment'));
     }
 
     /**
@@ -163,37 +146,36 @@ class SalesPaymentController extends Controller
      */
     public function update(Request $request, SalesInvoice $invoice, SalesInvoicePayment $payment)
     {
-        if ($payment->invoice_id !== $invoice->id) {
-            return response()->json(['error' => 'Payment not found for this invoice.'], 404);
+        // Only allow updating if not migrated to accounting
+        if ($payment->account_migration) {
+            return redirect()->route('sales.payments.show', [$invoice, $payment])
+                           ->with('error', 'Cannot update payment that has been migrated to accounting.');
         }
 
-        // Calculate max amount (current balance + this payment amount)
         $maxAmount = $invoice->balance_amount + $payment->paid_amount;
-
+        
         $validated = $request->validate([
             'payment_date' => 'required|date|before_or_equal:today',
             'paid_amount' => 'required|numeric|min:0.01|max:' . $maxAmount,
             'payment_mode_id' => 'required|exists:payment_modes,id',
             'received_by' => 'required|exists:users,id',
-            'file_upload' => 'nullable|file|mimes:jpeg,png,jpg,gif,pdf,docx,doc|max:10240',
-            'notes' => 'nullable|string|max:1000'
+            'notes' => 'nullable|string|max:1000',
+            'file_upload' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048'
         ]);
 
         DB::beginTransaction();
         try {
-            $oldFileName = $payment->file_upload;
-
             // Handle file upload
-            $fileName = $oldFileName;
+            $filePath = $payment->file_upload;
             if ($request->hasFile('file_upload')) {
-                $file = $request->file('file_upload');
-                $fileName = time() . '_' . $file->getClientOriginalName();
-                $file->storeAs('payments', $fileName, 'public');
-
                 // Delete old file
-                if ($oldFileName) {
-                    Storage::disk('public')->delete('payments/' . $oldFileName);
+                if ($filePath && Storage::disk('public')->exists($filePath)) {
+                    Storage::disk('public')->delete($filePath);
                 }
+                
+                $file = $request->file('file_upload');
+                $filename = 'payment_' . time() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('payments/sales', $filename, 'public');
             }
 
             // Update payment
@@ -202,24 +184,27 @@ class SalesPaymentController extends Controller
                 'paid_amount' => $validated['paid_amount'],
                 'payment_mode_id' => $validated['payment_mode_id'],
                 'received_by' => $validated['received_by'],
-                'file_upload' => $fileName,
-                'notes' => $validated['notes']
+                'notes' => $validated['notes'],
+                'file_upload' => $filePath,
             ]);
 
-            // Recalculate invoice totals
-            $this->updateInvoiceStatus($invoice);
+            // Re-migrate to accounting system if needed
+            try {
+                $this->accountMigrationService->migrateSalesInvoicePayment($payment);
+            } catch (\Exception $e) {
+                Log::error("Failed to re-migrate sales payment {$payment->id} to accounting: " . $e->getMessage());
+            }
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment updated successfully.',
-                'payment' => $payment->load(['paymentMode', 'receivedBy', 'createdBy'])
-            ]);
+            return redirect()->route('sales.payments.show', [$invoice, $payment])
+                           ->with('success', 'Payment updated successfully.');
 
         } catch (\Exception $e) {
             DB::rollback();
-            return response()->json(['error' => 'Error updating payment: ' . $e->getMessage()], 500);
+            return redirect()->back()
+                           ->with('error', 'Error updating payment: ' . $e->getMessage())
+                           ->withInput();
         }
     }
 
@@ -228,68 +213,30 @@ class SalesPaymentController extends Controller
      */
     public function destroy(SalesInvoice $invoice, SalesInvoicePayment $payment)
     {
-        if ($payment->invoice_id !== $invoice->id) {
-            return response()->json(['error' => 'Payment not found for this invoice.'], 404);
+        // Only allow deleting if not migrated to accounting
+        if ($payment->account_migration) {
+            return redirect()->route('sales.payments.index', $invoice)
+                           ->with('error', 'Cannot delete payment that has been migrated to accounting.');
         }
 
         DB::beginTransaction();
         try {
             // Delete file if exists
-            if ($payment->file_upload) {
-                Storage::disk('public')->delete('payments/' . $payment->file_upload);
+            if ($payment->file_upload && Storage::disk('public')->exists($payment->file_upload)) {
+                Storage::disk('public')->delete($payment->file_upload);
             }
 
             $payment->delete();
 
-            // Recalculate invoice totals
-            $this->updateInvoiceStatus($invoice);
-
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment deleted successfully.'
-            ]);
+            return redirect()->route('sales.invoices.show', $invoice)
+                           ->with('success', 'Payment deleted successfully.');
 
         } catch (\Exception $e) {
             DB::rollback();
-            return response()->json(['error' => 'Error deleting payment: ' . $e->getMessage()], 500);
+            return redirect()->route('sales.payments.index', $invoice)
+                           ->with('error', 'Error deleting payment: ' . $e->getMessage());
         }
-    }
-
-    /**
-     * Update invoice status and amounts
-     */
-    private function updateInvoiceStatus(SalesInvoice $invoice)
-    {
-        $totalPaid = $invoice->payments()->sum('paid_amount');
-        $balanceAmount = $invoice->total_amount - $totalPaid;
-
-        $status = 'pending';
-        if ($totalPaid >= $invoice->total_amount) {
-            $status = 'paid';
-        } elseif ($totalPaid > 0) {
-            $status = 'partial';
-        }
-
-        $invoice->update([
-            'paid_amount' => $totalPaid,
-            'balance_amount' => $balanceAmount,
-            'status' => $status
-        ]);
-    }
-
-    /**
-     * Account migration placeholder
-     */
-    private function accountMigration(SalesInvoicePayment $payment)
-    {
-        // Empty method for future account integration
-        // Once implemented, update payment record: account_migration = 1
-        
-        // Example of what will be implemented later:
-        // 1. Create debit entry for payment mode ledger (bank/cash account)
-        // 2. Create credit entry for customer ledger
-        // 3. Update payment record with account_migration = 1
     }
 }

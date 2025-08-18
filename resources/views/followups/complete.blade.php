@@ -15,20 +15,7 @@
     </nav>
 </div>
 
-{{-- Display any validation errors --}}
-@if ($errors->any())
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <strong>Please fix the following errors:</strong>
-        <ul class="mb-0 mt-2">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
-<form action="{{ route('followups.mark-complete', $followup) }}" method="POST" id="completeFollowupForm">
+<form action="{{ route('followups.mark-complete', $followup) }}" method="POST">
     @csrf
     
     <div class="row">
@@ -45,7 +32,7 @@
                                 <tr>
                                     <th width="40%">Type:</th>
                                     <td>
-                                        <i class="fas {{ $followup->type_icon ?? 'fa-calendar' }} me-1"></i>
+                                        <i class="fas {{ $followup->type_icon }} me-1"></i>
                                         {{ ucwords(str_replace('_', ' ', $followup->follow_up_type)) }}
                                     </td>
                                 </tr>
@@ -56,7 +43,7 @@
                                 <tr>
                                     <th>Priority:</th>
                                     <td>
-                                        <span class="badge bg-{{ $followup->priority_color ?? 'secondary' }}">
+                                        <span class="badge bg-{{ $followup->priority_color }}">
                                             {{ ucfirst($followup->priority) }}
                                         </span>
                                     </td>
@@ -183,7 +170,7 @@
                     <div id="nextFollowUpFields" style="display: none;">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="next_follow_up_date" class="form-label">Next Follow-up Date <span class="text-danger">*</span></label>
+                                <label for="next_follow_up_date" class="form-label">Next Follow-up Date</label>
                                 <input type="datetime-local" class="form-control @error('next_follow_up_date') is-invalid @enderror" 
                                        id="next_follow_up_date" name="next_follow_up_date"
                                        value="{{ old('next_follow_up_date') }}"
@@ -194,7 +181,7 @@
                             </div>
                             
                             <div class="col-md-6">
-                                <label for="next_follow_up_subject" class="form-label">Subject <span class="text-danger">*</span></label>
+                                <label for="next_follow_up_subject" class="form-label">Subject</label>
                                 <input type="text" class="form-control @error('next_follow_up_subject') is-invalid @enderror" 
                                        id="next_follow_up_subject" name="next_follow_up_subject"
                                        value="{{ old('next_follow_up_subject') }}"
@@ -217,7 +204,7 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-success btn-lg" id="completeBtn">
+                        <button type="submit" class="btn btn-success btn-lg">
                             <i class="fas fa-check me-2"></i> Complete Follow-up
                         </button>
                         <a href="{{ route('followups.show', $followup) }}" class="btn btn-outline-secondary">
@@ -243,151 +230,96 @@
             </div>
 
             <!-- Quick Actions -->
-            @if($followup->lead)
             <div class="card mt-4">
                 <div class="card-header">
                     <h5 class="mb-0">Quick Actions After Completion</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
+                        @if($followup->lead)
+                        
                         <a href="{{ route('leads.edit', $followup->lead) }}" 
-                           class="btn btn-sm btn-outline-info" target="_blank">
+                           class="btn btn-sm btn-outline-info">
                             <i class="fas fa-edit me-1"></i> Update Lead Status
                         </a>
+                      
+                        @endif
                     </div>
                 </div>
             </div>
-            @endif
         </div>
     </div>
 </form>
-@endsection
-
-@push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+$(document).ready(function() {
     // Show/hide duration field based on communication type
-    const communicationType = document.getElementById('communication_type');
-    const durationField = document.getElementById('durationField');
-    const durationInput = document.getElementById('duration_minutes');
-    
-    if (communicationType) {
-        communicationType.addEventListener('change', function() {
-            const type = this.value;
-            if (type === 'phone_call' || type === 'meeting') {
-                durationField.style.display = 'block';
-                durationInput.setAttribute('required', 'required');
-            } else {
-                durationField.style.display = 'none';
-                durationInput.removeAttribute('required');
-                durationInput.value = '';
-            }
-        });
-        
-        // Trigger initial check
-        communicationType.dispatchEvent(new Event('change'));
-    }
+    $('#communication_type').on('change', function() {
+        const type = $(this).val();
+        if (type === 'phone_call' || type === 'meeting') {
+            $('#durationField').show();
+            $('#duration_minutes').prop('required', true);
+        } else {
+            $('#durationField').hide();
+            $('#duration_minutes').prop('required', false);
+        }
+    });
+
+    // Trigger initial check
+    $('#communication_type').trigger('change');
 
     // Show/hide next follow-up fields
-    const nextFollowUpCheckbox = document.getElementById('next_follow_up');
-    const nextFollowUpFields = document.getElementById('nextFollowUpFields');
-    const nextFollowUpDate = document.getElementById('next_follow_up_date');
-    const nextFollowUpSubject = document.getElementById('next_follow_up_subject');
-    
-    if (nextFollowUpCheckbox) {
-        nextFollowUpCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                nextFollowUpFields.style.display = 'block';
-                nextFollowUpDate.setAttribute('required', 'required');
-                nextFollowUpSubject.setAttribute('required', 'required');
-            } else {
-                nextFollowUpFields.style.display = 'none';
-                nextFollowUpDate.removeAttribute('required');
-                nextFollowUpSubject.removeAttribute('required');
-                nextFollowUpDate.value = '';
-                nextFollowUpSubject.value = '';
-            }
-        });
-        
-        // Trigger initial check
-        if (nextFollowUpCheckbox.checked) {
-            nextFollowUpFields.style.display = 'block';
-            nextFollowUpDate.setAttribute('required', 'required');
-            nextFollowUpSubject.setAttribute('required', 'required');
+    $('#next_follow_up').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#nextFollowUpFields').show();
+            $('#next_follow_up_date').prop('required', true);
+            $('#next_follow_up_subject').prop('required', true);
+        } else {
+            $('#nextFollowUpFields').hide();
+            $('#next_follow_up_date').prop('required', false);
+            $('#next_follow_up_subject').prop('required', false);
         }
+    });
+
+    // Trigger initial check
+    if ($('#next_follow_up').is(':checked')) {
+        $('#nextFollowUpFields').show();
     }
 
     // Handle outcome-based suggestions
-    const outcomeSelect = document.getElementById('outcome');
-    if (outcomeSelect) {
-        outcomeSelect.addEventListener('change', function() {
-            const outcome = this.value;
+    $('#outcome').on('change', function() {
+        const outcome = $(this).val();
+        
+        // Auto-check next follow-up for certain outcomes
+        if (['callback_later', 'interested', 'meeting_scheduled', 'demo_scheduled'].includes(outcome)) {
+            $('#next_follow_up').prop('checked', true).trigger('change');
             
-            // Auto-check next follow-up for certain outcomes
-            if (['callback_later', 'interested', 'meeting_scheduled', 'demo_scheduled'].includes(outcome)) {
-                nextFollowUpCheckbox.checked = true;
-                nextFollowUpCheckbox.dispatchEvent(new Event('change'));
-                
-                // Set default follow-up dates based on outcome
-                const nextDate = new Date();
-                let defaultSubject = '';
-                
-                switch(outcome) {
-                    case 'callback_later':
-                        nextDate.setDate(nextDate.getDate() + 3);
-                        defaultSubject = 'Follow-up call as requested';
-                        break;
-                    case 'meeting_scheduled':
-                        nextDate.setDate(nextDate.getDate() + 1);
-                        defaultSubject = 'Meeting reminder';
-                        break;
-                    case 'demo_scheduled':
-                        nextDate.setDate(nextDate.getDate() + 1);
-                        defaultSubject = 'Demo reminder';
-                        break;
-                    case 'interested':
-                        nextDate.setDate(nextDate.getDate() + 7);
-                        defaultSubject = 'Follow-up on interest';
-                        break;
-                }
-                
-                // Set default time to 10:00 AM
-                nextDate.setHours(10, 0, 0, 0);
-                
-                // Format date for datetime-local input
-                const year = nextDate.getFullYear();
-                const month = String(nextDate.getMonth() + 1).padStart(2, '0');
-                const day = String(nextDate.getDate()).padStart(2, '0');
-                const hours = String(nextDate.getHours()).padStart(2, '0');
-                const minutes = String(nextDate.getMinutes()).padStart(2, '0');
-                
-                nextFollowUpDate.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-                nextFollowUpSubject.value = defaultSubject;
-            }
-        });
-    }
-
-    // Form validation before submission
-    const form = document.getElementById('completeFollowupForm');
-    const submitBtn = document.getElementById('completeBtn');
-    
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            // Check if required fields are filled
-            const communicationType = document.getElementById('communication_type').value;
-            const outcome = document.getElementById('outcome').value;
-            
-            if (!communicationType || !outcome) {
-                e.preventDefault();
-                alert('Please select both Communication Type and Outcome before completing the follow-up.');
-                return false;
+            // Set default follow-up dates based on outcome
+            const nextDate = new Date();
+            switch(outcome) {
+                case 'callback_later':
+                    nextDate.setDate(nextDate.getDate() + 3);
+                    $('#next_follow_up_subject').val('Follow-up call as requested');
+                    break;
+                case 'meeting_scheduled':
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    $('#next_follow_up_subject').val('Meeting reminder');
+                    break;
+                case 'demo_scheduled':
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    $('#next_follow_up_subject').val('Demo reminder');
+                    break;
+                case 'interested':
+                    nextDate.setDate(nextDate.getDate() + 7);
+                    $('#next_follow_up_subject').val('Follow-up on interest');
+                    break;
             }
             
-            // Disable submit button to prevent double submission
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Processing...';
-        });
-    }
+            // Format date for datetime-local input
+            nextDate.setMinutes(nextDate.getMinutes() - nextDate.getTimezoneOffset());
+            $('#next_follow_up_date').val(nextDate.toISOString().slice(0, 16));
+        }
+    });
 });
 </script>
-@endpush
+@endsection
+

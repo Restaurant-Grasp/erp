@@ -38,11 +38,11 @@ class SalesInvoiceController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('invoice_no', 'like', "%{$search}%")
-                  ->orWhere('reference_no', 'like', "%{$search}%")
-                  ->orWhere('po_no', 'like', "%{$search}%")
-                  ->orWhereHas('customer', function ($q) use ($search) {
-                      $q->where('company_name', 'like', "%{$search}%");
-                  });
+                    ->orWhere('reference_no', 'like', "%{$search}%")
+                    ->orWhere('po_no', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('company_name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -67,11 +67,11 @@ class SalesInvoiceController extends Controller
                     break;
                 case 'due_today':
                     $query->whereDate('due_date', now()->toDateString())
-                          ->whereIn('status', ['pending', 'partial']);
+                        ->whereIn('status', ['pending', 'partial']);
                     break;
                 case 'due_this_week':
                     $query->whereBetween('due_date', [now(), now()->addWeek()])
-                          ->whereIn('status', ['pending', 'partial']);
+                        ->whereIn('status', ['pending', 'partial']);
                     break;
             }
         }
@@ -95,7 +95,7 @@ class SalesInvoiceController extends Controller
     public function create(Request $request)
     {
         $customers = Customer::where('status', 'active')->orderBy('company_name')->get();
-        
+
         // Pre-fill data if coming from quotation
         $quotation = null;
         if ($request->filled('quotation_id')) {
@@ -130,28 +130,33 @@ class SalesInvoiceController extends Controller
             'items.*.tax_id' => 'nullable|exists:taxes,id',
             'items.*.description' => 'nullable|string'
         ]);
-
+      
         DB::beginTransaction();
         try {
             // Create invoice
             $invoiceData = $validated;
             unset($invoiceData['items']);
             $invoiceData['created_by'] = Auth::id();
-            $invoiceData['status'] = 'pending';
-        
-            $invoiceData['due_date'] = now()->addDays((int) $validated['payment_terms']);
 
+            $invoiceData['status'] = 'pending';
+
+            $invoiceData['due_date'] = now()->addDays((int) $validated['payment_terms']);
+   
             $invoice = SalesInvoice::create($invoiceData);
 
             // Create invoice items
-            foreach ($validated['items'] as $index => $itemData) {
+                $items = $quotationData['items'] ?? [];
+            // Create quotation items
+           foreach ($items as $index => $itemData) {
                 $itemData['invoice_id'] = $invoice->id;
                 $itemData['delivered_quantity'] = 0;
                 $itemData['delivery_status'] = 'not_delivered';
                 $itemData['sort_order'] = $index + 1;
+                  
                 SalesInvoiceItem::create($itemData);
+        
             }
-
+         
             // Calculate totals
             $invoice->calculateTotals();
 
@@ -164,8 +169,8 @@ class SalesInvoiceController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('success', 'Invoice created successfully.');
+            return redirect()->route('sales.invoices.index')
+                ->with('success', 'Invoice created successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return back()->withErrors(['error' => 'Error creating invoice: ' . $e->getMessage()])->withInput();
@@ -199,11 +204,11 @@ class SalesInvoiceController extends Controller
     {
         if ($invoice->status === 'paid' || $invoice->status === 'cancelled') {
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('error', 'Invoice cannot be edited in current status.');
+                ->with('error', 'Invoice cannot be edited in current status.');
         }
 
         $customers = Customer::where('status', 'active')->orderBy('company_name')->get();
-        $invoice->load('items');
+        $invoice->load(['items.product','items.service','items.package']);
 
         return view('sales.invoices.edit', compact('invoice', 'customers'));
     }
@@ -215,7 +220,7 @@ class SalesInvoiceController extends Controller
     {
         if ($invoice->status === 'paid' || $invoice->status === 'cancelled') {
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('error', 'Invoice cannot be edited in current status.');
+                ->with('error', 'Invoice cannot be edited in current status.');
         }
 
         $validated = $request->validate([
@@ -243,14 +248,16 @@ class SalesInvoiceController extends Controller
             // Update invoice
             $invoiceData = $validated;
             unset($invoiceData['items']);
-            $invoiceData['due_date'] = $invoice->invoice_date->addDays($validated['payment_terms']);
+            $invoiceData['due_date'] = $invoice->invoice_date->addDays((int) $validated['payment_terms']);
             $invoice->update($invoiceData);
 
             // Delete existing items
             $invoice->items()->delete();
 
             // Create new items
-            foreach ($validated['items'] as $index => $itemData) {
+               $items = $quotationData['items'] ?? [];
+            // Create quotation items
+           foreach ($items as $index => $itemData) {
                 $itemData['invoice_id'] = $invoice->id;
                 $itemData['delivered_quantity'] = 0;
                 $itemData['delivery_status'] = 'not_delivered';
@@ -266,7 +273,7 @@ class SalesInvoiceController extends Controller
 
             DB::commit();
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('success', 'Invoice updated successfully.');
+                ->with('success', 'Invoice updated successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return back()->withErrors(['error' => 'Error updating invoice: ' . $e->getMessage()])->withInput();
@@ -280,7 +287,7 @@ class SalesInvoiceController extends Controller
     {
         if (!$invoice->can_be_cancelled) {
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('error', 'Invoice cannot be cancelled as payments have been made.');
+                ->with('error', 'Invoice cannot be cancelled as payments have been made.');
         }
 
         $validated = $request->validate([
@@ -292,10 +299,10 @@ class SalesInvoiceController extends Controller
             $invoice->update(['notes' => ($invoice->notes . "\n\nCancellation Reason: " . $validated['cancellation_reason'])]);
 
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('success', 'Invoice cancelled successfully.');
+                ->with('success', 'Invoice cancelled successfully.');
         } catch (\Exception $e) {
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('error', 'Error cancelling invoice: ' . $e->getMessage());
+                ->with('error', 'Error cancelling invoice: ' . $e->getMessage());
         }
     }
 
@@ -306,14 +313,14 @@ class SalesInvoiceController extends Controller
     {
         // Check if invoice has items that need delivery
         $pendingItems = $invoice->items()->where('delivery_status', '!=', 'delivered')->count();
-        
+
         if ($pendingItems === 0) {
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('error', 'All items have been delivered.');
+                ->with('error', 'All items have been delivered.');
         }
 
         return redirect()->route('sales.delivery-orders.create', ['invoice_id' => $invoice->id])
-                        ->with('success', 'Create delivery order for pending items.');
+            ->with('success', 'Create delivery order for pending items.');
     }
 
     /**
@@ -323,17 +330,17 @@ class SalesInvoiceController extends Controller
     {
         if ($invoice->e_invoice_status !== 'not_submitted') {
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('error', 'Invoice has already been submitted to e-invoice system.');
+                ->with('error', 'Invoice has already been submitted to e-invoice system.');
         }
 
         try {
             $invoice->submitToEInvoice();
-            
+
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('success', 'Invoice submitted to e-invoice system successfully.');
+                ->with('success', 'Invoice submitted to e-invoice system successfully.');
         } catch (\Exception $e) {
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('error', 'Error submitting to e-invoice: ' . $e->getMessage());
+                ->with('error', 'Error submitting to e-invoice: ' . $e->getMessage());
         }
     }
 
@@ -396,11 +403,11 @@ class SalesInvoiceController extends Controller
 
             DB::commit();
             return redirect()->route('sales.invoices.edit', $newInvoice)
-                           ->with('success', 'Invoice duplicated successfully.');
+                ->with('success', 'Invoice duplicated successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('error', 'Error duplicating invoice: ' . $e->getMessage());
+                ->with('error', 'Error duplicating invoice: ' . $e->getMessage());
         }
     }
 
@@ -417,81 +424,82 @@ class SalesInvoiceController extends Controller
             'outstanding_amount' => SalesInvoice::whereIn('status', ['pending', 'partial'])->sum('balance_amount'),
             'overdue_amount' => SalesInvoice::overdue()->sum('balance_amount'),
             'this_month_revenue' => SalesInvoice::whereMonth('invoice_date', now()->month)
-                                              ->whereYear('invoice_date', now()->year)
-                                              ->sum('total_amount')
+                ->whereYear('invoice_date', now()->year)
+                ->sum('total_amount')
         ];
 
         return response()->json($statistics);
     }
-  
-/**
- * Get invoice payments for modal display
- */
-public function getPayments(SalesInvoice $invoice)
-{
-    $payments = $invoice->payments()
-                       ->with(['paymentMode.ledger', 'receivedBy', 'createdBy'])
-                       ->orderBy('payment_date', 'desc')
-                       ->get();
 
-    return response()->json([
-        'invoice' => [
-            'id' => $invoice->id,
-            'invoice_no' => $invoice->invoice_no,
-            'customer_name' => $invoice->customer->company_name,
-            'total_amount' => $invoice->total_amount,
-            'paid_amount' => $invoice->paid_amount,
-            'balance_amount' => $invoice->balance_amount,
-            'status' => $invoice->status
-        ],
-        'payments' => $payments->map(function ($payment) {
-            return [
-                'id' => $payment->id,
-                'payment_date' => $payment->payment_date->format('d/m/Y'),
-                'paid_amount' => number_format($payment->paid_amount, 2),
-                'payment_mode' => $payment->paymentMode->name,
-                'ledger_name' => $payment->paymentMode->ledger->name ?? '',
-                'received_by' => $payment->receivedBy->name,
-                'notes' => $payment->notes,
-                'file_upload' => $payment->file_upload,
-                'file_url' => $payment->file_url,
-                'created_by' => $payment->createdBy->name,
-                'created_at' => $payment->created_at->format('d/m/Y H:i'),
-                'account_migration' => $payment->account_migration
-            ];
-        }),
-        'total_paid' => $payments->sum('paid_amount'),
-        'payment_count' => $payments->count()
-    ]);
-}
+    /**
+     * Get invoice payments for modal display
+     */
+    public function getPayments(SalesInvoice $invoice)
+    {
+        $payments = $invoice->payments()
+            ->with(['paymentMode.ledger', 'receivedBy', 'createdBy'])
+            ->orderBy('payment_date', 'desc')
+            ->get();
 
-/**
- * Get tax dropdown method that was missing
- */
-public function getTaxesForDropdown(Request $request)
-{
-    $itemType = $request->get('type', 'both');
-    
-    $query = Tax::where('status', 1);
-    
-    if ($itemType === 'product') {
-        $query->whereIn('applicable_for', ['product', 'both']);
-    } elseif ($itemType === 'service') {
-        $query->whereIn('applicable_for', ['service', 'both']);
-    } else {
-        // For 'both' or any other case, show all active taxes
-        $query->whereIn('applicable_for', ['product', 'service', 'both']);
+        return response()->json([
+            'invoice' => [
+                'id' => $invoice->id,
+                'invoice_no' => $invoice->invoice_no,
+                'customer_name' => $invoice->customer->company_name,
+                'total_amount' => $invoice->total_amount,
+                'paid_amount' => $invoice->paid_amount,
+                'balance_amount' => $invoice->balance_amount,
+                'status' => $invoice->status
+            ],
+            'payments' => $payments->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'payment_date' => $payment->payment_date->format('d/m/Y'),
+                    'paid_amount' => number_format($payment->paid_amount, 2),
+                    'payment_mode' => $payment->paymentMode->name,
+                    'ledger_name' => $payment->paymentMode->ledger->name ?? '',
+                    'received_by' => $payment->receivedBy->name,
+                    'notes' => $payment->notes,
+                    'file_upload' => $payment->file_upload,
+                    'file_url' => $payment->file_url,
+                    'created_by' => $payment->createdBy->name,
+                    'created_at' => $payment->created_at->format('d/m/Y H:i'),
+                    'account_migration' => $payment->account_migration
+                ];
+            }),
+            'total_paid' => $payments->sum('paid_amount'),
+            'payment_count' => $payments->count()
+        ]);
     }
-    
-    $taxes = $query->orderBy('name')->get();
-    
-    return response()->json($taxes->map(function ($tax) {
-        return [
-            'id' => $tax->id,
-            'name' => $tax->name,
-            'percent' => $tax->percent,
-            'applicable_for' => $tax->applicable_for
-        ];
-    }));
-}
+
+    /**
+     * Get tax dropdown method that was missing
+     */
+    public function getTaxesForDropdown(Request $request)
+    {
+
+        $itemType = $request->get('type', 'both');
+
+        $query = Tax::where('status', 1);
+
+        if ($itemType === 'product') {
+            $query->whereIn('applicable_for', ['product', 'both']);
+        } elseif ($itemType === 'service') {
+            $query->whereIn('applicable_for', ['service', 'both']);
+        } else {
+            // For 'both' or any other case, show all active taxes
+            $query->whereIn('applicable_for', ['product', 'service', 'both']);
+        }
+
+        $taxes = $query->orderBy('name')->get();
+
+        return response()->json($taxes->map(function ($tax) {
+            return [
+                'id' => $tax->id,
+                'name' => $tax->name,
+                'percent' => $tax->percent,
+                'applicable_for' => $tax->applicable_for
+            ];
+        }));
+    }
 }

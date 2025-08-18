@@ -322,3 +322,112 @@ INSERT INTO `role_has_permissions` (`permission_id`, `role_id`) VALUES
 (275, 1), (275, 22),
 (276, 1), (276, 22),
 (277, 1), (277, 22);
+
+----------------------------------
+
+14-08-2025 sales migration
+
+
+-- Add account_migration column to sales_invoices table
+ALTER TABLE `sales_invoices` 
+ADD `account_migration` TINYINT(1) NOT NULL DEFAULT 0 AFTER `entry_id`;
+
+-- Add account_migration column to purchase_invoices table
+ALTER TABLE `purchase_invoices` 
+ADD `account_migration` TINYINT(1) NOT NULL DEFAULT 0 AFTER `entry_id`;
+
+-- Add account_migration column to sales_invoice_payments table (if exists)
+ALTER TABLE `sales_invoice_payments` 
+ADD `account_migration` TINYINT(1) NOT NULL DEFAULT 0 AFTER `created_at`;
+
+-- Add account_migration column to purchase_invoice_payments table (if exists)
+ALTER TABLE `purchase_invoice_payments` 
+ADD `account_migration` TINYINT(1) NOT NULL DEFAULT 0 AFTER `created_at`;
+
+-- Insert required ledger settings into crm_settings (only if not already exists)
+INSERT INTO `crm_settings` 
+(`category`, `setting_key`, `setting_value`, `setting_type`, `description`, `created_at`, `updated_at`)
+SELECT category, setting_key, setting_value, setting_type, description, created_at, updated_at
+FROM (
+    SELECT 
+        'sales' AS category, 
+        'sales_ledger_id' AS setting_key, 
+        NULL AS setting_value, 
+        'number' AS setting_type, 
+        'Default sales revenue ledger for accounting entries' AS description, 
+        NOW() AS created_at, 
+        NOW() AS updated_at
+    UNION ALL
+    SELECT 
+        'sales', 
+        'discount_ledger_id', 
+        NULL, 
+        'number', 
+        'Default discount ledger for accounting entries', 
+        NOW(), 
+        NOW()
+    UNION ALL
+    SELECT 
+        'purchase', 
+        'purchase_ledger_id', 
+        NULL, 
+        'number', 
+        'Default purchase expense ledger for accounting entries', 
+        NOW(), 
+        NOW()
+) AS tmp
+WHERE NOT EXISTS (
+    SELECT 1 
+    FROM `crm_settings` 
+    WHERE `category` = tmp.category 
+      AND `setting_key` = tmp.setting_key
+);
+-- Create payment_modes table
+CREATE TABLE IF NOT EXISTS `payment_modes` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(255) NOT NULL,
+    `type` ENUM('receipt','payment','both') NOT NULL DEFAULT 'both',
+    `ledger_id` BIGINT UNSIGNED NULL,
+    `description` TEXT NULL,
+    `status` TINYINT(1) NOT NULL DEFAULT 1,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `payment_modes_ledger_id_foreign` FOREIGN KEY (`ledger_id`) REFERENCES `ledgers`(`id`) ON DELETE SET NULL,
+    INDEX `payment_modes_status_type_index` (`status`, `type`)
+);
+
+-- Create sales_invoice_payments table
+CREATE TABLE IF NOT EXISTS `sales_invoice_payments` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `invoice_id` INT NOT NULL,
+    `payment_date` DATE NOT NULL,
+    `paid_amount` DECIMAL(14,2) NOT NULL,
+    `payment_mode_id` INT NOT NULL,
+    `received_by` INT NOT NULL,
+    `file_upload` VARCHAR(255) NULL,
+    `notes` TEXT NULL,
+    `account_migration` TINYINT(1) NOT NULL DEFAULT 0,
+    `created_by` INT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `sales_invoice_payments_invoice_id_foreign` FOREIGN KEY (`invoice_id`) REFERENCES `sales_invoices`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `sales_invoice_payments_payment_mode_id_foreign` FOREIGN KEY (`payment_mode_id`) REFERENCES `payment_modes`(`id`),
+    CONSTRAINT `sales_invoice_payments_received_by_foreign` FOREIGN KEY (`received_by`) REFERENCES `users`(`id`),
+    CONSTRAINT `sales_invoice_payments_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users`(`id`),
+    INDEX `sales_invoice_payments_invoice_date_index` (`invoice_id`, `payment_date`),
+    INDEX `sales_invoice_payments_account_migration_index` (`account_migration`)
+);
+
+-- Add payment_mode_id to purchase_invoice_payments table if it doesn’t exist
+ALTER TABLE `purchase_invoice_payments`
+ADD COLUMN `payment_mode_id` INT NULL AFTER `paid_amount`,
+ADD CONSTRAINT `purchase_invoice_payments_payment_mode_id_foreign` FOREIGN KEY (`payment_mode_id`) REFERENCES `payment_modes`(`id`);
+
+-- Insert default payment modes
+INSERT INTO `payment_modes` (`name`, `type`, `ledger_id`, `description`, `status`, `sort_order`, `created_at`, `updated_at`) VALUES
+('Cash', 'both', 2, 'Cash payments', 1, 1, NOW(), NOW()),
+('Bank Transfer', 'both', 1, 'Bank transfer payments', 1, 2, NOW(), NOW()),
+('Cheque', 'both', 1, 'Cheque payments', 1, 3, NOW(), NOW()),
+('Credit Card', 'receipt', 1, 'Credit card payments', 1, 4, NOW(), NOW()),
+('Online Banking', 'both', 1, 'Online banking payments', 1, 5, NOW(), NOW());

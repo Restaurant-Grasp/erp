@@ -113,4 +113,7 @@ class Kernel extends HttpKernel
 
         require base_path('routes/console.php');
     }
+    protected $commands = [
+    \App\Console\Commands\TestAccountMigration::class,
+];
 }

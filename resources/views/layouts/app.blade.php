@@ -302,16 +302,16 @@
                 @endif
 
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') ? '' : 'collapsed' }}"
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('payment-modes.*') || request()->routeIs('service.*') ? '' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#masterMenu" role="button"
-                        aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') ? 'true' : 'false' }}"
+                        aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('payment-modes.*') || request()->routeIs('service.*') ? 'true' : 'false' }}"
                         aria-controls="masterMenu">
                         <span><i class="fas fa-tools me-2"></i> Master</span>
                         <i class="fas fa-chevron-down"></i>
                     </a>
 
 
-                    <div class="collapse {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('payment-modes.*') || request()->routeIs('service.*') ? 'show' : '' }}"
                         id="masterMenu">
                         <ul class="nav flex-column ms-3">
 
@@ -366,9 +366,25 @@
                                     <i class="fas fa-truck"></i> Vendors
                                 </a>
                             </li>
+                            @if ($permissions->contains('name', 'payment_modes.view'))
 
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('payment-modes.*') ? 'active' : '' }}" href="{{ route('payment-modes.index') }}">
+                                    <i class="fas fa-credit-card"></i> Payment Modes
+                                </a>
+                            </li>
+                            @endif
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('service.*') ? 'active' : '' }}" href="{{ route('service.index') }}">
+                                    <i class="fas fa-cogs me-2"></i> Services
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('packages.*') ? 'active' : '' }}" href="{{ route('packages.index') }}">
+                                    <i class="fas fa-box me-2"></i> Packages
 
-
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </li>
@@ -470,6 +486,7 @@
                             </li>
 
                             @endif
+
 
                         </ul>
                     </div>
@@ -633,14 +650,14 @@
                                 </a>
                             </li>
                             @endif
-                            @if ($permissions->contains('name', 'accounts.receipt.view'))
+                           
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('receipt.*') ? 'active' : '' }}"
                                     href="{{ route('accounts.receipt.list') }}">
                                     <i class="fas fa-receipt me-2"></i> Receipt
                                 </a>
                             </li>
-                            @endif
+                         
 
 
                             {{-- Payment Vouchers --}}
@@ -702,14 +719,6 @@
                     </div>
                 </li>
                 @endif
-
-
-
-                <li class="nav-item">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-wrench"></i> Service
-                    </a>
-                </li>
 
                 <li class="nav-item">
                     <a class="nav-link" href="#">
