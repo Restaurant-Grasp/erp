@@ -32,7 +32,7 @@
                         <div class="col-md-6">
                             <label class="form-label">Company Name <span class="text-danger">*</span></label>
                             <input type="text" name="company_name" class="form-control @error('company_name') is-invalid @enderror" 
-                                   value="{{ old('company_name', $customer->company_name) }}" required>
+                                   value="{{ old('company_name', $customer->company_name) }}">
                             @error('company_name')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -167,11 +167,14 @@
 
                     <div class="mb-3">
                         <label class="form-label">Status <span class="text-danger">*</span></label>
-                        <select name="status" class="form-select" required>
+                        <select name="status" class="form-select @error('source') is-invalid @enderror">
                             <option value="active" {{ old('status', $customer->status) == 'active' ? 'selected' : '' }}>Active</option>
                             <option value="inactive" {{ old('status', $customer->status) == 'inactive' ? 'selected' : '' }}>Inactive</option>
                             <option value="blocked" {{ old('status', $customer->status) == 'blocked' ? 'selected' : '' }}>Blocked</option>
                         </select>
+                           @error('status')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
                 </div>
             </div>
@@ -182,13 +185,16 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">Source <span class="text-danger">*</span></label>
-                        <select name="source" class="form-select" required>
+                        <select name="source" class="form-select @error('source') is-invalid @enderror">
                             <option value="">Select Source</option>
                             <option value="online" {{ old('source', $customer->source) == 'online' ? 'selected' : '' }}>Online</option>
                             <option value="reference" {{ old('source', $customer->source) == 'reference' ? 'selected' : '' }}>Reference</option>
                             <option value="direct" {{ old('source', $customer->source) == 'direct' ? 'selected' : '' }}>Direct</option>
                             <option value="other" {{ old('source', $customer->source) == 'other' ? 'selected' : '' }}>Other</option>
                         </select>
+                           @error('source')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="mb-3">
