@@ -157,4 +157,12 @@ class Entry extends Model
     {
         return $this->hasMany(EntryItem::class);
     }
+        public function fund()
+    {
+        return $this->belongsTo(Fund::class);
+    }
+        public function creator()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
