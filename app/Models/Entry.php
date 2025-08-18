@@ -153,4 +153,8 @@ class Entry extends Model
     {
         return $this->debit == $this->credit;
     }
+         public function entryItems()
+    {
+        return $this->hasMany(EntryItem::class);
+    }
 }
