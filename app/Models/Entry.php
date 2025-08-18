@@ -149,4 +149,8 @@ class Entry extends Model
     {
         return $query->where('entrytype_id', 2);
     }
+        public function isBalanced(): bool
+    {
+        return $this->debit == $this->credit;
+    }
 }
