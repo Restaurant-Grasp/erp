@@ -15,7 +15,7 @@
     </nav>
 </div>
 
-<form action="{{ route('packages.update', $package) }}" method="POST" id="packageForm">
+<form action="{{ route('packages.update', $package) }}" method="POST" id="packageForm" novalidate>
     @csrf
     @method('PUT')
     <div class="row">
@@ -189,19 +189,23 @@ function addItem() {
                 <option value="service">Service</option>
                 <option value="product">Product</option>
             </select>
+              <span class="error text-danger larger"></span>
         </td>
         <td>
             <select name="items[${itemIndex}][item_id]" class="form-select item-select" required onchange="updateItemDetails(this, ${itemIndex})">
                 <option value="">Select Item</option>
             </select>
+              <span class="error text-danger larger"></span>
         </td>
         <td>
             <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" 
                 required min="1" value="1" onchange="calculateRowTotal(${itemIndex})">
+                  <span class="error text-danger larger"></span>
         </td>
         <td>
           <input type="number" name="items[${itemIndex}][unit_price]" class="form-control unit-price-input" 
                 required min="0" step="0.01" value="0" onchange="calculateRowTotal(${itemIndex})">
+                  <span class="error text-danger larger"></span>
         </td>
           
         <td>
@@ -312,32 +316,57 @@ $(document).ready(function() {
     
     // Form validation
     $('#packageForm').on('submit', function(e) {
-        const hasItems = $('#itemsTableBody tr').length > 0;
-        
-        if (!hasItems) {
-            e.preventDefault();
-            alert('Please add at least one item to the package.');
-            return false;
+      let valid = true;
+
+    // clear old error messages
+    $('.error').text('');
+
+    // validate Package Name
+    if (!$('input[name="name"]').val().trim()) {
+        $('input[name="name"]').after('<span class="text-danger error">Package Name is required</span>');
+        valid = false;
+    }
+
+    // validate Package Code
+    if (!$('input[name="code"]').val().trim()) {
+        $('input[name="code"]').after('<span class="text-danger error">Package Code is required</span>');
+        valid = false;
+    }
+
+    // validate at least one item
+    if ($('#itemsTableBody tr').length === 0) {
+        $('#itemsTable').after('<span class="text-danger error">At least one item is required</span>');
+        valid = false;
+    }
+
+    // validate each row
+    $('#itemsTableBody tr').each(function() {
+        const itemType = $(this).find('.item-type').val();
+        const itemId   = $(this).find('.item-select').val();
+        const qty      = parseFloat($(this).find('.quantity').val());
+        const price    = parseFloat($(this).find('.unit-price-input').val());
+
+        if (!itemType) {
+            $(this).find('.item-type').siblings('.error').text('Type required');
+            valid = false;
         }
-        
-        // Check if all items are properly filled
-        let hasValidItems = true;
-        $('#itemsTableBody tr').each(function() {
-            const itemType = $(this).find('.item-type').val();
-            const itemId = $(this).find('.item-select').val();
-            const quantity = $(this).find('.quantity').val();
-            const unitPrice = $(this).find('.unit-price-input').val();
-             if (!itemType || !itemId || !quantity || quantity <= 0 || !unitPrice || unitPrice <= 0) {
-                hasValidItems = false;
-                return false;
-            }
-        });
-        
-        if (!hasValidItems) {
-            e.preventDefault();
-                      alert('Please complete all item details and ensure quantities and unit prices are greater than 0.');
-            return false;
+        if (!itemId) {
+            $(this).find('.item-select').siblings('.error').text('Item required');
+            valid = false;
         }
+        if (!qty || qty <= 0) {
+            $(this).find('.quantity').siblings('.error').text('Quantity > 0 required');
+            valid = false;
+        }
+        if (!price || price <= 0) {
+            $(this).find('.unit-price-input').siblings('.error').text('Unit price > 0 required');
+            valid = false;
+        }
+    });
+
+    if (!valid) {
+        e.preventDefault();
+    }
     });
 });
 </script>
