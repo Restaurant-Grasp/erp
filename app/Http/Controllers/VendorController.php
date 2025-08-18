@@ -137,7 +137,7 @@ class VendorController extends Controller
                 $rightCodeNumber++;
                 $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
             }
-            $leftCode = str_pad($tradeCreditorsGroup->id, 4, '0', STR_PAD_LEFT);
+            $leftCode = str_pad($tradeCreditorsGroup->code, 4, '0', STR_PAD_LEFT);
             // Create ledger for vendor
             $ledgerName = $validated['company_name'] . ' (' . $vendorCode . ')';
             $ledger = Ledger::create([
