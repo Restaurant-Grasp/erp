@@ -31,7 +31,7 @@ class MasterController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:100|unique:brands,name',
-            'code' => 'string|max:50|unique:brands,code',
+            'code' => 'nullable|string|max:50|unique:brands,code',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png,svg,gif|max:2048',
         ]);
         DB::beginTransaction();
@@ -74,7 +74,7 @@ class MasterController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:100|unique:brands,name',
-            'code' => 'string|max:50|unique:brands,code',
+            'code' => 'nullable|string|max:50|unique:brands,code',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png,svg,gif|max:2048',
         ]);
         DB::beginTransaction();
