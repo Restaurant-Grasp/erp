@@ -59,7 +59,7 @@ class PurchaseInvoiceItem extends Model
 
     public function uom(): BelongsTo
     {
-        return $this->belongsTo(UOM::class);
+        return $this->belongsTo(Uom::class);
     }
 
     // Accessors

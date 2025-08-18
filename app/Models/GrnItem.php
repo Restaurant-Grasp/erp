@@ -57,7 +57,7 @@ class GrnItem extends Model
 
     public function uom(): BelongsTo
     {
-        return $this->belongsTo(UOM::class);
+        return $this->belongsTo(Uom::class);
     }
 
     public function serialNumbers(): HasMany
