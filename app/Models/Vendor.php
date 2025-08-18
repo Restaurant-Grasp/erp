@@ -45,7 +45,6 @@ class Vendor extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
-
     /**
      * Get the status badge class for display
      */

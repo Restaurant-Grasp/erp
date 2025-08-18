@@ -326,7 +326,6 @@ class VendorController extends Controller
 
         return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
-
     /**
      * Search vendors for autocomplete
      */
