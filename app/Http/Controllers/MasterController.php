@@ -140,7 +140,7 @@ class MasterController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:100|unique:models,name',
-            'code' => 'string|max:50|unique:models,code',
+            'code' => 'nullable|string|max:50|unique:models,code',
             'brand_id' => 'required|exists:brands,id',
         ]);
         DB::beginTransaction();

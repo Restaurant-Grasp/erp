@@ -10,26 +10,43 @@
             @csrf
             <div class="mb-3">
                 <label>Name <span class="text-danger">*</span></label>
-                <input type="text" name="name" class="form-control" required>
+                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}">
+                @error('name')
+                    <div class="text-danger mt-1">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="mb-3">
                 <label>Code</label>
-                <input type="text" name="code" class="form-control">
+                <input type="text" name="code" class="form-control @error('code') is-invalid @enderror" value="{{ old('code') }}">
+                @error('code')
+                    <div class="text-danger mt-1">{{ $message }}</div>
+                @enderror
             </div>
+
             <div class="mb-3">
                 <label>Brand <span class="text-danger">*</span></label>
-                <select name="brand_id" class="form-control" required>
+                <select name="brand_id" class="form-control @error('brand_id') is-invalid @enderror">
                     <option value="">-- Select Brand --</option>
                     @foreach($brands as $brand)
-                    <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                    <option value="{{ $brand->id }}" {{ old('brand_id') == $brand->id ? 'selected' : '' }}>
+                        {{ $brand->name }}
+                    </option>
                     @endforeach
                 </select>
+                @error('brand_id')
+                    <div class="text-danger mt-1">{{ $message }}</div>
+                @enderror
             </div>
+
             <div class="mb-3">
                 <label>Specifications</label>
-                <input type="text" name="specifications" class="form-control">
+                <input type="text" name="specifications" class="form-control @error('specifications') is-invalid @enderror" value="{{ old('specifications') }}">
+                @error('specifications')
+                    <div class="text-danger mt-1">{{ $message }}</div>
+                @enderror
             </div>
+
             <button type="submit" class="btn btn-primary">Create</button>
             <a href="{{ route('model.index') }}" class="btn btn-secondary">Cancel</a>
         </form>
