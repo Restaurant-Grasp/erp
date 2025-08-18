@@ -29,7 +29,7 @@
                         <div class="col-md-6">
                             <label for="entity_type" class="form-label">Entity Type <span class="text-danger">*</span></label>
                             <select class="form-select @error('entity_type') is-invalid @enderror" 
-                                    name="entity_type" id="entity_type" required>
+                                    name="entity_type" id="entity_type">
                                 <option value="">Select Entity Type</option>
                                 <option value="lead" {{ old('entity_type') == 'lead' || $lead ? 'selected' : '' }}>Lead</option>
                                 <option value="customer" {{ old('entity_type') == 'customer' || $customer ? 'selected' : '' }}>Customer</option>
@@ -42,7 +42,7 @@
                         <div class="col-md-6">
                             <label for="entity_id" class="form-label">Select Entity <span class="text-danger">*</span></label>
                             <select class="form-select @error('entity_id') is-invalid @enderror" 
-                                    name="entity_id" id="entity_id" required>
+                                    name="entity_id" id="entity_id">
                                 <option value="">Select Entity</option>
                                 @if($lead)
                                     <option value="{{ $lead->id }}" selected>{{ $lead->lead_no }} - {{ $lead->entity_name }}</option>
@@ -62,7 +62,7 @@
                         <div class="col-md-6">
                             <label for="follow_up_type" class="form-label">Follow-up Type <span class="text-danger">*</span></label>
                             <select class="form-select @error('follow_up_type') is-invalid @enderror" 
-                                    name="follow_up_type" id="follow_up_type" required>
+                                    name="follow_up_type" id="follow_up_type">
                                 <option value="">Select Type</option>
                                 <option value="phone_call" {{ old('follow_up_type') == 'phone_call' ? 'selected' : '' }}>
                                     <i class="fas fa-phone"></i> Phone Call
@@ -91,7 +91,7 @@
                         <div class="col-md-6">
                             <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>
                             <select class="form-select @error('priority') is-invalid @enderror" 
-                                    name="priority" id="priority" required>
+                                    name="priority" id="priority">
                                 <option value="">Select Priority</option>
                                 <option value="low" {{ old('priority') == 'low' ? 'selected' : '' }}>Low</option>
                                 <option value="medium" {{ old('priority', 'medium') == 'medium' ? 'selected' : '' }}>Medium</option>
@@ -114,7 +114,7 @@
                                    id="scheduled_date" 
                                    value="{{ old('scheduled_date') }}"
                                    min="{{ now()->format('Y-m-d\TH:i') }}" 
-                                   required>
+                                   >
                             @error('scheduled_date')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -123,7 +123,7 @@
                         <div class="col-md-6">
                             <label for="assigned_to" class="form-label">Assigned To <span class="text-danger">*</span></label>
                             <select class="form-select @error('assigned_to') is-invalid @enderror" 
-                                    name="assigned_to" id="assigned_to" required>
+                                    name="assigned_to" id="assigned_to">
                                 <option value="">Select Staff Member</option>
                                 @foreach($staff as $staffMember)
                                     <option value="{{ $staffMember->id }}" 
@@ -147,7 +147,7 @@
                                id="subject" 
                                value="{{ old('subject') }}" 
                                maxlength="255" 
-                               required>
+                               >
                         @error('subject')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -193,12 +193,18 @@
                     <div class="card border">
                         <div class="card-header">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" 
-                                       name="is_recurring" id="is_recurring" value="1"
+                                <input class="form-check-input @error('is_recurring') is-invalid @enderror" 
+                                       type="checkbox" 
+                                       name="is_recurring" 
+                                       id="is_recurring" 
+                                       value="1"
                                        {{ old('is_recurring') ? 'checked' : '' }}>
                                 <label class="form-check-label fw-bold" for="is_recurring">
                                     <i class="fas fa-redo me-1"></i> Make this a recurring follow-up
                                 </label>
+                                @error('is_recurring')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
                         <div class="card-body" id="recurring_options" style="{{ old('is_recurring') ? '' : 'display: none;' }}">
