@@ -38,7 +38,7 @@
                                 <option value="">Select Ledger Account</option>
                                 @foreach($ledgers as $ledger)
                                 <option value="{{ $ledger->id }}" {{ old('ledger_id') == $ledger->id ? 'selected' : '' }}>
-                                    {{ $ledger->name }} ({{ $ledger->code ?? 'No Code' }})
+                                    {{ ($ledger->left_code ?? $ledger->left_code) . '/' . ($ledger->right_code ?? $ledger->right_code) }} {{ $ledger->name }}
                                 </option>
                                 @endforeach
                             </select>
