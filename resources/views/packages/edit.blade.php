@@ -43,6 +43,7 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                        
                         <div class="col-md-4">
                             <label class="form-label">Validity (Days)</label>
                             <input type="number" name="validity_days" class="form-control" 

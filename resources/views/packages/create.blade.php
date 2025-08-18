@@ -51,6 +51,7 @@
                             <label class="form-label">Description</label>
                             <textarea name="description" class="form-control" rows="3">{{ old('description') }}</textarea>
                         </div>
+                        
                    
                         <div class="col-md-3">
                             <div class="form-check">
