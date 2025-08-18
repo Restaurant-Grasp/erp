@@ -151,10 +151,18 @@
                             @enderror
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Tax No (GST)</label>
+                            <label class="form-label">Tax No (SST)</label>
                             <input type="text" name="tax_no" class="form-control @error('tax_no') is-invalid @enderror" 
                                    value="{{ old('tax_no', $vendor->tax_no) }}">
                             @error('tax_no')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                              <div class="col-md-4">
+                            <label class="form-label">Tin No</label>
+                            <input type="text" name="tin_no" class="form-control @error('tin_no') is-invalid @enderror" 
+                                   value="{{ old('tin_no', $vendor->tax_no) }}">
+                            @error('tin_no')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

@@ -28,6 +28,7 @@ class Vendor extends Model
         'country',
         'registration_no',
         'tax_no',
+        'tin_no',
         'category_id',
         'payment_terms',
         'credit_limit',

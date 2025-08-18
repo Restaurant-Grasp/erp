@@ -14,7 +14,7 @@
     </nav>
 </div>
 
-<form action="{{ route('sales.quotations.store') }}" method="POST" id="quotationForm">
+<form action="{{ route('sales.quotations.store') }}" method="POST" id="quotationForm" novalidate>
     @csrf
     <div class="row">
         <div class="col-md-12">
@@ -52,28 +52,44 @@
                             @error('entity_type')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                                <input type="hidden" name="customer_id" id="customer_id" value="{{ $customer->id ?? '' }}" class="customer_lead">
+                            <input type="hidden" name="lead_id" id="lead_id" value="{{ $lead->id ?? '' }}">
                         </div>
                         <div class="col-md-3">
                             <label for="entity_select" class="form-label">Customer<span class="text-danger">*</span></label>
                             <select class="form-select" name="entity_select" id="entity_select" required>
                                 <option value="">Select Customer</option>
                                 @if(isset($lead))
-                                <option value="{{ $lead->id }}" selected>{{ $lead->lead_no }} - {{ $lead->entity_name }}</option>
+                                <option value="{{ $lead->id }}"
+                                    {{ old('lead_id') == $lead->id ? 'selected' : 'selected' }}>
+                                    {{ $lead->lead_no }} - {{ $lead->entity_name }}
+                                </option>
                                 @endif
+
                                 @if(isset($customer))
-                                <option value="{{ $customer->id }}" selected>{{ $customer->customer_code }} - {{ $customer->company_name }}</option>
+                                <option value="{{ $customer->id }}"
+                                    {{ old('customer_id') == $customer->id ? 'selected' : 'selected' }}>
+                                    {{ $customer->customer_code }} - {{ $customer->company_name }}
+                                </option>
                                 @endif
                             </select>
-                            <input type="hidden" name="customer_id" id="customer_id" value="{{ $customer->id ?? '' }}">
-                            <input type="hidden" name="lead_id" id="lead_id" value="{{ $lead->id ?? '' }}">
+                        
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Reference No</label>
-                            <input type="text" name="reference_no" class="form-control" value="{{ old('reference_no') }}">
+                            <input type="text" name="reference_no" class="form-control @error('reference_no') is-invalid @enderror"
+                                value="{{ old('reference_no') }}" maxlength="100">
+                            @error('reference_no')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-8">
                             <label class="form-label">Subject</label>
-                            <input type="text" name="subject" class="form-control" value="{{ old('subject') }}">
+                            <input type="text" name="subject" class="form-control @error('subject') is-invalid @enderror"
+                                value="{{ old('subject') }}" maxlength="500">
+                            @error('subject')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Currency</label>
@@ -85,15 +101,22 @@
                         <input type="hidden" name="exchange_rate" value="1">
                         <div class="col-md-3">
                             <label class="form-label">Discount Type</label>
-                            <select name="discount_type" id="discount_type" class="form-select">
+                            <select name="discount_type" id="discount_type" class="form-select @error('discount_type') is-invalid @enderror">
                                 <option value="amount" {{ old('discount_type', 'amount') == 'amount' ? 'selected' : '' }}>Fixed Amount</option>
                                 <option value="percentage" {{ old('discount_type') == 'percentage' ? 'selected' : '' }}>Percentage</option>
                             </select>
+                            @error('discount_type')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Discount Value</label>
-                            <input type="number" name="discount_value" id="discount_value" class="form-control" value="{{ old('discount_value', '0') }}"
-                                min="0" step="0.01">
+                            <input type="number" name="discount_value" id="discount_value"
+                                class="form-control @error('discount_value') is-invalid @enderror"
+                                value="{{ old('discount_value', '0') }}" min="0" step="0.01">
+                            @error('discount_value')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -102,7 +125,7 @@
             <!-- Items Section -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Items</h5>
+                    <h5 class="mb-0">Items <span class="text-danger">*</span></h5>
                     <button type="button" class="btn btn-primary btn-sm" onclick="addItem()">
                         <i class="fas fa-plus me-2"></i>Add Item
                     </button>
@@ -156,7 +179,11 @@
                             <h5 class="mb-0">Terms & Conditions</h5>
                         </div>
                         <div class="card-body">
-                            <textarea name="terms_conditions" class="form-control" rows="4">{{ old('terms_conditions') }}</textarea>
+                            <textarea name="terms_conditions" class="form-control @error('terms_conditions') is-invalid @enderror"
+                                rows="4">{{ old('terms_conditions') }}</textarea>
+                            @error('terms_conditions')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -166,7 +193,11 @@
                             <h5 class="mb-0">Internal Notes</h5>
                         </div>
                         <div class="card-body">
-                            <textarea name="internal_notes" class="form-control" rows="4">{{ old('internal_notes') }}</textarea>
+                            <textarea name="internal_notes" class="form-control @error('internal_notes') is-invalid @enderror"
+                                rows="4">{{ old('internal_notes') }}</textarea>
+                            @error('internal_notes')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -205,6 +236,16 @@
     .row-total {
         font-weight: bold;
         color: #198754;
+    }
+
+    .is-invalid {
+        border-color: #dc3545;
+    }
+
+    .invalid-feedback {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
     }
 
     @media (max-width: 768px) {
@@ -383,7 +424,7 @@
 
     function loadTaxes(selectElement, itemType = 'both') {
         const currentValue = selectElement.value;
-        
+
         fetch(`/taxes/for-dropdown?type=${itemType}`)
             .then(response => {
                 if (!response.ok) {
@@ -571,50 +612,56 @@
     });
 
     $(document).ready(function() {
-        // Add initial item
         addItem();
-
-        // Initialize discount change listeners
-        $('#discount_value, #discount_type').on('change input', function() {
-            calculateTotals();
-        });
-
         // Form validation
         $('#quotationForm').on('submit', function(e) {
+            let valid = true;
+            $('.error').remove(); // clear old errors
+
+            // Check customer or lead
             const hasCustomerOrLead = $('#customer_id').val() || $('#lead_id').val();
-            const hasItems = $('#itemsTableBody tr').length > 0;
-
             if (!hasCustomerOrLead) {
-                e.preventDefault();
-                alert('Please select a customer or lead.');
-                return false;
+                $('.customer_lead').after('<span class="text-danger error">Please select a customer or lead</span>');
+                valid = false;
             }
 
+            // Check if at least one item exists
+            const hasItems = $('#itemsTableBody tr').length > 0;
             if (!hasItems) {
-                e.preventDefault();
-                alert('Please add at least one item.');
-                return false;
+                $('#itemsTableBody').after('<span class="text-danger error d-block mt-2">Please add at least one item</span>');
+                valid = false;
             }
 
-            // Validate that all items have required fields
-            let hasInvalidItems = false;
+            // Row-wise validation
             $('#itemsTableBody tr').each(function() {
                 const itemType = $(this).find('.item-type').val();
                 const itemId = $(this).find('.item-select').val();
-                const quantity = $(this).find('.quantity').val();
-                const unitPrice = $(this).find('.unit-price').val();
+                const qty = parseFloat($(this).find('.quantity').val());
+                const price = parseFloat($(this).find('.unit-price').val());
 
-                if (!itemType || !itemId || !quantity || !unitPrice) {
-                    hasInvalidItems = true;
-                    return false;
+                if (!itemType) {
+                    $(this).find('.item-type')
+                        .after('<span class="text-danger error">Item type is required</span>');
+                    valid = false;
+                }
+                if (!itemId) {
+                    $(this).find('.item-select')
+                        .after('<span class="text-danger error">Please select an item</span>');
+                    valid = false;
+                }
+                if (!qty || qty <= 0) {
+                    $(this).find('.quantity')
+                        .after('<span class="text-danger error">Quantity must be greater than 0</span>');
+                    valid = false;
+                }
+                if (!price || price <= 0) {
+                    $(this).find('.unit-price')
+                        .after('<span class="text-danger error">Unit price must be greater than 0</span>');
+                    valid = false;
                 }
             });
 
-            if (hasInvalidItems) {
-                e.preventDefault();
-                alert('Please fill in all required fields for each item.');
-                return false;
-            }
+            if (!valid) e.preventDefault();
         });
     });
 </script>

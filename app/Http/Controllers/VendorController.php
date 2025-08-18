@@ -106,6 +106,7 @@ class VendorController extends Controller
             'country' => 'nullable|string|max:100',
             'registration_no' => 'nullable|string|max:100',
             'tax_no' => 'nullable|string|max:100',
+            'tin_no' => 'nullable|string|max:50',
             'category_id' => 'nullable|exists:categories,id',
             'payment_terms' => 'nullable|integer|min:0',
             'credit_limit' => 'nullable|numeric|min:0',
@@ -243,7 +244,8 @@ class VendorController extends Controller
             'status' => 'required|in:active,inactive,blocked',
             'notes' => 'nullable|string',
             'service_types' => 'array',
-            'service_types.*' => 'exists:service_types,id'
+            'service_types.*' => 'exists:service_types,id',
+            'tin_no' => 'nullable|string|max:50',
         ]);
 
         DB::beginTransaction();
