@@ -73,10 +73,11 @@ class MasterController extends Controller
     public function brandUpdate(Request $request, Brand $brand)
     {
         $request->validate([
+            'name' => 'required|string|max:100|unique:brands,name,' . $brand->id,
+            'code' => 'nullable|string|max:50|unique:brands,code,' . $brand->id,
             'logo' => 'nullable|image|mimes:jpg,jpeg,png,svg,gif|max:2048',
         ]);
         DB::beginTransaction();
-
         try {
             $filename = $brand->logo;
 
