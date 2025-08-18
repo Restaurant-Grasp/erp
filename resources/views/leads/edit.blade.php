@@ -28,23 +28,38 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Temple Name</label>
-                            <input type="text" name="company_name" class="form-control" value="{{ old('company_name', $lead->company_name) }}">
+                            <input type="text" name="company_name" class="form-control @error('company_name') is-invalid @enderror" value="{{ old('company_name', $lead->company_name) }}">
+                            @error('company_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Contact Person *</label>
-                            <input type="text" name="contact_person" class="form-control" value="{{ old('contact_person', $lead->contact_person) }}" required>
+                            <input type="text" name="contact_person" class="form-control @error('contact_person') is-invalid @enderror" value="{{ old('contact_person', $lead->contact_person) }}">
+                            @error('contact_person')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Email</label>
-                            <input type="email" name="email" class="form-control" value="{{ old('email', $lead->email) }}">
+                            <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $lead->email) }}">
+                            @error('email')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Phone</label>
-                            <input type="text" name="phone" class="form-control" value="{{ old('phone', $lead->phone) }}">
+                            <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', $lead->phone) }}">
+                            @error('phone')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Mobile</label>
-                            <input type="text" name="mobile" class="form-control" value="{{ old('mobile', $lead->mobile) }}">
+                            <input type="text" name="mobile" class="form-control @error('mobile') is-invalid @enderror" value="{{ old('mobile', $lead->mobile) }}">
+                            @error('mobile')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -59,15 +74,24 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">Address</label>
-                            <textarea name="address" class="form-control" rows="2">{{ old('address', $lead->address) }}</textarea>
+                            <textarea name="address" class="form-control @error('address') is-invalid @enderror" rows="2">{{ old('address', $lead->address) }}</textarea>
+                            @error('address')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">City</label>
-                            <input type="text" name="city" class="form-control" value="{{ old('city', $lead->city) }}">
+                            <input type="text" name="city" class="form-control @error('city') is-invalid @enderror" value="{{ old('city', $lead->city) }}">
+                            @error('city')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">State</label>
-                            <input type="text" name="state" class="form-control" value="{{ old('state', $lead->state) }}">
+                            <input type="text" name="state" class="form-control @error('state') is-invalid @enderror" value="{{ old('state', $lead->state) }}">
+                            @error('state')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Country</label>
@@ -86,7 +110,7 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Temple Category</label>
-                            <select name="temple_category_id" class="form-select">
+                            <select name="temple_category_id" class="form-select @error('temple_category_id') is-invalid @enderror">
                                 <option value="">Select Category</option>
                                 @foreach($templeCategories as $category)
                                 <option value="{{ $category->id }}" {{ old('temple_category_id', $lead->temple_category_id) == $category->id ? 'selected' : '' }}>
@@ -94,20 +118,29 @@
                                 </option>
                                 @endforeach
                             </select>
+                            @error('temple_category_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Temple Size</label>
-                            <select name="temple_size" class="form-select">
+                            <select name="temple_size" class="form-select @error('temple_size') is-invalid @enderror">
                                 <option value="">Select Size</option>
                                 <option value="small" {{ old('temple_size', $lead->temple_size) == 'small' ? 'selected' : '' }}>Small</option>
                                 <option value="medium" {{ old('temple_size', $lead->temple_size) == 'medium' ? 'selected' : '' }}>Medium</option>
                                 <option value="large" {{ old('temple_size', $lead->temple_size) == 'large' ? 'selected' : '' }}>Large</option>
                                 <option value="very_large" {{ old('temple_size', $lead->temple_size) == 'very_large' ? 'selected' : '' }}>Very Large</option>
                             </select>
+                            @error('temple_size')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-12">
                             <label class="form-label">Interested In</label>
-                            <textarea name="interested_in" class="form-control" rows="2">{{ old('interested_in', $lead->interested_in) }}</textarea>
+                            <textarea name="interested_in" class="form-control @error('interested_in') is-invalid @enderror" rows="2">{{ old('interested_in', $lead->interested_in) }}</textarea>
+                            @error('interested_in')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -166,98 +199,118 @@
                             accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
                         <div class="form-text">Allowed formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (Max: 10MB each)</div>
                         @error('documents.*')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
             </div>
         </div>
 
+        <div class="col-md-4">
+            {{-- Lead Info --}}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Lead Info</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Lead Source *</label>
+                        <select name="source" class="form-select @error('source') is-invalid @enderror">
+                            <option value="">Select Source</option>
+                            <option value="online" {{ old('source', $lead->source) == 'online' ? 'selected' : '' }}>Online</option>
+                            <option value="reference" {{ old('source', $lead->source) == 'reference' ? 'selected' : '' }}>Reference</option>
+                            <option value="cold_call" {{ old('source', $lead->source) == 'cold_call' ? 'selected' : '' }}>Cold Call</option>
+                            <option value="exhibition" {{ old('source', $lead->source) == 'exhibition' ? 'selected' : '' }}>Exhibition</option>
+                            <option value="advertisement" {{ old('source', $lead->source) == 'advertisement' ? 'selected' : '' }}>Advertisement</option>
+                            <option value="other" {{ old('source', $lead->source) == 'other' ? 'selected' : '' }}>Other</option>
+                        </select>
+                        @error('source')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
 
-    <div class="col-md-4">
-        {{-- Lead Info --}}
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Lead Info</h5>
+                    <div class="mb-3">
+                        <label class="form-label">Source Details</label>
+                        <input type="text" name="source_details" class="form-control @error('source_details') is-invalid @enderror" value="{{ old('source_details', $lead->source_details) }}">
+                        @error('source_details')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Lead Status</label>
+                        <select name="lead_status" class="form-select @error('lead_status') is-invalid @enderror" id="lead_status">
+                            <option value="new" {{ old('lead_status', $lead->lead_status) == 'new' ? 'selected' : '' }}>New</option>
+                            <option value="contacted" {{ old('lead_status', $lead->lead_status) == 'contacted' ? 'selected' : '' }}>Contacted</option>
+                            <option value="qualified" {{ old('lead_status', $lead->lead_status) == 'qualified' ? 'selected' : '' }}>Qualified</option>
+                            <option value="proposal" {{ old('lead_status', $lead->lead_status) == 'proposal' ? 'selected' : '' }}>Proposal</option>
+                            <option value="negotiation" {{ old('lead_status', $lead->lead_status) == 'negotiation' ? 'selected' : '' }}>Negotiation</option>
+                            <option value="won" {{ old('lead_status', $lead->lead_status) == 'won' ? 'selected' : '' }}>Won</option>
+                            <option value="lost" {{ old('lead_status', $lead->lead_status) == 'lost' ? 'selected' : '' }}>Lost</option>
+                        </select>
+                        @error('lead_status')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3" id="lost_reason_div" style="display: none;">
+                        <label class="form-label">Lost Reason</label>
+                        <textarea name="lost_reason" id="lost_reason" class="form-control @error('lost_reason') is-invalid @enderror" rows="2">{{ old('lost_reason', $lead->lost_reason) }}</textarea>
+                        @error('lost_reason')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Next Follow-up Date</label>
+                        <input type="date" name="next_followup_date" class="form-control @error('next_followup_date') is-invalid @enderror" value="{{ old('next_followup_date', $lead->next_followup_date) }}">
+                        @error('next_followup_date')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Assigned To</label>
+                        <select name="assigned_to" class="form-select @error('assigned_to') is-invalid @enderror">
+                            <option value="">Select Staff</option>
+                            @foreach($staff as $member)
+                            <option value="{{ $member->id }}" {{ old('assigned_to', $lead->assigned_to) == $member->id ? 'selected' : '' }}>
+                                {{ $member->name }}
+                            </option>
+                            @endforeach
+                        </select>
+                        @error('assigned_to')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control @error('notes') is-invalid @enderror" rows="3">{{ old('notes', $lead->notes) }}</textarea>
+                        @error('notes')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label">Lead Source *</label>
-                    <select name="source" class="form-select" required>
-                        <option value="">Select Source</option>
-                        <option value="online" {{ old('source', $lead->source) == 'online' ? 'selected' : '' }}>Online</option>
-                        <option value="reference" {{ old('source', $lead->source) == 'reference' ? 'selected' : '' }}>Reference</option>
-                        <option value="cold_call" {{ old('source', $lead->source) == 'cold_call' ? 'selected' : '' }}>Cold Call</option>
-                        <option value="exhibition" {{ old('source', $lead->source) == 'exhibition' ? 'selected' : '' }}>Exhibition</option>
-                        <option value="advertisement" {{ old('source', $lead->source) == 'advertisement' ? 'selected' : '' }}>Advertisement</option>
-                        <option value="other" {{ old('source', $lead->source) == 'other' ? 'selected' : '' }}>Other</option>
-                    </select>
-                </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Source Details</label>
-                    <input type="text" name="source_details" class="form-control" value="{{ old('source_details', $lead->source_details) }}">
+            {{-- Actions --}}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Actions</h5>
                 </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Lead Status</label>
-                    <select name="lead_status" class="form-select" id="lead_status">
-                        <option value="new" {{ old('lead_status', $lead->lead_status) == 'new' ? 'selected' : '' }}>New</option>
-                        <option value="contacted" {{ old('lead_status', $lead->lead_status) == 'contacted' ? 'selected' : '' }}>Contacted</option>
-                        <option value="qualified" {{ old('lead_status', $lead->lead_status) == 'qualified' ? 'selected' : '' }}>Qualified</option>
-                        <option value="proposal" {{ old('lead_status', $lead->lead_status) == 'proposal' ? 'selected' : '' }}>Proposal</option>
-                        <option value="negotiation" {{ old('lead_status', $lead->lead_status) == 'negotiation' ? 'selected' : '' }}>Negotiation</option>
-                        <option value="won" {{ old('lead_status', $lead->lead_status) == 'won' ? 'selected' : '' }}>Won</option>
-                        <option value="lost" {{ old('lead_status', $lead->lead_status) == 'lost' ? 'selected' : '' }}>Lost</option>
-                    </select>
-                </div>
-
-                <div class="mb-3" id="lost_reason_div" style="display: none;">
-                    <label class="form-label">Lost Reason</label>
-                    <textarea name="lost_reason" class="form-control" rows="2">{{ old('lost_reason', $lead->lost_reason) }}</textarea>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Next Follow-up Date</label>
-                    <input type="date" name="next_followup_date" class="form-control" value="{{ old('next_followup_date', $lead->next_followup_date) }}">
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Assigned To</label>
-                    <select name="assigned_to" class="form-select">
-                        <option value="">Select Staff</option>
-                        @foreach($staff as $member)
-                        <option value="{{ $member->id }}" {{ old('assigned_to', $lead->assigned_to) == $member->id ? 'selected' : '' }}>
-                            {{ $member->name }}
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Notes</label>
-                    <textarea name="notes" class="form-control" rows="3">{{ old('notes', $lead->notes) }}</textarea>
+                <div class="card-body">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Update Lead
+                        </button>
+                        <a href="{{ route('leads.index') }}" class="btn btn-outline-secondary mt-2">
+                            <i class="fas fa-times me-2"></i> Cancel
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-
-        {{-- Actions --}}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">Actions</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-2"></i> Update Lead
-                    </button>
-                    <a href="{{ route('leads.index') }}" class="btn btn-outline-secondary mt-2">
-                        <i class="fas fa-times me-2"></i> Cancel
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
     </div>
 </form>
 @endsection
@@ -267,8 +320,10 @@
     function toggleLostReason() {
         if ($('#lead_status').val() === 'lost') {
             $('#lost_reason_div').show();
+            $('#lost_reason').prop('required', true);
         } else {
             $('#lost_reason_div').hide();
+            $('#lost_reason').prop('required', false);
         }
     }
 

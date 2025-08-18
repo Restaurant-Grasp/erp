@@ -25,23 +25,38 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Temple Name</label>
-                            <input type="text" name="company_name" class="form-control" value="{{ old('company_name') }}">
+                            <input type="text" name="company_name" class="form-control @error('company_name') is-invalid @enderror" value="{{ old('company_name') }}">
+                            @error('company_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Contact Person *</label>
-                            <input type="text" name="contact_person" class="form-control" value="{{ old('contact_person') }}" required>
+                            <input type="text" name="contact_person" class="form-control @error('contact_person') is-invalid @enderror" value="{{ old('contact_person') }}">
+                            @error('contact_person')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Email</label>
-                            <input type="email" name="email" class="form-control" value="{{ old('email') }}">
+                            <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}">
+                            @error('email')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Phone</label>
-                            <input type="text" name="phone" class="form-control" value="{{ old('phone') }}">
+                            <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone') }}">
+                            @error('phone')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Mobile</label>
-                            <input type="text" name="mobile" class="form-control" value="{{ old('mobile') }}">
+                            <input type="text" name="mobile" class="form-control @error('mobile') is-invalid @enderror" value="{{ old('mobile') }}">
+                            @error('mobile')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -54,15 +69,24 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">Address</label>
-                            <textarea name="address" class="form-control" rows="2">{{ old('address') }}</textarea>
+                            <textarea name="address" class="form-control @error('address') is-invalid @enderror" rows="2">{{ old('address') }}</textarea>
+                            @error('address')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">City</label>
-                            <input type="text" name="city" class="form-control" value="{{ old('city') }}">
+                            <input type="text" name="city" class="form-control @error('city') is-invalid @enderror" value="{{ old('city') }}">
+                            @error('city')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">State</label>
-                            <input type="text" name="state" class="form-control" value="{{ old('state') }}">
+                            <input type="text" name="state" class="form-control @error('state') is-invalid @enderror" value="{{ old('state') }}">
+                            @error('state')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Country</label>
@@ -79,7 +103,7 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Temple Category</label>
-                            <select name="temple_category_id" class="form-select">
+                            <select name="temple_category_id" class="form-select @error('temple_category_id') is-invalid @enderror">
                                 <option value="">Select Category</option>
                                 @foreach($templeCategories as $category)
                                     <option value="{{ $category->id }}" {{ old('temple_category_id') == $category->id ? 'selected' : '' }}>
@@ -87,20 +111,29 @@
                                     </option>
                                 @endforeach
                             </select>
+                            @error('temple_category_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Temple Size</label>
-                            <select name="temple_size" class="form-select">
+                            <select name="temple_size" class="form-select @error('temple_size') is-invalid @enderror">
                                 <option value="">Select Size</option>
                                 <option value="small" {{ old('temple_size') == 'small' ? 'selected' : '' }}>Small</option>
                                 <option value="medium" {{ old('temple_size') == 'medium' ? 'selected' : '' }}>Medium</option>
                                 <option value="large" {{ old('temple_size') == 'large' ? 'selected' : '' }}>Large</option>
                                 <option value="very_large" {{ old('temple_size') == 'very_large' ? 'selected' : '' }}>Very Large</option>
                             </select>
+                            @error('temple_size')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-12">
                             <label class="form-label">Interested In</label>
-                            <textarea name="interested_in" class="form-control" rows="2">{{ old('interested_in') }}</textarea>
+                            <textarea name="interested_in" class="form-control @error('interested_in') is-invalid @enderror" rows="2">{{ old('interested_in') }}</textarea>
+                            @error('interested_in')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -111,8 +144,11 @@
                 <div class="card-header"><h5 class="mb-0">Documents</h5></div>
                 <div class="card-body">
                     <label class="form-label">Upload Documents</label>
-                    <input type="file" name="documents[]" class="form-control" multiple>
+                    <input type="file" name="documents[]" class="form-control @error('documents.*') is-invalid @enderror" multiple>
                     <div class="form-text">Allowed: PDF, DOC, XLS, JPG, PNG (Max: 10MB)</div>
+                    @error('documents.*')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
         </div>
@@ -124,7 +160,7 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">Lead Source *</label>
-                        <select name="source" class="form-select" required>
+                        <select name="source" class="form-select @error('source') is-invalid @enderror">
                             <option value="">Select Source</option>
                             <option value="online" {{ old('source') == 'online' ? 'selected' : '' }}>Online</option>
                             <option value="reference" {{ old('source') == 'reference' ? 'selected' : '' }}>Reference</option>
@@ -133,16 +169,22 @@
                             <option value="advertisement" {{ old('source') == 'advertisement' ? 'selected' : '' }}>Advertisement</option>
                             <option value="other" {{ old('source') == 'other' ? 'selected' : '' }}>Other</option>
                         </select>
+                        @error('source')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Source Details</label>
-                        <input type="text" name="source_details" class="form-control" value="{{ old('source_details') }}">
+                        <input type="text" name="source_details" class="form-control @error('source_details') is-invalid @enderror" value="{{ old('source_details') }}">
+                        @error('source_details')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Assigned To</label>
-                        <select name="assigned_to" class="form-select">
+                        <select name="assigned_to" class="form-select @error('assigned_to') is-invalid @enderror">
                             <option value="">Select Staff</option>
                             @foreach($staff as $member)
                                 <option value="{{ $member->id }}" {{ old('assigned_to') == $member->id ? 'selected' : '' }}>
@@ -150,11 +192,17 @@
                                 </option>
                             @endforeach
                         </select>
+                        @error('assigned_to')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Notes</label>
-                        <textarea name="notes" class="form-control" rows="3">{{ old('notes') }}</textarea>
+                        <textarea name="notes" class="form-control @error('notes') is-invalid @enderror" rows="3">{{ old('notes') }}</textarea>
+                        @error('notes')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
                 </div>
             </div>
