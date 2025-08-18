@@ -15,7 +15,7 @@
     </nav>
 </div>
 
-<form action="{{ route('sales.quotations.update', $quotation) }}" method="POST" id="quotationForm">
+<form action="{{ route('sales.quotations.update', $quotation) }}" method="POST" id="quotationForm" novalidate>
     @csrf
     @method('PUT')
     <div class="row">
@@ -68,16 +68,24 @@
                             </select>
                             
                             <!-- Hidden fields that will be populated based on selection -->
-                            <input type="hidden" name="customer_id" id="customer_id" value="{{ old('customer_id', $quotation->customer_id) }}">
+                            <input type="hidden" name="customer_id" id="customer_id" value="{{ old('customer_id', $quotation->customer_id) }}" class="customer_lead">
                             <input type="hidden" name="lead_id" id="lead_id" value="{{ old('lead_id', $quotation->lead_id) }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Reference No</label>
-                            <input type="text" name="reference_no" class="form-control" value="{{ old('reference_no', $quotation->reference_no) }}">
+                            <input type="text" name="reference_no" class="form-control @error('reference_no') is-invalid @enderror" 
+                                   value="{{ old('reference_no', $quotation->reference_no) }}" maxlength="100">
+                            @error('reference_no')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-8">
                             <label class="form-label">Subject</label>
-                            <input type="text" name="subject" class="form-control" value="{{ old('subject', $quotation->subject) }}">
+                            <input type="text" name="subject" class="form-control @error('subject') is-invalid @enderror" 
+                                   value="{{ old('subject', $quotation->subject) }}" maxlength="500">
+                            @error('subject')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Currency</label>
@@ -92,15 +100,21 @@
 
                         <div class="col-md-3">
                             <label class="form-label">Discount Type</label>
-                            <select name="discount_type" class="form-select">
+                            <select name="discount_type" class="form-select @error('discount_type') is-invalid @enderror" id="discount_type">
                                 <option value="amount" {{ old('discount_type', $quotation->discount_type) == 'amount' ? 'selected' : '' }}>Fixed Amount</option>
                                 <option value="percentage" {{ old('discount_type', $quotation->discount_type) == 'percentage' ? 'selected' : '' }}>Percentage</option>
                             </select>
+                            @error('discount_type')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Discount Value</label>
-                            <input type="number" name="discount_value" class="form-control" value="{{ old('discount_value', $quotation->discount_value) }}"
-                                min="0" step="0.01">
+                            <input type="number" name="discount_value" class="form-control @error('discount_value') is-invalid @enderror" 
+                                   value="{{ old('discount_value', $quotation->discount_value) }}" min="0" step="0.01" id="discount_value">
+                            @error('discount_value')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -139,6 +153,7 @@
                                             <option value="product" {{ $item->item_type == 'product' ? 'selected' : '' }}>Product</option>
                                             <option value="service" {{ $item->item_type == 'service' ? 'selected' : '' }}>Service</option>
                                         </select>
+                                        <div class="invalid-feedback item-type-error" style="display: none;"></div>
                                     </td>
                                     <td>
                                         <select name="items[{{ $index }}][item_id]" class="form-select item-select" required onchange="updateItemDetails(this, {{ $index }})">
@@ -157,9 +172,11 @@
                                             </option>
                                             @endif
                                         </select>
+                                        <div class="invalid-feedback item-id-error" style="display: none;"></div>
                                     </td>
                                     <td>
                                         <input type="number" name="items[{{ $index }}][quantity]" class="form-control quantity" required min="0.01" step="0.01" value="{{ $item->quantity }}" onchange="calculateRowTotal({{ $index }})">
+                                        <div class="invalid-feedback quantity-error" style="display: none;"></div>
                                     </td>
                                     <td style="display: none;">
                                         <select name="items[{{ $index }}][uom_id]" class="form-select uom-select">
@@ -171,10 +188,12 @@
                                     </td>
                                     <td>
                                         <input type="number" name="items[{{ $index }}][unit_price]" class="form-control unit-price" required min="0" step="0.01" value="{{ $item->unit_price }}" onchange="calculateRowTotal({{ $index }})">
+                                        <div class="invalid-feedback unit-price-error" style="display: none;"></div>
                                     </td>
                                     <td>
                                         <input type="number" name="items[{{ $index }}][discount_value]" class="form-control discount-value" min="0" step="0.01" value="{{ $item->discount_value }}" onchange="calculateRowTotal({{ $index }})">
                                         <input type="hidden" name="items[{{ $index }}][discount_type]" value="{{ $item->discount_type }}">
+                                        <div class="invalid-feedback discount-error" style="display: none;"></div>
                                     </td>
                                     <td class="tax-cell">
                                         @if($item->item_type == 'package')
@@ -199,6 +218,7 @@
                                             <input type="number" name="items[{{ $index }}][tax_rate]" class="form-control tax-rate mb-1" placeholder="Tax Rate %" min="0" step="0.01" onchange="calculateRowTotal({{ $index }})">
                                         </div>
                                         @endif
+                                        <div class="invalid-feedback tax-error" style="display: none;"></div>
                                     </td>
                                     <td>
                                         <span class="row-total">{{ $quotation->currency }} {{ number_format($item->total_amount, 2) }}</span>
@@ -241,7 +261,11 @@
                             <h5 class="mb-0">Terms & Conditions</h5>
                         </div>
                         <div class="card-body">
-                            <textarea name="terms_conditions" class="form-control" rows="4">{{ old('terms_conditions', $quotation->terms_conditions) }}</textarea>
+                            <textarea name="terms_conditions" class="form-control @error('terms_conditions') is-invalid @enderror" 
+                                      rows="4">{{ old('terms_conditions', $quotation->terms_conditions) }}</textarea>
+                            @error('terms_conditions')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -251,7 +275,11 @@
                             <h5 class="mb-0">Internal Notes</h5>
                         </div>
                         <div class="card-body">
-                            <textarea name="internal_notes" class="form-control" rows="4">{{ old('internal_notes', $quotation->internal_notes) }}</textarea>
+                            <textarea name="internal_notes" class="form-control @error('internal_notes') is-invalid @enderror" 
+                                      rows="4">{{ old('internal_notes', $quotation->internal_notes) }}</textarea>
+                            @error('internal_notes')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -270,6 +298,18 @@
     </div>
 </form>
 
+<style>
+    .is-invalid {
+        border-color: #dc3545;
+    }
+
+    .invalid-feedback {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+    }
+</style>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     let itemIndex = {{ count($quotation->items) }};
@@ -285,14 +325,17 @@
                     <option value="service">Service</option>
                     <option value="package">Package</option>
                 </select>
+                <div class="invalid-feedback item-type-error" style="display: none;"></div>
             </td>
             <td>
                 <select name="items[${itemIndex}][item_id]" class="form-select item-select" required onchange="updateItemDetails(this, ${itemIndex})">
                     <option value="">Select Item</option>
                 </select>
+                <div class="invalid-feedback item-id-error" style="display: none;"></div>
             </td>
             <td>
                 <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" required min="0.01" step="0.01" value="1" onchange="calculateRowTotal(${itemIndex})">
+                <div class="invalid-feedback quantity-error" style="display: none;"></div>
             </td>
             <td style="display: none;">
                 <select name="items[${itemIndex}][uom_id]" class="form-select uom-select">
@@ -301,10 +344,12 @@
             </td>
             <td>
                 <input type="number" name="items[${itemIndex}][unit_price]" class="form-control unit-price" required min="0" step="0.01" value="0" onchange="calculateRowTotal(${itemIndex})">
+                <div class="invalid-feedback unit-price-error" style="display: none;"></div>
             </td>
             <td>
                 <input type="number" name="items[${itemIndex}][discount_value]" class="form-control discount-value" min="0" step="0.01" value="0" onchange="calculateRowTotal(${itemIndex})">
                 <input type="hidden" name="items[${itemIndex}][discount_type]" value="percentage">
+                <div class="invalid-feedback discount-error" style="display: none;"></div>
             </td>
             <td class="tax-cell">
                 <!-- Tax Dropdown (default) -->
@@ -315,6 +360,7 @@
                 <div class="tax-inputs" style="display: none;">
                     <input type="number" name="items[${itemIndex}][tax_rate]" class="form-control tax-rate mb-1" placeholder="Tax Rate %" min="0" step="0.01" onchange="calculateRowTotal(${itemIndex})">
                 </div>
+                <div class="invalid-feedback tax-error" style="display: none;"></div>
             </td>
             <td>
                 <span class="row-total">{{ $quotation->currency }} 0.00</span>
@@ -497,6 +543,7 @@
     }
 
     $(document).ready(function() {
+        addItem();
         // Load taxes for existing tax selects
         document.querySelectorAll('.tax-select').forEach(select => {
             if (select.style.display !== 'none') {
@@ -556,22 +603,63 @@
             }
         });
 
-        // Form validation
-        $('#quotationForm').on('submit', function(e) {
+     $('#quotationForm').on('submit', function(e) {
+            let valid = true;
+            $('.error').remove(); // clear old errors
+// Quotation Date validation
+if (!$('input[name="quotation_date"]').val()) {
+    $('input[name="quotation_date"]').after('<span class="text-danger error">Quotation Date is required</span>');
+    valid = false;
+}
+// Quotation Date validation
+if (!$('input[name="valid_until"]').val()) {
+    $('input[name="valid_until"]').after('<span class="text-danger error">Valid Until Date is required</span>');
+    valid = false;
+}
+            // Check customer or lead
             const hasCustomerOrLead = $('#customer_id').val() || $('#lead_id').val();
-            const hasItems = $('#itemsTableBody tr').length > 0;
-
             if (!hasCustomerOrLead) {
-                e.preventDefault();
-                alert('Please select either a customer or lead.');
-                return false;
+                $('.customer_lead').after('<span class="text-danger error">Please select a customer or lead</span>');
+                valid = false;
             }
 
+            // Check if at least one item exists
+            const hasItems = $('#itemsTableBody tr').length > 0;
             if (!hasItems) {
-                e.preventDefault();
-                alert('Please add at least one item.');
-                return false;
+                $('#itemsTableBody').after('<span class="text-danger error d-block mt-2">Please add at least one item</span>');
+                valid = false;
             }
+
+            // Row-wise validation
+            $('#itemsTableBody tr').each(function() {
+                const itemType = $(this).find('.item-type').val();
+                const itemId = $(this).find('.item-select').val();
+                const qty = parseFloat($(this).find('.quantity').val());
+                const price = parseFloat($(this).find('.unit-price').val());
+
+                if (!itemType) {
+                    $(this).find('.item-type')
+                        .after('<span class="text-danger error">Item type is required</span>');
+                    valid = false;
+                }
+                if (!itemId) {
+                    $(this).find('.item-select')
+                        .after('<span class="text-danger error">Please select an item</span>');
+                    valid = false;
+                }
+                if (!qty || qty <= 0) {
+                    $(this).find('.quantity')
+                        .after('<span class="text-danger error">Quantity must be greater than 0</span>');
+                    valid = false;
+                }
+                if (!price || price <= 0) {
+                    $(this).find('.unit-price')
+                        .after('<span class="text-danger error">Unit price must be greater than 0</span>');
+                    valid = false;
+                }
+            });
+
+            if (!valid) e.preventDefault();
         });
     });
 </script>

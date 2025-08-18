@@ -617,7 +617,16 @@
         $('#quotationForm').on('submit', function(e) {
             let valid = true;
             $('.error').remove(); // clear old errors
-
+// Quotation Date validation
+if (!$('input[name="quotation_date"]').val()) {
+    $('input[name="quotation_date"]').after('<span class="text-danger error">Quotation Date is required</span>');
+    valid = false;
+}
+// Quotation Date validation
+if (!$('input[name="valid_until"]').val()) {
+    $('input[name="valid_until"]').after('<span class="text-danger error">Valid Until Date is required</span>');
+    valid = false;
+}
             // Check customer or lead
             const hasCustomerOrLead = $('#customer_id').val() || $('#lead_id').val();
             if (!hasCustomerOrLead) {
