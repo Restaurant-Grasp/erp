@@ -16,9 +16,7 @@
                     type="text" 
                     name="name" 
                     class="form-control @error('name') is-invalid @enderror" 
-                    value="{{ old('name', $uom->name) }}" 
-                    required
-                >
+                    value="{{ old('name', $uom->name) }}">
                 @error('name')
                     <div class="text-danger mt-1">{{ $message }}</div>
                 @enderror
