@@ -391,13 +391,13 @@ $(document).ready(function() {
                         <option value="">Select Account</option>
                         ${ledgerOptions}
                     </select>
-                    <option value="">Select Account</option>
+                 <span class="error text-danger larger"></span>
                 </td>
                 <td>
                     <div class="input-group">
                         <input type="number" name="items[${itemIndex}][amount]" class="form-control item-amount" 
                                step="0.01" min="0.01" required placeholder="0.00">
-                               <option value="">Select Account</option>
+                               <span class="error text-danger larger"></span>
                     </div>
                 </td>
                 <td>
