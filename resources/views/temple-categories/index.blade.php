@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'Temple Categories')
+@section('title', 'Business Categories')
 
 @section('content')
 <div class="page-header">
-    <h1 class="page-title">Temple Categories</h1>
+    <h1 class="page-title">Business Categories</h1>
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
             <li class="breadcrumb-item"><a href="{{ route('leads.index') }}">Leads</a></li>
-            <li class="breadcrumb-item active">Temple Categories</li>
+            <li class="breadcrumb-item active">Business Categories</li>
         </ol>
     </nav>
 </div>
@@ -73,7 +73,7 @@
         <!-- Categories List -->
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">All Temple Categories</h5>
+                <h5 class="mb-0">All Business Categories</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -131,7 +131,7 @@
                                 <td colspan="6" class="text-center py-4">
                                     <div class="text-muted">
                                         <i class="fas fa-tags fa-3x mb-3"></i>
-                                        <p>No temple categories found</p>
+                                        <p>No business categories found</p>
                                     </div>
                                 </td>
                             </tr>
