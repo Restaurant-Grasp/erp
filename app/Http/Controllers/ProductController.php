@@ -116,7 +116,9 @@ class ProductController extends Controller
         $brands = Brand::all();
         $models = Models::all();
         $uoms = Uom::all();
-        $ledgers = Ledger::all();
+        $ledgers = Ledger::whereHas('group', function($query) {
+			$query->where('pd', 1);
+		})->get();
         $categories = Categories::whereNull('parent_id')->with('childrenCategories')->get();
         return view('product.create', compact('brands', 'categories', 'models', 'uoms', 'ledgers'));
     }
@@ -162,7 +164,9 @@ class ProductController extends Controller
         $brands = Brand::all();
         $models = Models::all();
         $uoms = Uom::all();
-        $ledgers = Ledger::all();
+        $ledgers = Ledger::whereHas('group', function($query) {
+			$query->where('pd', 1);
+		})->get();
         $categories = Categories::whereNull('parent_id')->with('childrenCategories')->get();
 
         return view('product.edit', compact('product', 'brands', 'categories', 'models', 'uoms', 'ledgers'));
