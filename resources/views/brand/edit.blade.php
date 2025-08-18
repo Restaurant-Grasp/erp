@@ -10,19 +10,29 @@
             @csrf @method('PUT')
             <div class="mb-3">
                 <label>Name <span class="text-danger">*</span></label>
-                <input type="text" name="name" class="form-control" value="{{ $brand->name }}" required>
+                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $brand->name) }}">
+                @error('name')
+                    <div class="text-danger mt-1">{{ $message }}</div>
+                @enderror
             </div>
+            
             <div class="mb-3">
                 <label>Code</label>
-                <input type="text" name="code" class="form-control" value="{{ $brand->code }}">
+                <input type="text" name="code" class="form-control @error('code') is-invalid @enderror" value="{{ old('code', $brand->code) }}">
+                @error('code')
+                    <div class="text-danger mt-1">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="mb-3">
                 <label>Logo</label><br>
-                <input type="file" name="logo" class="form-control">
-                <small class="text-muted">Supported formats: jpg, png, svg, gif.</small><br>
+                <input type="file" name="logo" class="form-control @error('logo') is-invalid @enderror">
+                <small class="text-muted">Supported formats: jpg, png, svg, gif.</small>
+                @error('logo')
+                    <div class="text-danger mt-1">{{ $message }}</div>
+                @enderror
                 @if ($brand->logo)
-                <img src="{{ asset('assets/' . $brand->logo) }}" width="100" class="mb-2"><br>
+                    <br><img src="{{ asset('assets/' . $brand->logo) }}" width="100" class="mb-2">
                 @endif
             </div>
 
