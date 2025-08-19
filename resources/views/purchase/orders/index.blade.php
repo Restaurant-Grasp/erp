@@ -292,6 +292,7 @@
     </div>
 </div>
 
+
 <script>
 $(document).ready(function() {
     // Delete confirmation
