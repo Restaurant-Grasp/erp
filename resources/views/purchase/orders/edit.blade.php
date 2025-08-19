@@ -1,7 +1,17 @@
 @extends('layouts.app')
 
 @section('title', 'Edit Purchase Order')
-
+<style>
+#itemsTable{
+	width: 130%;
+}
+.card-body .table-responsive{
+	overflow-x: scroll;
+}
+.input-group-sm>.form-select{
+	padding-right: 0rem;
+}
+</style>
 @section('content')
 <div class="page-header">
     <h1 class="page-title">Edit Purchase Order</h1>
@@ -150,7 +160,7 @@
                                     </td>
                                     <td>
                                         <input type="number" name="items[{{ $index }}][quantity]" class="form-control form-control-sm text-end item-quantity" 
-                                               value="{{ $item->quantity }}" step="0.01" min="0.01" required onchange="calculateItemTotal(this)">
+                                               value="{{ $item->quantity }}" step="1" min="1" required onchange="calculateItemTotal(this)">
                                     </td>
                                     <td>
                                         <select name="items[{{ $index }}][uom_id]" class="form-select form-select-sm item-uom">
@@ -288,7 +298,7 @@
         </td>
         <td>
             <input type="number" name="items[INDEX][quantity]" class="form-control form-control-sm text-end item-quantity" 
-                   value="1" step="0.01" min="0.01" required onchange="calculateItemTotal(this)">
+                   value="1" step="1" min="1" required onchange="calculateItemTotal(this)">
         </td>
         <td>
             <select name="items[INDEX][uom_id]" class="form-select form-select-sm item-uom">
