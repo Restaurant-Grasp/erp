@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchase;
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceItem;
+use App\Models\PurchaseInvoiceFile;
 use App\Models\PurchaseOrder;
 use App\Models\Vendor;
 use App\Models\Product;
@@ -14,8 +15,8 @@ use App\Models\Tax;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
-
 
 class PurchaseInvoiceController extends Controller
 {
@@ -136,6 +137,11 @@ class PurchaseInvoiceController extends Controller
             'items.*.discount_type' => 'required|in:percentage,amount',
             'items.*.discount_value' => 'nullable|numeric|min:0',
             'items.*.tax_rate' => 'nullable|numeric|min:0|max:100',
+            // File validation
+            'files' => 'nullable|array',
+            'files.*' => 'file|mimes:pdf,jpg,jpeg,png,gif,doc,docx,xls,xlsx|max:20480', // 20MB max
+            'file_descriptions' => 'nullable|array',
+            'file_descriptions.*' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
@@ -238,6 +244,11 @@ class PurchaseInvoiceController extends Controller
                 ]));
             }
 
+            // Handle file uploads
+            if ($request->hasFile('files')) {
+                $this->handleFileUploads($request, $invoice);
+            }
+
             // Update PO items received quantity if this is from PO
             if ($validated['po_id']) {
                 foreach ($request->items as $index => $item) {
@@ -286,7 +297,8 @@ class PurchaseInvoiceController extends Controller
             'items.service',
             'items.uom',
             'items.poItem',
-            'createdBy'
+            'createdBy',
+            'files.uploadedBy'
         ]);
 
         // Get related GRNs
@@ -306,7 +318,7 @@ class PurchaseInvoiceController extends Controller
                 ->with('error', 'Cannot edit purchase invoice with current status.');
         }
 
-        $invoice->load(['items', 'vendor']);
+        $invoice->load(['items', 'vendor', 'files']);
         $vendors = Vendor::where('status', 'active')->orderBy('company_name')->get();
         $products = Product::where('is_active', 1)->orderBy('name')->get();
         $services = Service::where('status', 1)->orderBy('name')->get();
@@ -347,6 +359,11 @@ class PurchaseInvoiceController extends Controller
             'items.*.discount_type' => 'required|in:percentage,amount',
             'items.*.discount_value' => 'nullable|numeric|min:0',
             'items.*.tax_rate' => 'nullable|numeric|min:0|max:100',
+            // File validation
+            'files' => 'nullable|array',
+            'files.*' => 'file|mimes:pdf,jpg,jpeg,png,gif,doc,docx,xls,xlsx|max:20480', // 20MB max
+            'file_descriptions' => 'nullable|array',
+            'file_descriptions.*' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
@@ -435,6 +452,11 @@ class PurchaseInvoiceController extends Controller
                 ]));
             }
 
+            // Handle file uploads
+            if ($request->hasFile('files')) {
+                $this->handleFileUploads($request, $invoice);
+            }
+
             DB::commit();
             return redirect()->route('purchase.invoices.index')
                 ->with('success', 'Purchase Invoice updated successfully.');
@@ -470,6 +492,9 @@ class PurchaseInvoiceController extends Controller
                 }
             }
 
+            // Delete files (this will automatically delete from storage due to model boot method)
+            $invoice->files()->delete();
+            
             $invoice->items()->delete();
             $invoice->delete();
 
@@ -480,6 +505,69 @@ class PurchaseInvoiceController extends Controller
             DB::rollback();
             return redirect()->route('purchase.invoices.index')
                 ->with('error', 'Error deleting purchase invoice: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle file uploads for the invoice
+     */
+    private function handleFileUploads(Request $request, PurchaseInvoice $invoice)
+    {
+        $files = $request->file('files');
+        $descriptions = $request->input('file_descriptions', []);
+
+        foreach ($files as $index => $file) {
+            if ($file && $file->isValid()) {
+                // Generate unique filename
+                $originalName = $file->getClientOriginalName();
+                $extension = $file->getClientOriginalExtension();
+                $filename = time() . '_' . $index . '_' . $originalName;
+                
+                // Store file in purchase_invoices directory
+                $path = $file->storeAs('purchase_invoices/' . $invoice->id, $filename, 'public');
+
+                // Create file record
+                PurchaseInvoiceFile::create([
+                    'invoice_id' => $invoice->id,
+                    'file_name' => $originalName,
+                    'file_path' => $path,
+                    'file_size' => $file->getSize(),
+                    'file_type' => $file->getMimeType(),
+                    'description' => $descriptions[$index] ?? null,
+                    'uploaded_by' => Auth::id(),
+                    'uploaded_at' => now(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Download a specific file
+     */
+    public function downloadFile(PurchaseInvoiceFile $file)
+    {
+        if (!Storage::exists($file->file_path)) {
+            abort(404, 'File not found');
+        }
+
+        return Storage::download($file->file_path, $file->file_name);
+    }
+
+    /**
+     * Delete a specific file
+     */
+    public function deleteFile(PurchaseInvoiceFile $file)
+    {
+        // Check if user has permission to edit the invoice
+        if (!in_array($file->invoice->status, ['draft', 'pending'])) {
+            return response()->json(['error' => 'Cannot delete file from invoice with current status.'], 403);
+        }
+
+        try {
+            $file->delete(); // This will also delete the physical file due to model boot method
+            return response()->json(['success' => 'File deleted successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error deleting file: ' . $e->getMessage()], 500);
         }
     }
 
@@ -552,6 +640,7 @@ class PurchaseInvoiceController extends Controller
         return redirect()->route('purchase.invoices.show', $invoice)
             ->with('info', 'E-Invoice submission will be implemented soon.');
     }
+
     /**
      * Get invoice payments for modal display
      */

@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('title', 'Edit Purchase Invoice')
@@ -16,7 +15,7 @@
     </nav>
 </div>
 
-<form action="{{ route('purchase.invoices.update', $invoice) }}" method="POST" id="invoiceForm">
+<form action="{{ route('purchase.invoices.update', $invoice) }}" method="POST" id="invoiceForm" enctype="multipart/form-data">
     @csrf
     @method('PUT')
     <div class="row">
@@ -218,6 +217,81 @@
                 </div>
             </div>
 
+            <!-- File Attachments -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-paperclip me-2"></i>Vendor Invoice Documents
+                    </h5>
+                    <button type="button" class="btn btn-success btn-sm" onclick="addFileUpload()">
+                        <i class="fas fa-plus me-2"></i> Add File
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Existing Files -->
+                    @if($invoice->files->count() > 0)
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">Existing Files:</h6>
+                        <div class="row g-3">
+                            @foreach($invoice->files as $file)
+                            <div class="col-md-6">
+                                <div class="card border" id="existing-file-{{ $file->id }}">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">
+                                                    @if($file->is_image)
+                                                        <i class="fas fa-image text-info me-2"></i>
+                                                    @elseif($file->is_pdf)
+                                                        <i class="fas fa-file-pdf text-danger me-2"></i>
+                                                    @else
+                                                        <i class="fas fa-file text-primary me-2"></i>
+                                                    @endif
+                                                    {{ $file->file_name }}
+                                                </h6>
+                                                @if($file->description)
+                                                <p class="mb-1 text-muted small">{{ $file->description }}</p>
+                                                @endif
+                                                <small class="text-muted">
+                                                    {{ $file->formatted_file_size }} • 
+                                                    {{ $file->file_extension }} • 
+                                                    {{ $file->uploaded_at->format('d/m/Y H:i') }}
+                                                </small>
+                                            </div>
+                                            <div class="ms-2">
+                                                <a href="{{ route('purchase.invoices.files.download', $file) }}" 
+                                                   class="btn btn-sm btn-outline-primary me-1" title="Download">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="deleteExistingFile({{ $file->id }})" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+
+                    <!-- New File Uploads -->
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Supported file types:</strong> PDF, Images (JPG, PNG, GIF), Documents (DOC, DOCX, XLS, XLSX)
+                        <br><strong>Maximum file size:</strong> 20MB per file
+                    </div>
+                    <div id="fileUploadsContainer">
+                        <!-- File upload fields will be added here -->
+                    </div>
+                    @error('files.*')
+                        <div class="text-danger mt-2">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+
             <!-- Notes -->
             <div class="card mt-4">
                 <div class="card-header"><h5 class="mb-0">Notes</h5></div>
@@ -358,6 +432,29 @@
     </tr>
 </template>
 
+<!-- File Upload Template -->
+<template id="fileUploadTemplate">
+    <div class="file-upload-row border rounded p-3 mb-3">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Select File</label>
+                <input type="file" name="files[]" class="form-control" 
+                       accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Description (Optional)</label>
+                <input type="text" name="file_descriptions[]" class="form-control" 
+                       placeholder="Brief description of the file">
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFileUpload(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
 <script>
 let itemIndex = {{ $invoice->items->count() }};
 let vendorProducts = [];
@@ -397,6 +494,35 @@ function addNewItem() {
 function removeItem(button) {
     $(button).closest('tr').remove();
     calculateTotals();
+}
+
+function addFileUpload() {
+    const template = document.getElementById('fileUploadTemplate');
+    const clone = template.content.cloneNode(true);
+    $('#fileUploadsContainer').append(clone);
+}
+
+function removeFileUpload(button) {
+    $(button).closest('.file-upload-row').remove();
+}
+
+function deleteExistingFile(fileId) {
+    if (confirm('Are you sure you want to delete this file?')) {
+        $.ajax({
+            url: `/purchase/invoices/files/${fileId}`,
+            type: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                $(`#existing-file-${fileId}`).remove();
+                alert('File deleted successfully.');
+            },
+            error: function(xhr) {
+                alert('Error deleting file: ' + xhr.responseJSON.error);
+            }
+        });
+    }
 }
 
 function loadVendorProducts(vendorId) {

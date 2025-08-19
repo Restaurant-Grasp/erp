@@ -14,7 +14,7 @@
     </nav>
 </div>
 
-<form action="{{ route('purchase.invoices.store') }}" method="POST" id="invoiceForm">
+<form action="{{ route('purchase.invoices.store') }}" method="POST" id="invoiceForm" enctype="multipart/form-data">
     @csrf
     <div class="row">
         <div class="col-md-8">
@@ -129,6 +129,31 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <!-- File Attachments -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-paperclip me-2"></i>Vendor Invoice Documents
+                    </h5>
+                    <button type="button" class="btn btn-success btn-sm" onclick="addFileUpload()">
+                        <i class="fas fa-plus me-2"></i> Add File
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Supported file types:</strong> PDF, Images (JPG, PNG, GIF), Documents (DOC, DOCX, XLS, XLSX)
+                        <br><strong>Maximum file size:</strong> 20MB per file
+                    </div>
+                    <div id="fileUploadsContainer">
+                        <!-- File upload fields will be added here -->
+                    </div>
+                    @error('files.*')
+                        <div class="text-danger mt-2">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
 
@@ -261,6 +286,29 @@
     </tr>
 </template>
 
+<!-- File Upload Template -->
+<template id="fileUploadTemplate">
+    <div class="file-upload-row border rounded p-3 mb-3">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Select File</label>
+                <input type="file" name="files[]" class="form-control" 
+                       accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Description (Optional)</label>
+                <input type="text" name="file_descriptions[]" class="form-control" 
+                       placeholder="Brief description of the file">
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFileUpload(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
 <script>
 let itemIndex = 0;
 let vendorProducts = [];
@@ -310,6 +358,16 @@ function addNewItem() {
 function removeItem(button) {
     $(button).closest('tr').remove();
     calculateTotals();
+}
+
+function addFileUpload() {
+    const template = document.getElementById('fileUploadTemplate');
+    const clone = template.content.cloneNode(true);
+    $('#fileUploadsContainer').append(clone);
+}
+
+function removeFileUpload(button) {
+    $(button).closest('.file-upload-row').remove();
 }
 
 function loadVendorProducts(vendorId) {
