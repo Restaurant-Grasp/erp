@@ -135,7 +135,7 @@
                         <div class="col-md-4">
                             <label class="form-label">Country</label>
                             <input type="text" name="country" class="form-control @error('country') is-invalid @enderror" 
-                                value="{{ old('country', 'India') }}">
+                                value="{{ old('country', 'Malaysia') }}">
                             @error('country')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
