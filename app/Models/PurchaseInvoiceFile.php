@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseInvoiceFile extends Model
 {
+	protected $table = 'purchase_invoice_files';
     protected $fillable = [
         'invoice_id',
         'file_name',
