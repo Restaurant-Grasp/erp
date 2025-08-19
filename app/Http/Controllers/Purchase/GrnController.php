@@ -43,16 +43,16 @@ class GrnController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('grn_no', 'like', "%{$search}%")
-                  ->orWhereHas('vendor', function($vendorQuery) use ($search) {
-                      $vendorQuery->where('company_name', 'like', "%{$search}%")
-                                  ->orWhere('vendor_code', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('purchaseOrder', function($poQuery) use ($search) {
-                      $poQuery->where('po_no', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('purchaseInvoice', function($invoiceQuery) use ($search) {
-                      $invoiceQuery->where('invoice_no', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('vendor', function ($vendorQuery) use ($search) {
+                        $vendorQuery->where('company_name', 'like', "%{$search}%")
+                            ->orWhere('vendor_code', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('purchaseOrder', function ($poQuery) use ($search) {
+                        $poQuery->where('po_no', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('purchaseInvoice', function ($invoiceQuery) use ($search) {
+                        $invoiceQuery->where('invoice_no', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -101,7 +101,7 @@ class GrnController extends Controller
         $invoice->load(['vendor', 'items.product', 'items.uom', 'purchaseOrder']);
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
         $uoms = Uom::where('status', 1)->orderBy('name')->get();
-        return view('purchase.grn.create-from-invoice', compact('invoice', 'staff','uoms'));
+        return view('purchase.grn.create-from-invoice', compact('invoice', 'staff', 'uoms'));
     }
 
     /**
@@ -144,6 +144,7 @@ class GrnController extends Controller
             // Create GRN
             $grn = GoodsReceiptNote::create([
                 'vendor_id' => $validated['vendor_id'],
+                'grn_no' => $this->generateGrnNumber(),
                 'po_id' => $validated['po_id'],
                 'invoice_id' => $validated['invoice_id'],
                 'grn_date' => $validated['grn_date'],
@@ -249,8 +250,7 @@ class GrnController extends Controller
 
             DB::commit();
             return redirect()->route('purchase.grn.show', $grn)
-                           ->with('success', 'GRN created successfully.');
-
+                ->with('success', 'GRN created successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Error creating GRN: ' . $e->getMessage())->withInput();
@@ -277,14 +277,14 @@ class GrnController extends Controller
 
         // Get serial numbers for items
         $serialNumbers = ProductSerialNumber::where('grn_id', $grn->id)
-                                           ->with('product')
-                                           ->get()
-                                           ->groupBy('grn_item_id');
+            ->with('product')
+            ->get()
+            ->groupBy('grn_item_id');
 
         // Get related returns
         $returns = PurchaseReturn::where('grn_id', $grn->id)
-                                ->with('items.product')
-                                ->get();
+            ->with('items.product')
+            ->get();
 
         return view('purchase.grn.show', compact('grn', 'serialNumbers', 'returns'));
     }
@@ -297,7 +297,7 @@ class GrnController extends Controller
         // Only allow editing if status is draft
         if ($grn->status !== 'draft') {
             return redirect()->route('purchase.grn.show', $grn)
-                           ->with('error', 'Cannot edit GRN that is not in draft status.');
+                ->with('error', 'Cannot edit GRN that is not in draft status.');
         }
 
         $grn->load(['items.product', 'items.uom', 'documents']);
@@ -308,8 +308,8 @@ class GrnController extends Controller
 
         // Get existing serial numbers
         $serialNumbers = ProductSerialNumber::where('grn_id', $grn->id)
-                                           ->get()
-                                           ->groupBy('grn_item_id');
+            ->get()
+            ->groupBy('grn_item_id');
 
         return view('purchase.grn.edit', compact('grn', 'vendors', 'staff', 'products', 'uoms', 'serialNumbers'));
     }
@@ -322,7 +322,7 @@ class GrnController extends Controller
         // Only allow updating if status is draft
         if ($grn->status !== 'draft') {
             return redirect()->route('purchase.grn.show', $grn)
-                           ->with('error', 'Cannot update GRN that is not in draft status.');
+                ->with('error', 'Cannot update GRN that is not in draft status.');
         }
 
         $validated = $request->validate([
@@ -407,8 +407,7 @@ class GrnController extends Controller
 
             DB::commit();
             return redirect()->route('purchase.grn.show', $grn)
-                           ->with('success', 'GRN updated successfully.');
-
+                ->with('success', 'GRN updated successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Error updating GRN: ' . $e->getMessage())->withInput();
@@ -429,10 +428,10 @@ class GrnController extends Controller
                 $originalName = $file->getClientOriginalName();
                 $extension = $file->getClientOriginalExtension();
                 $fileName = 'grn_' . $grn->id . '_' . Str::uuid() . '.' . $extension;
-                
+
                 // Store file
                 $filePath = $file->storeAs('grn_documents', $fileName, 'public');
-                
+
                 // Create document record
                 GrnDocument::create([
                     'grn_id' => $grn->id,
@@ -486,9 +485,9 @@ class GrnController extends Controller
     public function getInvoiceItems(Request $request)
     {
         $invoiceId = $request->invoice_id;
-        
+
         $invoice = PurchaseInvoice::with(['items.product.uom', 'items.service', 'vendor'])
-                                 ->find($invoiceId);
+            ->find($invoiceId);
 
         if (!$invoice) {
             return response()->json(['error' => 'Invoice not found'], 404);
@@ -611,5 +610,26 @@ class GrnController extends Controller
         $invoice->update([
             'received_percentage' => $receivedPercentage
         ]);
+    }
+    /**
+     * Generate unique GRN number
+     */
+    private function generateGrnNumber()
+    {
+  
+        $yearMonth = now()->format('ym');
+        $prefix = "GRN" . $yearMonth;
+
+        $lastGrn = GoodsReceiptNote::where('grn_no', 'like', $prefix . '%')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if ($lastGrn && $lastGrn->grn_no) {
+            $lastNumber = intval(substr($lastGrn->grn_no, strlen($prefix)));
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+        return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
 }
