@@ -150,6 +150,7 @@ class ProductController extends Controller
                 'reorder_level' => $request->reorder_level ?? 0,
                 'description' => $request->description,
                 'created_by' => auth()->id(),
+                'has_serial_number'=>$request->has('has_serial_number') ? 1 : 0,
             ]);
             $product->update([
                 'product_code' => 'PRD' . str_pad($product->id, 6, '0', STR_PAD_LEFT)
@@ -202,6 +203,7 @@ class ProductController extends Controller
                 'reorder_level' => $request->reorder_level ?? 0,
                 'description' => $request->description,
                 'created_by' => auth()->id(),
+                'has_serial_number'=>$request->has('has_serial_number') ? 1 : 0,
             ]);
 
             DB::commit();

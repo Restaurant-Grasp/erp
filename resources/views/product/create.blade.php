@@ -215,7 +215,11 @@
                     {{ old('is_active') ? 'checked' : '' }}>
                 <label class="form-check-label" for="activeCheck">Active</label>
             </div>
-
+            <div class="mb-3 form-check">
+                <input type="checkbox" name="has_serial_number" class="form-check-input" id="has_serial_number"
+                    {{ old('has_serial_number') ? 'checked' : '' }}>
+                <label class="form-check-label" for="has_serial_number">Is Serial Number</label>
+            </div>
             <button type="submit" class="btn btn-primary">Create</button>
             <a href="{{ route('product.index') }}" class="btn btn-secondary">Cancel</a>
         </form>
