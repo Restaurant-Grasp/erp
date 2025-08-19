@@ -2,6 +2,71 @@
 
 @section('title', 'Edit Tax')
 
+@push('styles')
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+/* Custom Select2 styling to match your theme */
+.select2-container--default .select2-selection--single {
+    height: 38px;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+}
+.select2-selection__placeholder {
+    color: black !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 24px;
+    padding-left: 0;
+    color: #495057;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px;
+    right: 10px;
+}
+
+.select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 0.2rem rgba(0, 165, 81, 0.25);
+}
+
+.select2-dropdown {
+    border: 1px solid var(--primary-green);
+    border-radius: 0.375rem;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: var(--primary-green);
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 6px 12px;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field:focus {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 0.2rem rgba(0, 165, 81, 0.25);
+}
+
+/* Error state styling */
+.is-invalid + .select2-container--default .select2-selection--single {
+    border-color: #dc3545;
+}
+
+.is-invalid + .select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+</style>
+@endpush
+
 @section('content')
 <div class="page-header">
     <h1 class="page-title">Edit Tax</h1>
@@ -54,9 +119,9 @@
                             @enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Tax Liability Account <span class="text-danger">*</span></label>
-                            <select name="ledger_id" class="form-select @error('ledger_id') is-invalid @enderror" required>
-                                <option value="">Select Ledger Account</option>
+                            <label class="form-label mb-2">Tax Liability Account <span class="text-danger">*</span></label>
+                            <select name="ledger_id" class="form-select ledger-select2  @error('ledger_id') is-invalid @enderror" required>
+                                 <option value="">-- Search and Select Ledger --</option>
                                 @foreach($ledgers as $ledger)
                                 <option value="{{ $ledger->id }}" {{ old('ledger_id', $tax->ledger_id) == $ledger->id ? 'selected' : '' }}>
                                     {{ $ledger->name }}
@@ -154,8 +219,15 @@
     </div>
 </form>
 
+
+
+@endsection
+@push('scripts')
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
-$(document).ready(function() {
+    $(document).ready(function() {
     // Form validation
     $('#taxForm').on('submit', function(e) {
         const name = $('input[name="name"]').val();
@@ -205,5 +277,16 @@ $(document).ready(function() {
         `);
     }
 });
+
+$(document).ready(function() {
+    // Initialize Select2 for all dropdowns
+    $('.ledger-select2').select2({
+        placeholder: '-- Search and Select Ledger --',
+        allowClear: true,
+        width: '100%',
+        theme: 'default'
+    });
+    
+});
 </script>
-@endsection
+@endpush
