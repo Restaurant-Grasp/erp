@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Purchase Order {{ $order->po_no }}</title>
+    <style>
+        /* Base styles for PDF */
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.2;
+            margin: 10px;
+            color: #000;
+        }
+
+        /* Company Header */
+        .company-header {
+            width: 100%;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 8px;
+        }
+
+        .company-header table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .company-header td {
+            vertical-align: top;
+            border: none;
+            padding: 0;
+        }
+
+        .company-info {
+            font-weight: bold;
+            width: 70%;
+            padding-right: 10px;
+            font-size: 15px;
+            line-height: 1.3;
+        }
+
+        .logo-cell {
+            width: 30%;
+            text-align: right;
+            vertical-align: top;
+        }
+
+        .logo-cell img {
+            max-width: 241px;
+            width: auto;
+            height: auto;
+            margin-right: 115px;
+        }
+
+        .company-name {
+            font-size: 15px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        .registration {
+            font-size: 10px;
+            color: #000;
+            margin-bottom: 3px;
+        }
+
+        .contact-info {
+            margin-bottom: 3px;
+            line-height: 1.2;
+        }
+
+        /* Vendor Details Section */
+        .vendor-details {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .vendor-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .vendor-details td {
+            padding: 5px;
+            vertical-align: top;
+            font-size: 9px;
+        }
+
+        .vendor-details .label {
+            font-weight: bold;
+            width: 20%;
+            background-color: #f0f0f0;
+            text-transform: uppercase;
+        }
+
+        .vendor-details .colon {
+            width: 2%;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+
+        .vendor-details .value {
+            width: 28%;
+            text-transform: uppercase;
+            background-color: #f0f0f0;
+        }
+
+        /* Purchase Order Header */
+        .po-header {
+            font-size: 11px;
+            font-weight: bold;
+            color: #000;
+            margin: 10px 0 8px 0;
+            text-transform: uppercase;
+        }
+
+        /* Items Table */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            border: 1px solid #000;
+        }
+
+        .items-table th,
+        .items-table td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: left;
+            font-size: 9px;
+            vertical-align: top;
+        }
+
+        .table-header-dark {
+            background-color: #000;
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+            font-size: 9px;
+            text-transform: uppercase;
+            padding: 8px 6px;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #f5f5f5;
+        }
+
+        .grand-total {
+            font-weight: bold;
+            background-color: #d0d0d0;
+            color: #000;
+            font-size: 10px;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 8px;
+            color: #000;
+            border-top: 1px solid #000;
+            padding-top: 6px;
+        }
+
+        /* Specific item styling */
+        .item-name {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .item-description {
+            font-size: 8px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* Approval status styling */
+        .approval-status {
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 3px;
+            color: #fff;
+            font-size: 8px;
+            text-transform: uppercase;
+        }
+
+        .status-approved {
+            background-color: #28a745;
+        }
+
+        .status-pending {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .status-rejected {
+            background-color: #dc3545;
+        }
+
+        /* Background colors for PDF */
+        .vendor-header-bg {
+            background-color: #f0f0f0;
+        }
+
+        /* Page break settings */
+        .page-break {
+            page-break-before: always;
+        }
+
+        .avoid-break {
+            page-break-inside: avoid;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Company Header -->
+    <div class="company-header">
+        <table>
+            <tr>
+                <td class="company-info">
+                    <div class="company-name">
+                        {{ $companyInfo['name'] !== 'Company Name Not Set' ? $companyInfo['name'] : 'GRASP SOFTWARE SOLUTIONS SDN BHD' }}
+                    </div>
+                    @if($companyInfo['registration_number'] && $companyInfo['registration_number'] !== 'Registration Number Not Set')
+                    <div class="registration">({{ $companyInfo['registration_number'] }})</div>
+                    @endif
+                    <div class="contact-info">
+                        @if($companyInfo['address'] && $companyInfo['address'] !== 'Address Not Set')
+                        {!! $companyInfo['address'] !!}<br>
+                        @else
+                        No. 8 Lot 2921, Jalan PJS 3/1, Taman Medan, 46000 Petaling Jaya,<br>
+                        Selangor Darul Ehsan<br>
+                        @endif
+                        @if($companyInfo['website'] && $companyInfo['website'] !== 'Website Not Set')
+                        {{ $companyInfo['website'] }}
+                        @endif
+                        @if($companyInfo['email'] && $companyInfo['email'] !== 'Email Not Set')
+                        {{ $companyInfo['email'] }}<br>
+                        @endif
+                        @if($companyInfo['phone'] && $companyInfo['phone'] !== 'Phone Not Set')
+                        {{ $companyInfo['phone'] }}
+                        @endif
+                    </div>
+                </td>
+                <td class="logo-cell">
+                    @if($companyInfo['logo'])
+                    <img src="{{ asset($companyInfo['logo']) }}" alt="Company Logo">
+                    @endif
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Vendor Details in Table Format -->
+    <div class="vendor-details">
+        <table>
+            <tr>
+                <td class="label vendor-header-bg">Vendor Name</td>
+                <td class="colon vendor-header-bg">:</td>
+                <td class="value vendor-header-bg">{{ strtoupper($order->vendor->company_name) }}</td>
+                <td></td>
+                <td class="label vendor-header-bg">PO Date</td>
+                <td class="colon vendor-header-bg">:</td>
+                <td class="value vendor-header-bg">{{ $order->po_date->format('d/m/Y') }}</td>
+            </tr>
+            <tr>
+                <td class="label vendor-header-bg">Vendor Code</td>
+                <td class="colon vendor-header-bg">:</td>
+                <td class="value vendor-header-bg">{{ strtoupper($order->vendor->vendor_code) }}</td>
+                <td></td>
+                <td class="label vendor-header-bg">PO Number</td>
+                <td class="colon vendor-header-bg">:</td>
+                <td class="value vendor-header-bg">{{ $order->po_no }}</td>
+            </tr>
+            <tr>
+                <td class="label vendor-header-bg">Address</td>
+                <td class="colon vendor-header-bg">:</td>
+                <td class="value vendor-header-bg">
+                    {{ strtoupper($order->vendor->address_line1 ?: '') }}
+                    @if($order->vendor->address_line2), {{ strtoupper($order->vendor->address_line2) }}@endif
+                    @if($order->vendor->city || $order->vendor->state || $order->vendor->postcode)
+                    <br>{{ strtoupper($order->vendor->city ?: '') }}
+                    @if($order->vendor->state), {{ strtoupper($order->vendor->state) }}@endif
+                    @if($order->vendor->postcode) {{ $order->vendor->postcode }}@endif
+                    @endif
+                    @if($order->vendor->country)
+                    <br>{{ strtoupper($order->vendor->country) }}
+                    @endif
+                </td>
+                <td></td>
+                @if($order->reference_no)
+                <td class="label vendor-header-bg">Reference No</td>
+                <td class="colon vendor-header-bg">:</td>
+                <td class="value vendor-header-bg">{{ $order->reference_no }}</td>
+                @else
+                <td class="label vendor-header-bg"></td>
+                <td class="colon vendor-header-bg"></td>
+                <td class="value vendor-header-bg"></td>
+                @endif
+            </tr>
+            <tr>
+                <td class="label vendor-header-bg">Contact Person</td>
+                <td class="colon vendor-header-bg">:</td>
+                <td class="value vendor-header-bg">{{ strtoupper($order->vendor->contact_person ?: '') }}</td>
+                <td></td>
+                @if($order->delivery_date)
+                <td class="label vendor-header-bg">Delivery Date</td>
+                <td class="colon vendor-header-bg">:</td>
+                <td class="value vendor-header-bg">{{ $order->delivery_date->format('d/m/Y') }}</td>
+                @else
+                <td class="label vendor-header-bg"></td>
+                <td class="colon vendor-header-bg"></td>
+                <td class="value vendor-header-bg"></td>
+                @endif
+            </tr>
+            <tr>
+                <td class="label vendor-header-bg">Email / Phone</td>
+                <td class="colon vendor-header-bg">:</td>
+                <td class="value vendor-header-bg">
+                    @if($order->vendor->email){{ strtoupper($order->vendor->email) }}@endif
+                    @if($order->vendor->email && $order->vendor->phone) / @endif
+                    @if($order->vendor->phone){{ $order->vendor->phone }}@endif
+                </td>
+                <td></td>
+                <td class="label vendor-header-bg">Approval Status</td>
+                <td class="colon vendor-header-bg">:</td>
+                <td class="value vendor-header-bg">
+                    <span class="approval-status status-{{ $order->approval_status }}">
+                        {{ strtoupper($order->approval_status) }}
+                    </span>
+                    @if($order->approval_status === 'approved' && $order->approvedBy)
+                    <br><small>By: {{ $order->approvedBy->name }} on {{ $order->approved_date->format('d/m/Y') }}</small>
+                    @endif
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Purchase Order Header -->
+    <div class="po-header">Purchase Order Items</div>
+
+    <!-- Items Table -->
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th class="table-header-dark">S.NO</th>
+                <th class="table-header-dark">Item Description</th>
+                <th class="table-header-dark">Qty</th>
+                <th class="table-header-dark">UOM</th>
+                <th class="table-header-dark">Unit Price ({{ $order->currency }})</th>
+                <th class="table-header-dark">Discount</th>
+                <th class="table-header-dark">Tax</th>
+                <th class="table-header-dark">Total ({{ $order->currency }})</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if($order->items && $order->items->count() > 0)
+            @foreach($order->items as $index => $item)
+            <tr class="avoid-break">
+                <td class="text-center">{{ $index + 1 }}</td>
+                <td>
+                    <div class="item-name">{{ strtoupper($item->item_name) }}</div>
+                    @if($item->description)
+                    <div class="item-description">{{ $item->description }}</div>
+                    @endif
+                    <small style="color: #666; font-size: 7px; text-transform: uppercase;">
+                        Type: {{ ucfirst($item->item_type) }}
+                    </small>
+                </td>
+                <td class="text-center">{{ number_format($item->quantity, 2) }}</td>
+                <td class="text-center">{{ $item->uom ? $item->uom->name : '-' }}</td>
+                <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
+                <td class="text-right">
+                    @if($item->
