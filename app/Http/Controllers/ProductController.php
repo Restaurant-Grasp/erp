@@ -138,6 +138,7 @@ class ProductController extends Controller
         try {
             $product = Product::create([
                 'name' => $request->name,
+                'item_type'=>'product',
                 'category_id' => $request->category_id,
                 'ledger_id' => $request->ledger_id,
                 'brand_id' => $request->brand_id,
@@ -189,6 +190,7 @@ class ProductController extends Controller
             $product->update([
                 'name' => $request->name,
                 'product_code' => $request->product_code,
+                'item_type'=>'product',
                 'ledger_id' => $request->ledger_id,
                 'category_id' => $request->category_id,
                 'brand_id' => $request->brand_id,
