@@ -135,7 +135,6 @@ class SalesInvoiceController extends Controller
         try {
             // Create invoice
             $invoiceData = $validated;
-            unset($invoiceData['items']);
             $invoiceData['created_by'] = Auth::id();
 
             $invoiceData['status'] = 'pending';
@@ -145,7 +144,7 @@ class SalesInvoiceController extends Controller
             $invoice = SalesInvoice::create($invoiceData);
 
             // Create invoice items
-                $items = $quotationData['items'] ?? [];
+            $items = $invoiceData['items'] ?? [];
             // Create quotation items
            foreach ($items as $index => $itemData) {
                 $itemData['invoice_id'] = $invoice->id;
@@ -247,7 +246,6 @@ class SalesInvoiceController extends Controller
         try {
             // Update invoice
             $invoiceData = $validated;
-            unset($invoiceData['items']);
             $invoiceData['due_date'] = $invoice->invoice_date->addDays((int) $validated['payment_terms']);
             $invoice->update($invoiceData);
 
@@ -255,7 +253,7 @@ class SalesInvoiceController extends Controller
             $invoice->items()->delete();
 
             // Create new items
-               $items = $quotationData['items'] ?? [];
+               $items = $invoiceData['items'] ?? [];
             // Create quotation items
            foreach ($items as $index => $itemData) {
                 $itemData['invoice_id'] = $invoice->id;

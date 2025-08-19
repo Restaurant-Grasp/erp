@@ -360,7 +360,7 @@ class Quotation extends Model
             'address_line1' => $lead->address,
             'city' => $lead->city,
             'state' => $lead->state,
-            'country' => $lead->country ?: 'India',
+            'country' => $lead->country ?: 'Malaysia',
             'source' => 'lead_conversion', // Now a valid enum value
             'reference_by' => 'Lead: ' . $lead->lead_no,
             'assigned_to' => $lead->assigned_to,

@@ -142,14 +142,15 @@ class QuotationController extends Controller
         try {
             // Create quotation
             $quotationData = $validated;
-
-            unset($quotationData['items']);
+         
             $quotationData['created_by'] = Auth::id();
             $quotationData['status'] = 'draft';
             $quotationData['approval_status'] = 'pending';
 
             $quotation = Quotation::create($quotationData);
+            
             $items = $quotationData['items'] ?? [];
+            
             // Create quotation items
            foreach ($items as $index => $itemData) {
                 $itemData['quotation_id'] = $quotation->id;
@@ -254,7 +255,6 @@ class QuotationController extends Controller
         try {
             // Update quotation
             $quotationData = $validated;
-            unset($quotationData['items']);
             $quotation->update($quotationData);
 
             // Delete existing items
@@ -681,5 +681,152 @@ class QuotationController extends Controller
 
         return $paymentTerms;
     }
-    
+      /**
+     * Manual convert to invoice (separate from approval)
+     */
+    public function convertToInvoice(Quotation $quotation)
+    {
+        if ($quotation->status === 'converted') {
+            return redirect()->route('sales.invoices.show', $quotation->convertedInvoice)
+                           ->with('info', 'Quotation has already been converted to invoice.');
+        }
+
+        if ($quotation->approval_status !== 'approved') {
+            return redirect()->route('sales.quotations.show', $quotation)
+                           ->with('error', 'Quotation must be approved before conversion to invoice.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $invoice = $quotation->convertToInvoice();
+            
+            DB::commit();
+            return redirect()->route('sales.invoices.show', $invoice)
+                           ->with('success', 'Quotation converted to invoice successfully.');
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->route('sales.quotations.show', $quotation)
+                           ->with('error', 'Error converting quotation: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Manual convert lead to customer (separate method)
+     */
+    public function convertLeadToCustomer(Quotation $quotation)
+    {
+        if (!$quotation->lead_id) {
+            return redirect()->route('sales.quotations.show', $quotation)
+                           ->with('error', 'This quotation is not associated with a lead.');
+        }
+
+        if ($quotation->customer_id) {
+            return redirect()->route('sales.quotations.show', $quotation)
+                           ->with('info', 'Lead has already been converted to customer.');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Check if lead is already converted
+            $lead = $quotation->lead;
+            if ($lead->converted_to_customer_id) {
+                // Use existing customer
+                $quotation->update(['customer_id' => $lead->converted_to_customer_id]);
+                
+                DB::commit();
+                return redirect()->route('sales.quotations.show', $quotation)
+                               ->with('success', 'Quotation linked to existing customer from lead conversion.');
+            }
+
+            // Convert lead to customer using the private method logic
+            $customerId = $this->performLeadToCustomerConversion($quotation->lead);
+            
+            // Update quotation with new customer
+            $quotation->update(['customer_id' => $customerId]);
+            
+            DB::commit();
+            return redirect()->route('sales.quotations.show', $quotation)
+                           ->with('success', 'Lead converted to customer and linked to quotation successfully.');
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->route('sales.quotations.show', $quotation)
+                           ->with('error', 'Error converting lead to customer: ' . $e->getMessage());
+        }
+    }
+ /**
+     * Private method to perform lead to customer conversion
+     */
+    private function performLeadToCustomerConversion(Lead $lead)
+    {
+        // Check if trade debtors group exists
+        $tradeDebtorGroup = Group::where('td', 1)->first();
+        if (!$tradeDebtorGroup) {
+            throw new \Exception('Trade Debtors group not configured');
+        }
+
+        // Generate customer code
+        $customerCode = $this->generateCustomerCode();
+        
+        // Create ledger for customer
+        $ledgerName = ($lead->company_name ?: $lead->contact_person) . ' (' . $customerCode . ')';
+        $ledger = Ledger::create([
+            'group_id' => $tradeDebtorGroup->id,
+            'name' => $ledgerName,
+            'type' => 0,
+            'reconciliation' => 0,
+            'aging' => 1,
+            'credit_aging' => 0
+        ]);
+
+        // Create customer from lead data
+        $customer = Customer::create([
+            'customer_code' => $customerCode,
+            'ledger_id' => $ledger->id,
+            'company_name' => $lead->company_name ?: $lead->contact_person,
+            'contact_person' => $lead->contact_person,
+            'email' => $lead->email,
+            'phone' => $lead->phone,
+            'mobile' => $lead->mobile,
+            'address_line1' => $lead->address,
+            'city' => $lead->city,
+            'state' => $lead->state,
+            'country' => $lead->country ?: 'India',
+            'source' => 'lead_conversion',
+            'reference_by' => 'Lead: ' . $lead->lead_no,
+            'assigned_to' => $lead->assigned_to,
+            'status' => 'active',
+            'notes' => 'Converted from lead: ' . $lead->lead_no,
+            'lead_id' => $lead->id,
+            'created_by' => auth()->id()
+        ]);
+
+        // Update lead with conversion details
+        $lead->update([
+            'lead_status' => 'won',
+            'converted_to_customer_id' => $customer->id,
+            'conversion_date' => now()
+        ]);
+
+        return $customer->id;
+    }
+
+    /**
+     * Generate unique customer code
+     */
+    private function generateCustomerCode()
+    {
+        $prefix = 'CU';
+        $lastCustomer = Customer::where('customer_code', 'like', $prefix . '%')
+            ->orderBy('customer_code', 'desc')
+            ->first();
+
+        if ($lastCustomer) {
+            $lastNumber = intval(substr($lastCustomer->customer_code, strlen($prefix)));
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+
+        return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+    }
 }

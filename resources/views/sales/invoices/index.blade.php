@@ -198,10 +198,10 @@
 
                                 <!-- Payment Button - Show only for pending, partial, overdue -->
                                 @if(in_array($invoice->status, ['pending', 'partial', 'overdue']) && $permissions->contains('name', 'sales.payments.create'))
-                                <button type="button" class="btn btn-sm btn-outline-success" 
-                                        onclick="openPaymentModal({{ $invoice->id }})" title="Add Payment">
-                                    <i class="fas fa-credit-card"></i>
-                                </button>
+                            <a href="{{ route('sales.payments.create', $invoice->id) }}" 
+   class="btn btn-sm btn-outline-success" title="Add Payment">
+    <i class="fas fa-credit-card"></i>
+</a>
                                 @endif
 
                                 <!-- View Payments Button -->
@@ -424,6 +424,7 @@ function openPaymentModal(invoiceId) {
     // Fetch payment form data
     $.get(createPaymentUrl)
     .done(function(data) {
+     
             // Populate invoice details
             $('#modalInvoiceNo').text(data.invoice.invoice_no);
             $('#modalCustomerName').text(data.invoice.customer_name);

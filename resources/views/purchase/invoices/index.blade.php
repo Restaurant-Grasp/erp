@@ -177,10 +177,12 @@
 
                                 <!-- Payment Button - Show only for pending, partial, overdue -->
                                 @if(in_array($invoice->status, ['pending', 'partial', 'overdue']) && $permissions->contains('name', 'purchases.payments.create'))
-                                <button type="button" class="btn btn-sm btn-outline-success" 
-                                        onclick="openPaymentModal({{ $invoice->id }})" title="Add Payment">
-                                    <i class="fas fa-credit-card"></i>
-                                </button>
+                                
+                                <a href="{{ route('purchases.payments.create', $invoice->id) }}" 
+   class="btn btn-sm btn-outline-success" title="Add Payment">
+    <i class="fas fa-credit-card"></i>
+</a>
+
                                 @endif
 
                                 <!-- View Payments Button -->

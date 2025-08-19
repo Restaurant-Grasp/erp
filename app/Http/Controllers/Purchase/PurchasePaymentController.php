@@ -63,7 +63,7 @@ class PurchasePaymentController extends Controller
                                   ->orderBy('name')
                                   ->get();
 
-        $users = User::where('status', 1)->orderBy('name')->get();
+        $users = User::where('is_active', 1)->orderBy('name')->get();
 
         return view('purchase.payments.create', compact('invoice', 'paymentModes', 'users'));
     }
