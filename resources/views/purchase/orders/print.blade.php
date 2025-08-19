@@ -276,6 +276,7 @@
             color: #fff;
             font-size: 8px;
             text-transform: uppercase;
+			line-height: 21px;
         }
 
         .status-approved {
