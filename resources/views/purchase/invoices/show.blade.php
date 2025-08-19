@@ -167,7 +167,88 @@
                 </div>
             </div>
         </div>
-
+@if($invoice->files->count() > 0)
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-paperclip me-2"></i>Vendor Invoice Documents
+            <span class="badge bg-primary ms-2">{{ $invoice->files->count() }}</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            @foreach($invoice->files as $file)
+            <div class="col-md-6 col-lg-4">
+                <div class="card border h-100">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-start mb-2">
+                            <div class="me-3">
+                                @if($file->is_image)
+                                    <div class="bg-info bg-opacity-10 p-2 rounded">
+                                        <i class="fas fa-image text-info fa-2x"></i>
+                                    </div>
+                                @elseif($file->is_pdf)
+                                    <div class="bg-danger bg-opacity-10 p-2 rounded">
+                                        <i class="fas fa-file-pdf text-danger fa-2x"></i>
+                                    </div>
+                                @else
+                                    <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                        <i class="fas fa-file text-primary fa-2x"></i>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <h6 class="mb-1 text-truncate" title="{{ $file->file_name }}">
+                                    {{ $file->file_name }}
+                                </h6>
+                                <span class="badge bg-secondary mb-2">{{ $file->file_extension }}</span>
+                                <p class="text-muted small mb-2">{{ $file->formatted_file_size }}</p>
+                                @if($file->description)
+                                <p class="text-muted small mb-2">{{ $file->description }}</p>
+                                @endif
+                                <p class="text-muted small mb-0">
+                                    <i class="fas fa-user me-1"></i>{{ $file->uploadedBy->name }}
+                                    <br>
+                                    <i class="fas fa-clock me-1"></i>{{ $file->uploaded_at->format('d/m/Y H:i') }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <a href="{{ route('purchase.invoices.files.download', $file) }}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-download me-2"></i>Download
+                            </a>
+                            @if($file->is_image)
+                            <button type="button" class="btn btn-outline-info btn-sm" 
+                                    onclick="previewImage('{{ $file->file_url }}', '{{ $file->file_name }}')">
+                                <i class="fas fa-eye me-2"></i>Preview
+                            </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+@endif
+<div class="modal fade" id="imagePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imagePreviewTitle">Image Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="imagePreviewImg" src="" alt="" class="img-fluid" style="max-height: 500px;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
         <!-- GRNs -->
         @if($grns->count() > 0)
         <div class="card mt-4">
@@ -390,6 +471,7 @@
     </div>
 </div>
 
+
 <script>
 $(document).ready(function() {
     // Delete confirmation
@@ -402,7 +484,11 @@ $(document).ready(function() {
         }
     });
 });
-
+function previewImage(imageUrl, fileName) {
+    $('#imagePreviewTitle').text(fileName);
+    $('#imagePreviewImg').attr('src', imageUrl);
+    $('#imagePreviewModal').modal('show');
+}
 function printInvoice() {
     window.print();
 }
@@ -419,6 +505,9 @@ function submitEInvoice() {
 </script>
 
 <style>
+    .min-w-0 {
+    min-width: 0;
+}
 @media print {
     .btn, .card-header, .breadcrumb, .page-header {
         display: none !important;

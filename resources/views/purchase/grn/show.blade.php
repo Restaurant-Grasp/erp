@@ -175,6 +175,59 @@
                 </div>
             </div>
         </div>
+  <!-- Documents Section -->
+        @if($grn->documents->count() > 0)
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-alt me-2"></i>Delivery Order Documents
+                    <span class="badge bg-secondary ms-2">{{ $grn->documents->count() }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    @foreach($grn->documents as $document)
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card border h-100">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-start">
+                                    <div class="me-3">
+                                        <i class="{{ $document->icon_class }}" style="font-size: 2rem;"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="card-title mb-1">{{ $document->original_name }}</h6>
+                                        <p class="card-text small text-muted mb-1">
+                                            Size: {{ $document->formatted_size }}
+                                        </p>
+                                        @if($document->description)
+                                        <p class="card-text small mb-2">{{ $document->description }}</p>
+                                        @endif
+                                        <p class="card-text small text-muted mb-2">
+                                            Uploaded by: {{ $document->uploadedBy->name }}<br>
+                                            <small>{{ $document->created_at->format('d M Y, h:i A') }}</small>
+                                        </p>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            @if($document->is_image)
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="previewImage('{{ $document->url }}', '{{ $document->original_name }}')">
+                                                <i class="fas fa-eye me-1"></i> Preview
+                                            </button>
+                                            @endif
+                                            <a href="{{ route('purchase.grn.documents.download', $document) }}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-download me-1"></i> Download
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
 
         <!-- Returns Section (if any) -->
         @if($returns->count() > 0)
