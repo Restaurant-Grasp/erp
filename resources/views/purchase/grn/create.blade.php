@@ -245,7 +245,7 @@
         </td>
         <td>
             <input type="number" name="items[INDEX][quantity]" class="form-control form-control-sm text-end received-quantity" 
-                   value="1" step="0.01" min="0.01" required onchange="calculateAcceptedQuantity(this)">
+                   value="1" step="1" min="1" required onchange="calculateAcceptedQuantity(this)">
         </td>
         <td>
             <input type="number" name="items[INDEX][damaged_quantity]" class="form-control form-control-sm text-end damaged-quantity" 
