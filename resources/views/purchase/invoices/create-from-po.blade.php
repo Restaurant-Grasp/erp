@@ -186,7 +186,7 @@
                                         <input type="number" name="items[{{ $index }}][quantity]" 
                                                class="form-control form-control-sm text-end item-quantity" 
                                                value="{{ $item->remaining_quantity }}" 
-                                               step="0.01" min="0" max="{{ $item->remaining_quantity }}" 
+                                               step="1" min="0" max="{{ $item->remaining_quantity }}" 
                                                onchange="calculateItemTotal(this)" 
                                                {{ $item->remaining_quantity > 0 ? '' : 'disabled' }}>
                                     </td>

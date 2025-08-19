@@ -139,15 +139,15 @@
                                         </td>
                                         <td>
                                             <input type="number" name="items[{{ $index }}][delivered_quantity]" class="form-control delivered-quantity" 
-                                                   value="{{ $item->remaining_quantity }}" required min="0" max="{{ $item->remaining_quantity }}" step="0.01">
+                                                   value="{{ $item->remaining_quantity }}" required min="0" max="{{ $item->remaining_quantity }}" step="1">
                                         </td>
                                         <td>
                                             <input type="number" name="items[{{ $index }}][damaged_quantity]" class="form-control damaged-quantity" 
-                                                   value="0" min="0" step="0.01">
+                                                   value="0" min="0" step="1">
                                         </td>
                                         <td>
                                             <input type="number" name="items[{{ $index }}][replacement_quantity]" class="form-control replacement-quantity" 
-                                                   value="0" min="0" step="0.01">
+                                                   value="0" min="0" step="1">
                                         </td>
                                         <td>
                                             <input type="date" name="items[{{ $index }}][warranty_start_date]" class="form-control warranty-start" 
@@ -258,19 +258,19 @@ function addItem() {
         </td>
         <td>
             <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" 
-                   required min="0.01" step="0.01" value="1">
+                   required min="1" step="1" value="1">
         </td>
         <td>
             <input type="number" name="items[${itemIndex}][delivered_quantity]" class="form-control delivered-quantity" 
-                   required min="0" step="0.01" value="1">
+                   required min="0" step="1" value="1">
         </td>
         <td>
             <input type="number" name="items[${itemIndex}][damaged_quantity]" class="form-control damaged-quantity" 
-                   value="0" min="0" step="0.01">
+                   value="0" min="0" step="1">
         </td>
         <td>
             <input type="number" name="items[${itemIndex}][replacement_quantity]" class="form-control replacement-quantity" 
-                   value="0" min="0" step="0.01">
+                   value="0" min="0" step="1">
         </td>
         <td>
             <input type="date" name="items[${itemIndex}][warranty_start_date]" class="form-control warranty-start" 

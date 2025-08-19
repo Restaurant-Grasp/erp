@@ -158,13 +158,13 @@
                                     <td>
                                         <input type="number" name="items[{{ $index }}][quantity]" 
                                                class="form-control form-control-sm text-end receive-quantity" 
-                                               value="{{ $remaining }}" step="0.01" min="0" max="{{ $remaining }}" 
+                                               value="{{ $remaining }}" step="1" min="0" max="{{ $remaining }}" 
                                                onchange="calculateAcceptedQuantity(this, {{ $index }})" disabled>
                                     </td>
                                     <td>
                                         <input type="number" name="items[{{ $index }}][damaged_quantity]" 
                                                class="form-control form-control-sm text-end damaged-quantity" 
-                                               value="0" step="0.01" min="0" 
+                                               value="0" step="1" min="0" 
                                                onchange="calculateAcceptedQuantity(this, {{ $index }})" disabled>
                                     </td>
                                     <td>

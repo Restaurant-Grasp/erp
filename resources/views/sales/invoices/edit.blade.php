@@ -167,7 +167,7 @@
                                     </td>
                                     <td>
                                         <input type="number" name="items[{{ $index }}][quantity]" class="form-control quantity" required
-                                            min="0.01" step="0.01" value="{{ $item->quantity }}" onchange="calculateRowTotal({{ $index }})">
+                                            min="1" step="1" value="{{ $item->quantity }}" onchange="calculateRowTotal({{ $index }})">
                                     </td>
                                     <td style="display: none;">
                                         <span class="badge bg-{{ $item->delivery_status_badge }}">{{ $item->delivered_quantity }}</span>
@@ -364,7 +364,7 @@
             </select>
         </td>
         <td>
-            <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" required min="0.01" step="0.01" value="1" onchange="calculateRowTotal(${itemIndex})">
+            <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" required min="1" step="1" value="1" onchange="calculateRowTotal(${itemIndex})">
         </td>
       
         <td style="display: none;">

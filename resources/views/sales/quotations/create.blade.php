@@ -283,7 +283,7 @@
             </select>
         </td>
         <td>
-            <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" required min="0.01" step="0.01" value="1" onchange="calculateRowTotal(${itemIndex})">
+            <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" required min="1" step="1" value="1" onchange="calculateRowTotal(${itemIndex})">
         </td>
         <td style="display: none;">
             <select name="items[${itemIndex}][uom_id]" class="form-select uom-select">

@@ -140,7 +140,7 @@
                                     </td>
                                     <td>
                                         <input type="number" name="items[{{ $index }}][quantity]" class="form-control quantity"
-                                            value="{{ $item->quantity }}" required min="0.01" step="0.01" onchange="calculateRowTotal({{ $index }})">
+                                            value="{{ $item->quantity }}" required min="1" step="1" onchange="calculateRowTotal({{ $index }})">
                                     </td>
                                     <td style="display: none;">
                                         <input type="hidden" name="items[{{ $index }}][uom_id]" value="{{ $item->uom_id }}">
@@ -233,7 +233,7 @@ function addItem() {
             </select>
         </td>
         <td>
-            <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" required min="0.01" step="0.01" value="1" onchange="calculateRowTotal(${itemIndex})">
+            <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" required min="1" step="1" value="1" onchange="calculateRowTotal(${itemIndex})">
         </td>
         <td style="display: none;">
             <select name="items[${itemIndex}][uom_id]" class="form-select uom-select">

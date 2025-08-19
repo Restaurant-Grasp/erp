@@ -175,7 +175,7 @@
                                         <div class="invalid-feedback item-id-error" style="display: none;"></div>
                                     </td>
                                     <td>
-                                        <input type="number" name="items[{{ $index }}][quantity]" class="form-control quantity" required min="0.01" step="0.01" value="{{ $item->quantity }}" onchange="calculateRowTotal({{ $index }})">
+                                        <input type="number" name="items[{{ $index }}][quantity]" class="form-control quantity" required min="1" step="1" value="{{ $item->quantity }}" onchange="calculateRowTotal({{ $index }})">
                                         <div class="invalid-feedback quantity-error" style="display: none;"></div>
                                     </td>
                                     <td style="display: none;">
@@ -334,7 +334,7 @@
                 <div class="invalid-feedback item-id-error" style="display: none;"></div>
             </td>
             <td>
-                <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" required min="0.01" step="0.01" value="1" onchange="calculateRowTotal(${itemIndex})">
+                <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" required min="1" step="1" value="1" onchange="calculateRowTotal(${itemIndex})">
                 <div class="invalid-feedback quantity-error" style="display: none;"></div>
             </td>
             <td style="display: none;">
