@@ -168,12 +168,15 @@
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 @endif
-                               
+                                  @if ($permissions->contains('name', 'purchases.grn.edit'))
+                          
+                                @if($grn->status === 'draft')
                                 <a href="{{ route('purchase.grn.edit', $grn) }}" class="btn btn-sm btn-outline-primary" 
                                    title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                             
+                                @endif
+                                @endif
                                 
                                 @if($grn->total_damaged_quantity > 0)
                                 <a href="{{ route('purchase.returns.index', ['grn' => $grn->id]) }}" 
