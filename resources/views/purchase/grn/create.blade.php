@@ -14,7 +14,7 @@
     </nav>
 </div>
 
-<form action="{{ route('purchase.grn.store') }}" method="POST" id="grnForm">
+<form action="{{ route('purchase.grn.store') }}" method="POST" id="grnForm" enctype="multipart/form-data">
     @csrf
     <div class="row">
         <div class="col-md-8">
@@ -110,6 +110,43 @@
                 </div>
             </div>
 
+            <!-- Documents Section -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Delivery Order Documents</h5>
+                    <button type="button" class="btn btn-success btn-sm" onclick="addDocumentField()">
+                        <i class="fas fa-plus me-2"></i> Add Document
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="documentsContainer">
+                        <div class="row mb-3 document-row">
+                            <div class="col-md-6">
+                                <label class="form-label">Document File</label>
+                                <input type="file" name="documents[]" class="form-control" 
+                                       accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.doc,.docx,.xls,.xlsx">
+                                <small class="text-muted">Accepted formats: PDF, Images, DOC, XLS (Max: 10MB)</small>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Description (Optional)</label>
+                                <input type="text" name="document_descriptions[]" class="form-control" 
+                                       placeholder="Brief description of the document">
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeDocumentField(this)" disabled>
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> You can upload delivery orders, packing slips, or any other relevant documents. 
+                        This helps maintain a complete record of the goods receipt process.
+                    </div>
+                </div>
+            </div>
+
             <!-- Notes -->
             <div class="card mt-4">
                 <div class="card-header"><h5 class="mb-0">Notes</h5></div>
@@ -145,6 +182,10 @@
                         <tr>
                             <td>Items with Serial Numbers:</td>
                             <td class="text-end" id="serialItemsDisplay">0</td>
+                        </tr>
+                        <tr>
+                            <td>Documents Attached:</td>
+                            <td class="text-end" id="documentsDisplay">0</td>
                         </tr>
                     </table>
                 </div>
@@ -270,6 +311,7 @@
         </div>
     </div>
 </div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 let itemIndex = 0;
@@ -285,6 +327,7 @@ $(document).ready(function() {
 
     // Add first item by default
     addNewItem();
+    updateSummary();
 });
 
 function addNewItem() {
@@ -336,6 +379,54 @@ function calculateAcceptedQuantity(input) {
     }
     
     updateSummary();
+}
+
+function addDocumentField() {
+    const container = $('#documentsContainer');
+    const currentCount = container.find('.document-row').length;
+    
+    const newRow = `
+        <div class="row mb-3 document-row">
+            <div class="col-md-6">
+                <label class="form-label">Document File</label>
+                <input type="file" name="documents[]" class="form-control" 
+                       accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.doc,.docx,.xls,.xlsx">
+                <small class="text-muted">Accepted formats: PDF, Images, DOC, XLS (Max: 10MB)</small>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Description (Optional)</label>
+                <input type="text" name="document_descriptions[]" class="form-control" 
+                       placeholder="Brief description of the document">
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeDocumentField(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.append(newRow);
+    updateDocumentButtons();
+    updateSummary();
+}
+
+function removeDocumentField(button) {
+    $(button).closest('.document-row').remove();
+    updateDocumentButtons();
+    updateSummary();
+}
+
+function updateDocumentButtons() {
+    const rows = $('.document-row');
+    rows.each(function(index) {
+        const removeButton = $(this).find('button[onclick*="removeDocumentField"]');
+        if (rows.length === 1) {
+            removeButton.prop('disabled', true);
+        } else {
+            removeButton.prop('disabled', false);
+        }
+    });
 }
 
 function loadVendorPOs() {
@@ -496,6 +587,7 @@ function updateSummary() {
     let acceptedQuantity = 0;
     let damagedQuantity = 0;
     let serialItems = 0;
+    let documentsCount = 0;
     
     $('.item-row').each(function() {
         const receivedQty = parseFloat($(this).find('.received-quantity').val()) || 0;
@@ -514,12 +606,25 @@ function updateSummary() {
         }
     });
     
+    // Count documents with files selected
+    $('.document-row input[type="file"]').each(function() {
+        if (this.files && this.files.length > 0) {
+            documentsCount++;
+        }
+    });
+    
     $('#totalItemsDisplay').text(totalItems);
     $('#totalQuantityDisplay').text(totalQuantity.toFixed(2));
     $('#acceptedQuantityDisplay').text(acceptedQuantity.toFixed(2));
     $('#damagedQuantityDisplay').text(damagedQuantity.toFixed(2));
     $('#serialItemsDisplay').text(serialItems);
+    $('#documentsDisplay').text(documentsCount);
 }
+
+// Update summary when files are selected
+$(document).on('change', 'input[type="file"]', function() {
+    updateSummary();
+});
 
 // Form validation
 $('#grnForm').on('submit', function(e) {

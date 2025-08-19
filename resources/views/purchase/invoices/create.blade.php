@@ -342,6 +342,7 @@ $(document).ready(function() {
 
     // Add first item by default
     addNewItem();
+    addFileUpload();
 });
 
 function addNewItem() {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchase;
 use App\Http\Controllers\Controller;
 use App\Models\GoodsReceiptNote;
 use App\Models\GrnItem;
+use App\Models\GrnDocument;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseOrder;
 use App\Models\Vendor;
@@ -17,14 +18,17 @@ use App\Models\PurchaseReturnItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class GrnController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:purchases.grn.view')->only(['index', 'show']);
+        $this->middleware('permission:purchases.grn.view')->only(['index', 'show', 'downloadDocument']);
         $this->middleware('permission:purchases.grn.create')->only(['create', 'store', 'createFromInvoice']);
         $this->middleware('permission:purchases.grn.edit')->only(['edit', 'update']);
+        $this->middleware('permission:purchases.grn.delete')->only(['deleteDocument']);
     }
 
     /**
@@ -128,6 +132,11 @@ class GrnController extends Controller
             'items.*.serial_numbers.*.serial_number' => 'required_with:items.*.serial_numbers|string',
             'items.*.serial_numbers.*.warranty_start_date' => 'nullable|date',
             'items.*.serial_numbers.*.warranty_end_date' => 'nullable|date|after:items.*.serial_numbers.*.warranty_start_date',
+            // Document validation
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:pdf,jpg,jpeg,png,gif,bmp,doc,docx,xls,xlsx|max:10240', // 10MB max
+            'document_descriptions' => 'nullable|array',
+            'document_descriptions.*' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
@@ -220,6 +229,11 @@ class GrnController extends Controller
                 }
             }
 
+            // Handle document uploads
+            if ($request->hasFile('documents')) {
+                $this->handleDocumentUploads($request, $grn);
+            }
+
             // Update GRN status
             $this->updateGrnStatus($grn);
 
@@ -257,7 +271,8 @@ class GrnController extends Controller
             'items.poItem',
             'items.invoiceItem',
             'receivedBy',
-            'createdBy'
+            'createdBy',
+            'documents.uploadedBy'
         ]);
 
         // Get serial numbers for items
@@ -285,7 +300,7 @@ class GrnController extends Controller
                            ->with('error', 'Cannot edit GRN that is not in draft status.');
         }
 
-        $grn->load(['items.product', 'items.uom']);
+        $grn->load(['items.product', 'items.uom', 'documents']);
         $vendors = Vendor::where('status', 'active')->orderBy('company_name')->get();
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
         $products = Product::where('is_active', 1)->orderBy('name')->get();
@@ -325,6 +340,11 @@ class GrnController extends Controller
             'items.*.damage_reason' => 'nullable|string',
             'items.*.replacement_required' => 'nullable|boolean',
             'items.*.notes' => 'nullable|string',
+            // Document validation
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:pdf,jpg,jpeg,png,gif,bmp,doc,docx,xls,xlsx|max:10240', // 10MB max
+            'document_descriptions' => 'nullable|array',
+            'document_descriptions.*' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
@@ -380,6 +400,11 @@ class GrnController extends Controller
                 }
             }
 
+            // Handle new document uploads
+            if ($request->hasFile('documents')) {
+                $this->handleDocumentUploads($request, $grn);
+            }
+
             DB::commit();
             return redirect()->route('purchase.grn.show', $grn)
                            ->with('success', 'GRN updated successfully.');
@@ -387,6 +412,71 @@ class GrnController extends Controller
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Error updating GRN: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Handle document uploads for GRN
+     */
+    private function handleDocumentUploads(Request $request, GoodsReceiptNote $grn)
+    {
+        $documents = $request->file('documents');
+        $descriptions = $request->input('document_descriptions', []);
+
+        foreach ($documents as $index => $file) {
+            if ($file && $file->isValid()) {
+                // Generate unique filename
+                $originalName = $file->getClientOriginalName();
+                $extension = $file->getClientOriginalExtension();
+                $fileName = 'grn_' . $grn->id . '_' . Str::uuid() . '.' . $extension;
+                
+                // Store file
+                $filePath = $file->storeAs('grn_documents', $fileName, 'public');
+                
+                // Create document record
+                GrnDocument::create([
+                    'grn_id' => $grn->id,
+                    'original_name' => $originalName,
+                    'file_name' => $fileName,
+                    'file_path' => $filePath,
+                    'file_type' => $extension,
+                    'mime_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                    'document_type' => 'delivery_order',
+                    'description' => $descriptions[$index] ?? null,
+                    'uploaded_by' => Auth::id(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Download a GRN document
+     */
+    public function downloadDocument(GrnDocument $document)
+    {
+        if (!Storage::disk('public')->exists($document->file_path)) {
+            return redirect()->back()->with('error', 'File not found.');
+        }
+
+        return Storage::disk('public')->download($document->file_path, $document->original_name);
+    }
+
+    /**
+     * Delete a GRN document
+     */
+    public function deleteDocument(GrnDocument $document)
+    {
+        // Only allow deletion if GRN is in draft status
+        if ($document->grn->status !== 'draft') {
+            return response()->json(['error' => 'Cannot delete GRN that is not in draft status.'], 403);
+        }
+
+        try {
+            $document->delete();
+            return response()->json(['success' => 'Document deleted successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error deleting document: ' . $e->getMessage()], 500);
         }
     }
 

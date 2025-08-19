@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -62,7 +63,7 @@ class GoodsReceiptNote extends Model
     // Accessors
     public function getStatusBadgeAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'draft' => 'secondary',
             'partial' => 'warning',
             'completed' => 'success',
@@ -88,5 +89,13 @@ class GoodsReceiptNote extends Model
     public function getTotalDamagedQuantityAttribute(): float
     {
         return $this->items()->sum('damaged_quantity');
+    }
+    public function documents()
+    {
+        return $this->hasMany(GrnDocument::class, 'grn_id');
+    }
+    public function deliveryOrderDocuments()
+    {
+        return $this->hasMany(GrnDocument::class, 'grn_id')->where('document_type', 'delivery_order');
     }
 }

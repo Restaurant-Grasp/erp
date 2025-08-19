@@ -15,7 +15,7 @@
     </nav>
 </div>
 
-<form action="{{ route('purchase.grn.update', $grn) }}" method="POST" id="grnForm">
+<form action="{{ route('purchase.grn.update', $grn) }}" method="POST" id="grnForm" enctype="multipart/form-data">
     @csrf
     @method('PUT')
     
@@ -190,6 +190,75 @@
                 </div>
             </div>
 
+            <!-- File Attachments -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-paperclip me-2"></i>Delivery Order Documents
+                    </h5>
+                    <button type="button" class="btn btn-success btn-sm" onclick="addFileUpload()">
+                        <i class="fas fa-plus me-2"></i> Add File
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Existing Files -->
+                    @if($grn->documents->count() > 0)
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">Existing Files:</h6>
+                        <div class="row g-3">
+                            @foreach($grn->documents as $document)
+                            <div class="col-md-6">
+                                <div class="card border" id="existing-file-{{ $document->id }}">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">
+                                                    <i class="{{ $document->icon_class }} me-2"></i>
+                                                    {{ $document->original_name }}
+                                                </h6>
+                                                @if($document->description)
+                                                <p class="mb-1 text-muted small">{{ $document->description }}</p>
+                                                @endif
+                                                <small class="text-muted">
+                                                    {{ $document->formatted_size }} • 
+                                                    {{ $document->extension }} • 
+                                                    {{ $document->created_at->format('d/m/Y H:i') }}
+                                                </small>
+                                            </div>
+                                            <div class="ms-2">
+                                                <a href="{{ route('purchase.grn.documents.download', $document) }}" 
+                                                   class="btn btn-sm btn-outline-primary me-1" title="Download">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="deleteExistingFile({{ $document->id }})" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+
+                    <!-- New File Uploads -->
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Supported file types:</strong> PDF, Images (JPG, PNG, GIF), Documents (DOC, DOCX, XLS, XLSX)
+                        <br><strong>Maximum file size:</strong> 10MB per file
+                    </div>
+                    <div id="fileUploadsContainer">
+                        <!-- File upload fields will be added here -->
+                    </div>
+                    @error('documents.*')
+                        <div class="text-danger mt-2">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+
             <!-- Notes -->
             <div class="card mt-4">
                 <div class="card-header"><h5 class="mb-0">Notes</h5></div>
@@ -208,23 +277,27 @@
                     <table class="table table-sm">
                         <tr>
                             <td>Total Items:</td>
-                            <td class="text-end" id="totalItemsDisplay">{{ $grn->total_items }}</td>
+                            <td class="text-end" id="totalItemsDisplay">{{ $grn->items->count() }}</td>
                         </tr>
                         <tr>
                             <td>Total Quantity:</td>
-                            <td class="text-end" id="totalQuantityDisplay">{{ number_format($grn->total_quantity, 2) }}</td>
+                            <td class="text-end" id="totalQuantityDisplay">{{ number_format($grn->items->sum('quantity'), 2) }}</td>
                         </tr>
                         <tr>
                             <td>Accepted Quantity:</td>
-                            <td class="text-end text-success" id="acceptedQuantityDisplay">{{ number_format($grn->total_accepted_quantity, 2) }}</td>
+                            <td class="text-end text-success" id="acceptedQuantityDisplay">{{ number_format($grn->items->sum('accepted_quantity'), 2) }}</td>
                         </tr>
                         <tr>
                             <td>Damaged Quantity:</td>
-                            <td class="text-end text-danger" id="damagedQuantityDisplay">{{ number_format($grn->total_damaged_quantity, 2) }}</td>
+                            <td class="text-end text-danger" id="damagedQuantityDisplay">{{ number_format($grn->items->sum('damaged_quantity'), 2) }}</td>
                         </tr>
                         <tr>
                             <td>Items with Serial Numbers:</td>
                             <td class="text-end" id="serialItemsDisplay">0</td>
+                        </tr>
+                        <tr>
+                            <td>New Documents:</td>
+                            <td class="text-end" id="newDocumentsDisplay">0</td>
                         </tr>
                     </table>
                 </div>
@@ -321,6 +394,29 @@
     </tr>
 </template>
 
+<!-- File Upload Template -->
+<template id="fileUploadTemplate">
+    <div class="file-upload-row mb-3">
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label">Document File</label>
+                <input type="file" name="documents[]" class="form-control" 
+                       accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.doc,.docx,.xls,.xlsx">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Description (Optional)</label>
+                <input type="text" name="document_descriptions[]" class="form-control" 
+                       placeholder="Brief description of the document">
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFileUpload(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
 <!-- Serial Numbers Modal -->
 <div class="modal fade" id="serialNumbersModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -348,6 +444,7 @@
         </div>
     </div>
 </div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 let itemIndex = {{ $grn->items->count() }};
@@ -355,6 +452,7 @@ let currentSerialItemIndex = 0;
 let serialNumbers = {};
 
 // Load existing serial numbers
+@if(isset($serialNumbers))
 const existingSerialNumbers = @json($serialNumbers);
 Object.keys(existingSerialNumbers).forEach(itemId => {
     const itemIndex = $('.item-row').find(`select[value="${itemId}"]`).closest('tr').index();
@@ -366,6 +464,7 @@ Object.keys(existingSerialNumbers).forEach(itemId => {
         }));
     }
 });
+@endif
 
 $(document).ready(function() {
     updateSummary();
@@ -377,6 +476,9 @@ $(document).ready(function() {
             $(this).find('.serial-btn').show();
         }
     });
+    
+    // Add first file upload field by default
+    addFileUpload();
 });
 
 function addNewItem() {
@@ -528,12 +630,46 @@ function saveSerialNumbers() {
     updateSummary();
 }
 
+function addFileUpload() {
+    const template = document.getElementById('fileUploadTemplate');
+    if (template) {
+        const clone = template.content.cloneNode(true);
+        $('#fileUploadsContainer').append(clone);
+        updateSummary();
+    }
+}
+
+function removeFileUpload(button) {
+    $(button).closest('.file-upload-row').remove();
+    updateSummary();
+}
+
+function deleteExistingFile(fileId) {
+    if (confirm('Are you sure you want to delete this file?')) {
+        $.ajax({
+            url: `/purchase/grn/documents/${fileId}`,
+            type: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                $(`#existing-file-${fileId}`).remove();
+                alert('File deleted successfully.');
+            },
+            error: function(xhr) {
+                alert('Error deleting file: ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Unknown error'));
+            }
+        });
+    }
+}
+
 function updateSummary() {
     let totalItems = 0;
     let totalQuantity = 0;
     let acceptedQuantity = 0;
     let damagedQuantity = 0;
     let serialItems = 0;
+    let newDocumentsCount = 0;
     
     $('.item-row').each(function() {
         const receivedQty = parseFloat($(this).find('.received-quantity').val()) || 0;
@@ -552,12 +688,25 @@ function updateSummary() {
         }
     });
     
+    // Count new documents with files selected
+    $('.file-upload-row input[type="file"]').each(function() {
+        if (this.files && this.files.length > 0) {
+            newDocumentsCount++;
+        }
+    });
+    
     $('#totalItemsDisplay').text(totalItems);
     $('#totalQuantityDisplay').text(totalQuantity.toFixed(2));
     $('#acceptedQuantityDisplay').text(acceptedQuantity.toFixed(2));
     $('#damagedQuantityDisplay').text(damagedQuantity.toFixed(2));
     $('#serialItemsDisplay').text(serialItems);
+    $('#newDocumentsDisplay').text(newDocumentsCount);
 }
+
+// Update summary when files are selected
+$(document).on('change', 'input[type="file"]', function() {
+    updateSummary();
+});
 
 // Form validation
 $('#grnForm').on('submit', function(e) {

@@ -478,6 +478,8 @@ $(document).ready(function() {
 
     // Initialize calculations
     calculateTotals();
+        addNewItem();
+    addFileUpload();
 });
 
 function addNewItem() {

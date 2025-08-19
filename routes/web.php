@@ -81,7 +81,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('vendors', VendorController::class);
     Route::get('vendors/search', [VendorController::class, 'search'])->name('vendors.search');
 
-Route::get('packages/get-services', [PackageController::class, 'getServices'])->name('get-services');
+    Route::get('packages/get-services', [PackageController::class, 'getServices'])->name('get-services');
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', function () {
             return view('coming-soon', ['module' => 'Products']);
@@ -724,10 +724,10 @@ Route::get('packages/get-services', [PackageController::class, 'getServices'])->
 
             // AJAX routes
             Route::get('/po-items', [PurchaseInvoiceController::class, 'getPoItems'])->name('po-items');
-			
-			// File management routes - ADD THESE
-			Route::get('files/{file}/download', [PurchaseInvoiceController::class, 'downloadFile'])->name('files.download');
-			Route::delete('/files/{file}', [PurchaseInvoiceController::class, 'deleteFile'])->name('files.delete');
+
+            // File management routes - ADD THESE
+            Route::get('files/{file}/download', [PurchaseInvoiceController::class, 'downloadFile'])->name('files.download');
+            Route::delete('/files/{file}', [PurchaseInvoiceController::class, 'deleteFile'])->name('files.delete');
         });
 
         // Goods Receipt Notes (GRN)
@@ -743,6 +743,8 @@ Route::get('packages/get-services', [PackageController::class, 'getServices'])->
             // AJAX routes
             Route::get('/invoice-items', [GrnController::class, 'getInvoiceItems'])->name('invoice-items');
         });
+        Route::get('grn/documents/{document}/download', [GrnController::class, 'downloadDocument'])
+            ->name('grn.documents.download');
         // Purchase Returns
         Route::prefix('returns')->name('returns.')->group(function () {
             Route::get('/', [PurchaseReturnController::class, 'index'])->name('index');
@@ -871,3 +873,5 @@ Route::prefix('purchase/invoices/{invoice}/payments')->name('purchases.payments.
 Route::get('/sales/invoices/{invoice}/payments', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'getPayments'])
     ->name('sales.invoices.get-payments')
     ->middleware('permission:sales.payments.view');
+Route::delete('purchase/grn/documents/{document}', [GrnController::class, 'deleteDocument'])
+     ->name('purchase.grn.documents.delete');
