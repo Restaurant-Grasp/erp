@@ -108,7 +108,7 @@ class LeadController extends Controller
         try {
             $validated['created_by'] = Auth::id();
             $validated['lead_status'] = 'new';
-            $validated['country'] = 'India'; // Default for temple management
+            $validated['country'] = 'Malaysia'; // Default for temple management
 
             $lead = Lead::create($validated);
 
