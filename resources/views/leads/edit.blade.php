@@ -95,7 +95,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Country</label>
-                            <input type="text" class="form-control" value="India" readonly>
+                            <input type="text" class="form-control" value="Malaysia">
                         </div>
                     </div>
                 </div>
