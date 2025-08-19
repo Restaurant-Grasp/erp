@@ -385,4 +385,101 @@
                 <td class="text-center">{{ $item->uom ? $item->uom->name : '-' }}</td>
                 <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
                 <td class="text-right">
-                    @if($item->
+                    @if($item->discount_amount > 0)
+                    {{ number_format($item->discount_amount, 2) }}
+                    @if($item->discount_type === 'percentage')
+                    <br><small>({{ $item->discount_value }}%)</small>
+                    @endif
+                    @else
+                    -
+                    @endif
+                </td>
+                <td class="text-right">
+                    @if($item->tax_amount > 0)
+                    {{ number_format($item->tax_amount, 2) }}
+                    @if($item->tax_rate > 0)
+                    <br><small>({{ $item->tax_rate }}%)</small>
+                    @endif
+                    @else
+                    -
+                    @endif
+                </td>
+                <td class="text-right">{{ number_format($item->total_amount, 2) }}</td>
+            </tr>
+            @endforeach
+            @else
+            <tr>
+                <td colspan="8" class="text-center" style="padding: 20px; color: #666;">
+                    No items added to this purchase order
+                </td>
+            </tr>
+            @endif
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="7" class="text-right">SUB-TOTAL</td>
+                <td class="text-right">{{ number_format($order->subtotal ?? 0, 2) }}</td>
+            </tr>
+            @if(($order->discount_amount ?? 0) > 0)
+            <tr class="total-row">
+                <td colspan="7" class="text-right">
+                    DISCOUNT
+                    @if($order->discount_type === 'percentage')
+                    ({{ $order->discount_value }}%)
+                    @endif
+                </td>
+                <td class="text-right">-{{ number_format($order->discount_amount, 2) }}</td>
+            </tr>
+            @endif
+            @if(($order->tax_amount ?? 0) > 0)
+            <tr class="total-row">
+                <td colspan="7" class="text-right">TAX</td>
+                <td class="text-right">{{ number_format($order->tax_amount, 2) }}</td>
+            </tr>
+            @endif
+            <tr class="grand-total">
+                <td colspan="7" class="text-right">GRAND TOTAL</td>
+                <td class="text-right">{{ number_format($order->total_amount ?? 0, 2) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <!-- Additional PO Information -->
+    @if($order->terms_conditions || $order->notes)
+    <div style="margin-top: 15px;" class="avoid-break">
+        @if($order->terms_conditions)
+        <div style="margin-bottom: 10px;">
+            <div style="font-weight: bold; font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">
+                Terms & Conditions:
+            </div>
+            <div style="font-size: 8px; line-height: 1.3; text-align: justify;">
+                {!! nl2br(e($order->terms_conditions)) !!}
+            </div>
+        </div>
+        @endif
+
+        @if($order->notes)
+        <div style="margin-bottom: 10px;">
+            <div style="font-weight: bold; font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">
+                Internal Notes:
+            </div>
+            <div style="font-size: 8px; line-height: 1.3; text-align: justify;">
+                {!! nl2br(e($order->notes)) !!}
+            </div>
+        </div>
+        @endif
+    </div>
+    @endif
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>This is a computer-generated purchase order and does not require signature.</p>
+        <p>Generated on: {{ date('d-m-Y H:i:s') }} | Created by: {{ $order->createdBy->name }}</p>
+        @if($order->currency !== 'MYR')
+        <p>Currency: {{ $order->currency }} | Exchange Rate: {{ $order->exchange_rate }}</p>
+        @endif
+    </div>
+
+</body>
+
+</html>
