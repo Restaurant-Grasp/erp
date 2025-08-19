@@ -133,7 +133,7 @@ class CustomerController extends Controller
             $existingLedgersCount = Ledger::where('group_id', $tradeDebtorGroup->id)->count();
             $rightCodeNumber = $existingLedgersCount + 1;
 
- 
+
             $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
 
             while (Ledger::where('right_code', $rightCode)->exists()) {
@@ -346,19 +346,17 @@ class CustomerController extends Controller
      */
     private function generateCustomerCode()
     {
+
         $prefix = 'CU';
-        $lastCustomer = Customer::where('customer_code', 'like', $prefix . '%')
-            ->orderBy('customer_code', 'desc')
-            ->first();
+        $newNumber = 1;
 
-        if ($lastCustomer) {
-            $lastNumber = intval(substr($lastCustomer->customer_code, strlen($prefix)));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
+        do {
+            $code = $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+            $exists = Customer::where('customer_code', $code)->exists();
+            $newNumber++;
+        } while ($exists);
 
-        return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+        return $code;
     }
 
     /**

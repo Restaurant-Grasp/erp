@@ -617,19 +617,17 @@ class GrnController extends Controller
     private function generateGrnNumber()
     {
   
-        $yearMonth = now()->format('ym');
-        $prefix = "GRN" . $yearMonth;
+    $yearMonth = now()->format('Ym'); // e.g., 202508
+    $prefix = "GRN" . $yearMonth;
 
-        $lastGrn = GoodsReceiptNote::where('grn_no', 'like', $prefix . '%')
-            ->orderBy('id', 'desc')
-            ->first();
+    $newNumber = 1;
+    do {
+        $grnNo = $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+        $exists = GoodsReceiptNote::where('grn_no', $grnNo)->exists();
+        $newNumber++;
+    } while ($exists);
 
-        if ($lastGrn && $lastGrn->grn_no) {
-            $lastNumber = intval(substr($lastGrn->grn_no, strlen($prefix)));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
-        return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+    return $grnNo;
+        
     }
 }

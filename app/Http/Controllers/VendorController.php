@@ -313,18 +313,15 @@ class VendorController extends Controller
     private function generateVendorCode()
     {
         $prefix = 'VE';
-        $lastVendor = Vendor::where('vendor_code', 'like', $prefix . '%')
-            ->orderBy('vendor_code', 'desc')
-            ->first();
+        $newNumber = 1;
 
-        if ($lastVendor) {
-            $lastNumber = intval(substr($lastVendor->vendor_code, strlen($prefix)));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
+        do {
+            $code = $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+            $exists = Vendor::where('vendor_code', $code)->exists();
+            $newNumber++;
+        } while ($exists);
 
-        return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+        return $code;
     }
     /**
      * Search vendors for autocomplete

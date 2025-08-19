@@ -2,7 +2,17 @@
 @extends('layouts.app')
 
 @section('title', 'Create Delivery Order')
-
+<style>
+#itemsTable{
+	width: 130%;
+}
+.card-body .table-responsive{
+	overflow-x: scroll;
+}
+.input-group-sm>.form-select{
+	padding-right: 0rem;
+}
+</style>
 @section('content')
 <div class="page-header">
     <h1 class="page-title">Create New Delivery Order</h1>
@@ -222,6 +232,7 @@ $(document).ready(function() {
             $(this).closest('tr').find('.warranty-end').val(endDateString);
         }
     });
+    addItem();
 });
 
 function loadPendingInvoices(customerId) {

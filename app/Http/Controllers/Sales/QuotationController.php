@@ -110,6 +110,7 @@ class QuotationController extends Controller
      */
     public function store(Request $request)
     {
+       
         $validated = $request->validate([
             'quotation_date' => 'required|date',
             'customer_id' => 'required_without:lead_id|nullable|exists:customers,id',
@@ -816,17 +817,14 @@ class QuotationController extends Controller
     private function generateCustomerCode()
     {
         $prefix = 'CU';
-        $lastCustomer = Customer::where('customer_code', 'like', $prefix . '%')
-            ->orderBy('customer_code', 'desc')
-            ->first();
+        $newNumber = 1;
 
-        if ($lastCustomer) {
-            $lastNumber = intval(substr($lastCustomer->customer_code, strlen($prefix)));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
+        do {
+            $code = $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+            $exists = Customer::where('customer_code', $code)->exists();
+            $newNumber++;
+        } while ($exists);
 
-        return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+        return $code;
     }
 }
