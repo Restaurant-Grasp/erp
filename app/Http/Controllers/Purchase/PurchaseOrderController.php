@@ -13,6 +13,7 @@ use App\Models\Tax;
 use App\Models\ProductVendor;
 use App\Models\PurchaseInvoiceItem;
 use App\Models\PurchaseInvoice;
+use App\Helpers\SettingsHelper;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -572,5 +573,79 @@ class PurchaseOrderController extends Controller
     {
         // Empty function for future account integration
         // Will be implemented when accounting system integration is explained
+    }
+	
+	/**
+     * Generate print view for purchase order
+     */
+    public function print(PurchaseOrder $order)
+    {
+        $order->load([
+            'vendor',
+            'items.product',
+            'items.service',
+            'items.uom',
+            'createdBy',
+            'approvedBy'
+        ]);
+
+        // Get company information from settings
+        $companyInfo = $this->getCompanyInfo();
+
+        $data = [
+            'order' => $order,
+            'companyInfo' => $companyInfo
+        ];
+
+        return view('purchase.orders.print', $data);
+    }
+
+    /**
+     * Generate PDF for purchase order
+     */
+    public function pdf(PurchaseOrder $order)
+    {
+        $order->load([
+            'vendor',
+            'items.product',
+            'items.service',
+            'items.uom',
+            'createdBy',
+            'approvedBy'
+        ]);
+
+        // Get company information from settings
+        $companyInfo = $this->getCompanyInfo();
+        
+        $data = [
+            'order' => $order,
+            'companyInfo' => $companyInfo
+        ];
+
+        $pdf = PDF::loadView('purchase.orders.pdf', $data);
+        $pdf->setPaper('A4', 'portrait');
+        $pdf->getDomPDF()->set_option('isRemoteEnabled', true);
+
+        return $pdf->download('purchase_order_' . $order->po_no . '.pdf');
+    }
+	/**
+     * Get company information from settings for purchase orders
+     */
+    private function getCompanyInfo()
+    {
+        return [
+            'name' => SettingsHelper::getSetting('general', 'name', 'Company Name Not Set'),
+            'address' => SettingsHelper::getSetting('general', 'address', 'Address Not Set'),
+            'pincode' => SettingsHelper::getSetting('general', 'pincode', 'Pincode Not Set'),
+            'state' => SettingsHelper::getSetting('general', 'state', 'State Not Set'),
+            'country' => SettingsHelper::getSetting('general', 'country', 'MY'),
+            'registration_number' => SettingsHelper::getSetting('general', 'registration_number', 'Registration Number Not Set'),
+            'phone' => SettingsHelper::getSetting('general', 'phone', 'Phone Not Set'),
+            'email' => SettingsHelper::getSetting('general', 'email', 'Email Not Set'),
+            'website' => SettingsHelper::getSetting('general', 'website', 'Website Not Set'),
+            'logo' => SettingsHelper::getCompanyLogo('general', 'logo'),
+            'sub_logo' => SettingsHelper::getCompanySubLogo('general', 'sub_logo'),
+            'currency' => SettingsHelper::getSetting('general', 'currency', 'MYR'),
+        ];
     }
 }
