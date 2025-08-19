@@ -218,7 +218,6 @@ class ProductController extends Controller
     }
     public function addQuantity(Request $request)
     {
-              dd( $request->all());
         $request->validate([
             'quantity' => 'required',
             'warehouse_id' => 'required'
