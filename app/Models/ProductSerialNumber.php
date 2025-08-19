@@ -19,7 +19,14 @@ class ProductSerialNumber extends Model
         'customer_id',
         'sales_invoice_id',
         'notes',
+        'warranty_status',
+        'warranty_claim_count',
+        'replacement_of_serial_id',
+        'grn_id',
+        'grn_item_id',
     ];
-
-    // Timestamps enabled by default
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
 }

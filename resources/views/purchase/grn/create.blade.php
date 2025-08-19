@@ -251,7 +251,7 @@
         </td>
         <td>
             <input type="number" class="form-control form-control-sm text-end ordered-quantity" 
-                   value="0" step="0.01" min="0" readonly>
+                   value="0" step="0.01" min="0" >
         </td>
         <td>
             <input type="number" name="items[INDEX][quantity]" class="form-control form-control-sm text-end received-quantity" 

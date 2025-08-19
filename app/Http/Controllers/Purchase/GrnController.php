@@ -310,7 +310,7 @@ class GrnController extends Controller
         $serialNumbers = ProductSerialNumber::where('grn_id', $grn->id)
             ->get()
             ->groupBy('grn_item_id');
-
+             
         return view('purchase.grn.edit', compact('grn', 'vendors', 'staff', 'products', 'uoms', 'serialNumbers'));
     }
 

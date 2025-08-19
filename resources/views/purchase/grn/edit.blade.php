@@ -127,9 +127,9 @@
                             </thead>
                             <tbody id="itemsTableBody">
                                 @foreach($grn->items as $index => $item)
-                                <tr class="item-row" data-index="{{ $index }}">
+                                <tr class="item-row" data-index="{{ $index }}" data-item-id="{{ $item->id }}">
                                     <td>
-                                        <select name="items[{{ $index }}][product_id]" class="form-select form-select-sm product-select" required onchange="loadProductDetails(this)">
+                                        <select name="items[{{ $index }}][product_id]" class="form-select form-select-sm product-select" required onchange="loadProductDetails(this, {{ $index }})">
                                             <option value="">Select Product</option>
                                             @foreach($products as $product)
                                             <option value="{{ $product->id }}" 
@@ -184,6 +184,15 @@
                                         <button type="button" class="btn btn-sm btn-outline-info serial-btn" 
                                                 onclick="manageSerialNumbers({{ $index }}, '{{ $item->product->name }}')">
                                             <i class="fas fa-barcode"></i>
+                                            @if(isset($serialNumbers[$item->id]) && $serialNumbers[$item->id]->count() > 0)
+                                           {{ $serialNumbers[$item->id]->count() }}
+                                            @endif
+                                        </button>
+                                        @else
+                                        <button type="button" class="btn btn-sm btn-outline-info serial-btn" 
+                                                onclick="manageSerialNumbers({{ $index }}, '{{ $item->product->name }}')" style="display: none;">
+                                            <i class="fas fa-barcode"></i>
+                                            <span class="badge bg-success ms-1 serial-count">0</span>
                                         </button>
                                         @endif
                                     </td>
@@ -303,11 +312,15 @@
                         </tr>
                         <tr>
                             <td>Items with Serial Numbers:</td>
-                            <td class="text-end" id="serialItemsDisplay">0</td>
+                            <td class="text-end" id="serialItemsDisplay">{{ $serialNumbers->count() }}</td>
                         </tr>
                         <tr>
-                            <td>New Documents:</td>
-                            <td class="text-end" id="newDocumentsDisplay">0</td>
+                            <td>Total Serial Numbers:</td>
+                            <td class="text-end" id="totalSerialsDisplay">{{ $serialNumbers->sum(fn($serials) => $serials->count()) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Documents Attached:</td>
+                            <td class="text-end">{{ $grn->documents->count() }}</td>
                         </tr>
                     </table>
                 </div>
@@ -350,9 +363,9 @@
 
 <!-- Item Template -->
 <template id="itemTemplate">
-    <tr class="item-row">
+    <tr class="item-row" data-index="INDEX">
         <td>
-            <select name="items[INDEX][product_id]" class="form-select form-select-sm product-select" required onchange="loadProductDetails(this)">
+            <select name="items[INDEX][product_id]" class="form-select form-select-sm product-select" required onchange="loadProductDetails(this, INDEX)">
                 <option value="">Select Product</option>
                 @foreach($products as $product)
                 <option value="{{ $product->id }}" data-has-serial="{{ $product->has_serial_number }}" data-has-warranty="{{ $product->has_warranty }}" data-warranty-months="{{ $product->warranty_period_months }}">
@@ -392,8 +405,9 @@
             </div>
         </td>
         <td class="text-center">
-            <button type="button" class="btn btn-sm btn-outline-info serial-btn" onclick="manageSerialNumbers(INDEX)" style="display: none;">
+            <button type="button" class="btn btn-sm btn-outline-info serial-btn" onclick="manageSerialNumbers(INDEX, '')" style="display: none;">
                 <i class="fas fa-barcode"></i>
+                <span class="badge bg-success ms-1 serial-count">0</span>
             </button>
         </td>
         <td>
@@ -461,20 +475,28 @@ let itemIndex = {{ $grn->items->count() }};
 let currentSerialItemIndex = 0;
 let serialNumbers = {};
 
-// Load existing serial numbers
+// Load existing serial numbers from server
 @if(isset($serialNumbers))
 const existingSerialNumbers = @json($serialNumbers);
+console.log('Existing serials from server:', existingSerialNumbers);
+
+// Convert the server data to our format
 Object.keys(existingSerialNumbers).forEach(itemId => {
-    const itemIndex = $('.item-row').find(`select[value="${itemId}"]`).closest('tr').index();
-    if (itemIndex >= 0) {
-        serialNumbers[itemIndex] = existingSerialNumbers[itemId].map(serial => ({
-            serial_number: serial.serial_number,
-            warranty_start_date: serial.warranty_start_date,
-            warranty_end_date: serial.warranty_end_date
+    // Find the row index by item ID
+    const row = $(`tr[data-item-id="${itemId}"]`);
+    if (row.length > 0) {
+        const rowIndex = row.data('index');
+        serialNumbers[rowIndex] = existingSerialNumbers[itemId].map(serial => ({
+            serial_number: serial.serial_number || '',
+            warranty_start_date: serial.warranty_start_date || '',
+            warranty_end_date: serial.warranty_end_date || ''
         }));
+        console.log(`Loaded ${serialNumbers[rowIndex].length} serials for item ${itemId} at row ${rowIndex}`);
     }
 });
 @endif
+
+console.log('Processed serial numbers:', serialNumbers);
 
 $(document).ready(function() {
     updateSummary();
@@ -484,10 +506,11 @@ $(document).ready(function() {
         const hasSerial = $(this).find('.product-select option:selected').data('has-serial') == 1;
         if (hasSerial) {
             $(this).find('.serial-btn').show();
+            updateSerialCount(index);
         }
     });
     
-    // Add first file upload field by default
+    // Add one file upload field by default
     addFileUpload();
 });
 
@@ -499,13 +522,17 @@ function addNewItem() {
     const htmlString = clone.querySelector('.item-row').outerHTML.replace(/INDEX/g, itemIndex);
     
     $('#itemsTableBody').append(htmlString);
+    
+    // Update the data-index attribute
+    $(`#itemsTableBody tr:last`).attr('data-index', itemIndex);
+    
     itemIndex++;
     updateSummary();
 }
 
 function removeItem(button) {
     const row = $(button).closest('tr');
-    const index = row.index();
+    const index = row.data('index');
     
     // Remove serial numbers for this item
     delete serialNumbers[index];
@@ -514,14 +541,17 @@ function removeItem(button) {
     updateSummary();
 }
 
-function loadProductDetails(select) {
+function loadProductDetails(select, index) {
     const row = $(select).closest('tr');
     const selectedOption = $(select).find('option:selected');
     const hasSerial = selectedOption.data('has-serial') == 1;
+    const productName = selectedOption.text();
     
     // Show/hide serial number button
     if (hasSerial) {
         row.find('.serial-btn').show();
+        // Update the onclick to include product name
+        row.find('.serial-btn').attr('onclick', `manageSerialNumbers(${index}, '${productName}')`);
     } else {
         row.find('.serial-btn').hide();
     }
@@ -543,13 +573,15 @@ function calculateAcceptedQuantity(input) {
 }
 
 function manageSerialNumbers(itemIndex, productName) {
-    const row = $('.item-row').eq(itemIndex);
+    const row = $(`.item-row[data-index="${itemIndex}"]`);
     const receivedQty = parseInt(row.find('.received-quantity').val()) || 0;
     
     currentSerialItemIndex = itemIndex;
     
     $('#serialProductName').text(productName || 'Unknown Product');
     $('#serialReceivedQty').text(receivedQty);
+    
+    console.log(`Managing serials for item ${itemIndex}, received qty: ${receivedQty}`);
     
     // Load existing serial numbers
     loadExistingSerialNumbers(itemIndex, receivedQty);
@@ -562,29 +594,36 @@ function loadExistingSerialNumbers(itemIndex, requiredQty) {
     container.empty();
     
     const existingSerials = serialNumbers[itemIndex] || [];
+    console.log(`Loading serials for item ${itemIndex}:`, existingSerials);
     
-    // Ensure we have the right number of serial number inputs
-    for (let i = 0; i < requiredQty; i++) {
-        const serial = existingSerials[i] || { serial_number: '', warranty_start_date: '', warranty_end_date: '' };
+    // Create inputs for existing serials
+    existingSerials.forEach((serial, i) => {
         addSerialNumberInput(serial, i);
+    });
+    
+    // If we have fewer serials than required quantity, add empty ones
+    if (existingSerials.length < requiredQty) {
+        for (let i = existingSerials.length; i < requiredQty; i++) {
+            addSerialNumberInput({ serial_number: '', warranty_start_date: '', warranty_end_date: '' }, i);
+        }
     }
 }
 
 function addSerialNumberInput(serial, index) {
     const container = $('#serialNumbersList');
     const html = `
-        <div class="row mb-2 serial-row">
+        <div class="row mb-2 serial-row" data-serial-index="${index}">
             <div class="col-md-4">
                 <input type="text" class="form-control form-control-sm serial-number" 
-                       placeholder="Serial Number ${index + 1}" value="${serial.serial_number}" required>
+                       placeholder="Serial Number ${index + 1}" value="${serial.serial_number || ''}" required>
             </div>
             <div class="col-md-3">
                 <input type="date" class="form-control form-control-sm warranty-start" 
-                       placeholder="Warranty Start" value="${serial.warranty_start_date}">
+                       placeholder="Warranty Start" value="${serial.warranty_start_date || ''}">
             </div>
             <div class="col-md-3">
                 <input type="date" class="form-control form-control-sm warranty-end" 
-                       placeholder="Warranty End" value="${serial.warranty_end_date}">
+                       placeholder="Warranty End" value="${serial.warranty_end_date || ''}">
             </div>
             <div class="col-md-2">
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSerialNumber(this)">
@@ -603,16 +642,34 @@ function addSerialNumber() {
 
 function removeSerialNumber(button) {
     $(button).closest('.serial-row').remove();
+    
+    // Reindex the remaining serial numbers
+    $('#serialNumbersList .serial-row').each(function(index) {
+        $(this).attr('data-serial-index', index);
+        $(this).find('.serial-number').attr('placeholder', `Serial Number ${index + 1}`);
+    });
+}
+
+function autoFillSerials() {
+    const receivedQty = parseInt($('#serialReceivedQty').text()) || 0;
+    const currentSerials = $('#serialNumbersList .serial-row').length;
+    
+    if (currentSerials < receivedQty) {
+        for (let i = currentSerials; i < receivedQty; i++) {
+            addSerialNumberInput({ serial_number: '', warranty_start_date: '', warranty_end_date: '' }, i);
+        }
+    }
 }
 
 function saveSerialNumbers() {
     const serials = [];
     
     $('#serialNumbersList .serial-row').each(function() {
-        const serialNumber = $(this).find('.serial-number').val();
+        const serialNumber = $(this).find('.serial-number').val().trim();
         const warrantyStart = $(this).find('.warranty-start').val();
         const warrantyEnd = $(this).find('.warranty-end').val();
         
+        // Only save serials that have a serial number
         if (serialNumber) {
             serials.push({
                 serial_number: serialNumber,
@@ -622,12 +679,16 @@ function saveSerialNumbers() {
         }
     });
     
+    console.log(`Saving ${serials.length} serials for item ${currentSerialItemIndex}:`, serials);
+    
+    // Store in our global object
     serialNumbers[currentSerialItemIndex] = serials;
     
-    // Add hidden inputs for serial numbers
-    const row = $('.item-row').eq(currentSerialItemIndex);
-    row.find('.serial-inputs').remove(); // Remove existing inputs
+    // Remove existing hidden inputs for this item
+    const row = $(`.item-row[data-index="${currentSerialItemIndex}"]`);
+    row.find('.serial-inputs').remove();
     
+    // Add new hidden inputs
     serials.forEach((serial, index) => {
         row.append(`
             <input type="hidden" name="items[${currentSerialItemIndex}][serial_numbers][${index}][serial_number]" value="${serial.serial_number}" class="serial-inputs">
@@ -636,40 +697,24 @@ function saveSerialNumbers() {
         `);
     });
     
+    // Update the serial count badge
+    updateSerialCount(currentSerialItemIndex);
+    
     $('#serialNumbersModal').modal('hide');
     updateSummary();
 }
 
-function addFileUpload() {
-    const template = document.getElementById('fileUploadTemplate');
-    if (template) {
-        const clone = template.content.cloneNode(true);
-        $('#fileUploadsContainer').append(clone);
-        updateSummary();
-    }
-}
-
-function removeFileUpload(button) {
-    $(button).closest('.file-upload-row').remove();
-    updateSummary();
-}
-
-function deleteExistingFile(fileId) {
-    if (confirm('Are you sure you want to delete this file?')) {
-        $.ajax({
-            url: `/purchase/grn/documents/${fileId}`,
-            type: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                $(`#existing-file-${fileId}`).remove();
-                alert('File deleted successfully.');
-            },
-            error: function(xhr) {
-                alert('Error deleting file: ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Unknown error'));
-            }
-        });
+function updateSerialCount(itemIndex) {
+    const row = $(`.item-row[data-index="${itemIndex}"]`);
+    const serialCount = (serialNumbers[itemIndex] || []).length;
+    const badge = row.find('.serial-count');
+    
+    badge.text(serialCount);
+    
+    if (serialCount > 0) {
+        badge.removeClass('bg-secondary').addClass('bg-success');
+    } else {
+        badge.removeClass('bg-success').addClass('bg-secondary');
     }
 }
 
@@ -680,11 +725,13 @@ function updateSummary() {
     let damagedQuantity = 0;
     let serialItems = 0;
     let newDocumentsCount = 0;
+    let totalSerials = 0;
     
     $('.item-row').each(function() {
         const receivedQty = parseFloat($(this).find('.received-quantity').val()) || 0;
         const damagedQty = parseFloat($(this).find('.damaged-quantity').val()) || 0;
         const hasSerial = $(this).find('.serial-btn').is(':visible');
+        const itemIndex = $(this).data('index');
         
         if (receivedQty > 0) {
             totalItems++;
@@ -694,6 +741,8 @@ function updateSummary() {
             
             if (hasSerial) {
                 serialItems++;
+                const itemSerials = serialNumbers[itemIndex] || [];
+                totalSerials += itemSerials.length;
             }
         }
     });
@@ -711,12 +760,46 @@ function updateSummary() {
     $('#damagedQuantityDisplay').text(damagedQuantity.toFixed(2));
     $('#serialItemsDisplay').text(serialItems);
     $('#newDocumentsDisplay').text(newDocumentsCount);
+     $('#totalSerialsDisplay').text(totalSerials);
 }
 
 // Update summary when files are selected
 $(document).on('change', 'input[type="file"]', function() {
     updateSummary();
 });
+function addFileUpload() {
+    const template = document.getElementById('fileUploadTemplate');
+    const clone = template.content.cloneNode(true);
+    $('#fileUploadsContainer').append(clone);
+}
+
+function removeFileUpload(button) {
+    $(button).closest('.file-upload-row').remove();
+    updateSummary();
+}
+
+function deleteExistingFile(fileId) {
+    if (confirm('Are you sure you want to delete this file?')) {
+        $.ajax({
+            url: `/purchase/grn/documents/${fileId}`,
+            type: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                $(`#existing-file-${fileId}`).fadeOut(() => {
+                    $(`#existing-file-${fileId}`).remove();
+                });
+                alert('File deleted successfully.');
+            },
+            error: function(xhr) {
+                console.error('Delete error:', xhr);
+                alert('Error deleting file: ' + (xhr.responseJSON?.error || 'Unknown error'));
+            }
+        });
+    }
+}
+
 
 // Form validation
 $('#grnForm').on('submit', function(e) {
