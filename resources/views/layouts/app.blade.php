@@ -304,14 +304,14 @@
                 <li class="nav-item">
                     <a class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('payment-modes.*') || request()->routeIs('temple-categories.*')|| request()->routeIs('service.*') ? '' : 'collapsed' }}"
                         data-bs-toggle="collapse" href="#masterMenu" role="button"
-                        aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('temple-categories.*') || request()->routeIs('payment-modes.*') || request()->routeIs('service.*') ? 'true' : 'false' }}"
+                        aria-expanded="{{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('temple-categories.*') || request()->routeIs('payment-modes.*') || request()->routeIs('service.*')|| request()->routeIs('packages.*') ? 'true' : 'false' }}"
                         aria-controls="masterMenu">
                         <span><i class="fas fa-tools me-2"></i> Master</span>
                         <i class="fas fa-chevron-down"></i>
                     </a>
 
 
-                    <div class="collapse {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('payment-modes.*') || request()->routeIs('service.*') ? 'show' : '' }}"
+                    <div class="collapse {{ request()->routeIs('brand.*') || request()->routeIs('model.*') || request()->routeIs('categories.*') || request()->routeIs('uom.*') || request()->routeIs('warehouse.*') || request()->routeIs('customers.*') || request()->routeIs('vendors.*') || request()->routeIs('product.*') || request()->routeIs('payment-modes.*') || request()->routeIs('service.*') || request()->routeIs('packages.*') || request()->routeIs('temple-categories.*') ? 'show' : '' }}"
                         id="masterMenu">
                         <ul class="nav flex-column ms-3">
 

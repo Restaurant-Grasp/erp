@@ -224,7 +224,7 @@
 
             <div class="mb-3 form-check">
                 <input type="checkbox" name="is_active" class="form-check-input" id="activeCheck"
-                    {{ old('is_active', $product->status) ? 'checked' : '' }}>
+                    {{ old('is_active', $product->is_active) ? 'checked' : '' }}>
                 <label class="form-check-label" for="activeCheck">Active</label>
             </div>
 
