@@ -726,7 +726,7 @@ Route::get('packages/get-services', [PackageController::class, 'getServices'])->
             Route::get('/po-items', [PurchaseInvoiceController::class, 'getPoItems'])->name('po-items');
 			
 			// File management routes - ADD THESE
-			Route::get('/files/download/{file}', [PurchaseInvoiceController::class, 'downloadFile'])->name('files.download');
+			Route::get('files/{file}/download', [PurchaseInvoiceController::class, 'downloadFile'])->name('files.download');
 			Route::delete('/files/{file}', [PurchaseInvoiceController::class, 'deleteFile'])->name('files.delete');
         });
 

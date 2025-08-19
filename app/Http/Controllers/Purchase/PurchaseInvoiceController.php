@@ -545,13 +545,50 @@ class PurchaseInvoiceController extends Controller
      * Download a specific file
      */
     public function downloadFile(PurchaseInvoiceFile $file)
-    {
-        if (!Storage::exists($file->file_path)) {
-            abort(404, 'File not found');
-        }
+	{
+		// Debug information
+		$debugInfo = [
+			'file_id' => $file->id,
+			'file_name' => $file->file_name,
+			'file_path' => $file->file_path,
+			'storage_path' => storage_path('app/public/' . $file->file_path),
+			'file_exists_storage' => Storage::disk('public')->exists($file->file_path),
+			'file_exists_filesystem' => file_exists(storage_path('app/public/' . $file->file_path)),
+			'storage_disk_path' => Storage::disk('public')->path($file->file_path),
+		];
+		
+		// For debugging - remove this after fixing
+		if (request()->has('debug')) {
+			return response()->json($debugInfo);
+		}
+		
+		// Check if file exists in storage
+		if (!Storage::disk('public')->exists($file->file_path)) {
+			return response()->json([
+				'error' => 'File not found in storage',
+				'debug' => $debugInfo
+			], 404);
+		}
 
-        return Storage::download($file->file_path, $file->file_name);
-    }
+		try {
+			// Method 1: Using Storage download
+			return Storage::disk('public')->download($file->file_path, $file->file_name);
+			
+		} catch (\Exception $e) {
+			// Method 2: Using response download as fallback
+			try {
+				$filePath = Storage::disk('public')->path($file->file_path);
+				return response()->download($filePath, $file->file_name);
+			} catch (\Exception $e2) {
+				return response()->json([
+					'error' => 'Download failed',
+					'error1' => $e->getMessage(),
+					'error2' => $e2->getMessage(),
+					'debug' => $debugInfo
+				], 500);
+			}
+		}
+	}
 
     /**
      * Delete a specific file
