@@ -47,35 +47,41 @@
                                 Select Ledger(s)
                                 <span class="text-danger">*</span>
                             </label>
-                            <div class="ledger-select-container">
-                                <div class="custom-multiselect">
-                                    <div class="multiselect-dropdown">
-                                        <div class="multiselect-input" id="multiselectInput">
-                                            <span>Search and select ledgers...</span>
-                                            <i class="fas fa-chevron-down dropdown-arrow"></i>
-                                        </div>
-                                        <div class="multiselect-dropdown-content" id="dropdownContent">
-                                            <div class="search-box">
-                                                <input type="text" id="ledgerSearch" placeholder="Search ledgers..." class="form-control form-control-sm">
-                                            </div>
-                                            <div class="select-all-container">
-                                                <button type="button" class="btn btn-sm btn-outline-primary me-2" id="selectAllBtn">Select All</button>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBtn">Clear All</button>
-                                            </div>
-                                            <div class="options-container" id="optionsContainer">
-                                                @foreach($ledgers as $ledger)
-                                                <label class="multiselect-option">
-                                                    <input type="checkbox" name="ledger_ids[]" value="{{ $ledger->id }}"
-                                                        {{ in_array($ledger->id, $selectedLedgerIds) ? 'checked' : '' }}>
-                                                    <span class="checkmark"></span>
-                                                    <span class="option-text">{{ $ledger->left_code }}/{{ $ledger->right_code }} - {{ $ledger->name }}</span>
-                                                </label>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                           <div class="enhanced-multiselect">
+    <div class="multiselect-container">
+        <div class="multiselect-input" id="multiselectInput">
+            <div class="input-content">
+                <div class="selected-items" id="selectedItems"></div>
+                <span class="placeholder-text" id="placeholderText">Search and select ledgers...</span>
+            </div>
+            <i class="fas fa-chevron-down dropdown-arrow" id="dropdownArrow"></i>
+        </div>
+        <div class="multiselect-dropdown-content" id="dropdownContent">
+            <!-- Search section -->
+            <div class="search-section">
+                <input type="text" id="ledgerSearch" placeholder="Type to search ledgers..." class="search-input">
+            </div>
+            <!-- Action buttons -->
+            <div class="actions-section">
+                <button type="button" class="action-btn" id="selectAllBtn">Select All</button>
+                <button type="button" class="action-btn" id="deselectAllBtn">Clear All</button>
+                <button type="button" class="action-btn" id="selectVisibleBtn">Select Visible</button>
+            </div>
+            <!-- Options list -->
+            <div class="options-section" id="optionsContainer">
+                @foreach($ledgers as $ledger)
+                <label class="multiselect-option">
+                    <input type="checkbox" name="ledger_ids[]" value="{{ $ledger->id }}" class="option-checkbox">
+                    <span class="option-text">
+                        <span class="option-code">{{ $ledger->left_code }}/{{ $ledger->right_code }}</span>
+                        <span class="option-name">{{ $ledger->name }}</span>
+                    </span>
+                </label>
+                @endforeach
+            </div>
+        </div>
+    </div>
+</div>
                         </div>
 
                         <!-- Invoice Type -->
@@ -349,368 +355,501 @@
 </div>
 
 <style>
-    .table thead th {
-        color: black;
-        background-color: #ffffff;
-        border-bottom: 2px #010102ff;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 12px;
-        letter-spacing: 0.5px;
-    }
-
-    /* Custom Multiselect Dropdown */
-    .custom-multiselect {
-        position: relative;
-        width: 100%;
-    }
-
-    .multiselect-dropdown {
-        position: relative;
-    }
-
-    .multiselect-input {
-        min-height: 38px;
-        padding: 8px 12px;
-        border: 1px solid #ced4da;
-        border-radius: 0.375rem;
-        background-color: white;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-    }
-
-    .multiselect-input:hover {
-        border-color: #86b7fe;
-    }
-
-    .multiselect-input.active {
-        border-color: #86b7fe;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
-
-    .placeholder {
-        color: #6c757d;
-        flex-grow: 1;
-    }
-
-    .dropdown-arrow {
-        transition: transform 0.2s;
-    }
-
-    .dropdown-arrow.rotated {
-        transform: rotate(180deg);
-    }
-
-    .multiselect-dropdown-content {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #ced4da;
-        border-top: none;
-        border-radius: 0 0 0.375rem 0.375rem;
-        z-index: 1000;
-        max-height: 300px;
-        overflow-y: auto;
-        display: none;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    }
-
-    .search-box {
-        padding: 10px;
-        border-bottom: 1px solid #e9ecef;
-    }
-
-    .select-all-container {
-        padding: 10px;
-        border-bottom: 1px solid #e9ecef;
-        background-color: #f8f9fa;
-    }
-
-    .options-container {
-        max-height: 200px;
-        overflow-y: auto;
-    }
-
-    .multiselect-option {
-        display: flex;
-        align-items: center;
-        padding: 8px 12px;
-        cursor: pointer;
-        transition: background-color 0.15s;
-        margin: 0;
-    }
-
-    .multiselect-option:hover {
-        background-color: #f8f9fa;
-    }
-
-    .multiselect-option input[type="checkbox"] {
-        margin-right: 8px;
-        cursor: pointer;
-    }
-
-    .option-text {
-        flex-grow: 1;
-        font-size: 0.875rem;
-    }
-
-    /* Selected items display */
-    .selected-items {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        margin-top: 4px;
-    }
-
-    .selected-item {
-        background-color: #e7f3ff;
-        color: #0969da;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .remove-item {
-        cursor: pointer;
-        font-weight: bold;
-    }
-
-    /* Table Enhancements */
-    .transaction-row:hover {
-        background-color: #f8f9fa !important;
-    }
-
-    .voucher-link {
-        color: #0d6efd;
-        font-weight: 500;
-    }
-
-    .voucher-link:hover {
-        color: #0a58ca;
-    }
-
-    /* Loading Animation */
-    .btn.loading {
-        pointer-events: none;
-        opacity: 0.6;
-    }
-
-    .btn.loading::after {
-        content: "";
-        display: inline-block;
-        width: 16px;
-        height: 16px;
-        margin-left: 8px;
-        border: 2px solid #ffffff;
-        border-radius: 50%;
-        border-top-color: transparent;
-        animation: spin 1s ease-in-out infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    /* Print Styles */
-    @media print {
-
-        .card-header,
-        .btn-group,
-        .filter-form {
-            display: none !important;
-        }
-
-        .ledger-report-section {
-            page-break-after: always;
-        }
-
-        .ledger-report-section:last-child {
-            page-break-after: auto;
-        }
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
+    /* Enhanced Multi-Select Dropdown Styles */
+        .enhanced-multiselect {
+            position: relative;
             width: 100%;
         }
 
-        .btn-group .btn {
-            margin-bottom: 5px;
+        .multiselect-container {
+            position: relative;
         }
 
-        .table-responsive {
-            font-size: 0.875rem;
+        .multiselect-input {
+            min-height: 42px;
+            padding: 8px 40px 8px 12px;
+            border: 2px solid #ced4da;
+            border-radius: 8px;
+            background-color: white;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            transition: all 0.2s ease;
+            position: relative;
         }
-    }
+
+        .multiselect-input:hover {
+            border-color: #0d6efd;
+        }
+
+        .multiselect-input.active {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+        }
+
+        .multiselect-input.has-selections {
+            padding: 4px 40px 4px 8px;
+        }
+
+
+
+        .placeholder-text {
+            color: black;
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .dropdown-arrow {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: transform 0.2s ease;
+            color: black;
+            pointer-events: none;
+        }
+
+        .dropdown-arrow.rotated {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        /* Selected Items */
+        .selected-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .selected-item {
+            background: linear-gradient(135deg, #e7f3ff, #d4edff);
+            color: #0969da;
+            padding: 4px 8px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border: 1px solid #b6d7ff;
+            max-width: 200px;
+        }
+
+        .selected-item-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .remove-item {
+            cursor: pointer;
+            font-weight: bold;
+            color: #dc3545;
+            margin-left: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .remove-item:hover {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+
+        /* Dropdown Content */
+        .multiselect-dropdown-content {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #0d6efd;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            z-index: 1050;
+            max-height: 320px;
+            overflow: hidden;
+            display: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .search-section {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.1);
+        }
+
+        .actions-section {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e9ecef;
+            background: #f8f9fa;
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: none;
+            border: 1px solid #ced4da;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+.table thead th {
+    color: black;
+}
+        .action-btn:hover {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+
+        .options-section {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .multiselect-option {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: background-color 0.15s;
+            margin: 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .multiselect-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .multiselect-option.selected {
+            background-color: #e7f3ff;
+        }
+
+        .option-checkbox {
+            margin-right: 10px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .option-text {
+            flex-grow: 1;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .option-code {
+            font-weight: 600;
+            color: #0d6efd;
+        }
+
+        .option-name {
+            color: #495057;
+            margin-left: 8px;
+        }
+
+        /* Counter Badge */
+        .selection-counter {
+            background: #0d6efd;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+
+        /* No Results Message */
+        .no-results {
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        /* Scrollbar Styling */
+        .options-section::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .options-section::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .options-section::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .options-section::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .selected-item {
+                max-width: 150px;
+                font-size: 11px;
+            }
+            
+            .multiselect-input {
+                min-height: 38px;
+            }
+        }
+
+        /* Demo Styling */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+
+        .demo-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .code-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border-left: 4px solid #0d6efd;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
 </style>
 
+@endsection
+
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const multiselectInput = document.getElementById('multiselectInput');
-        const dropdownContent = document.getElementById('dropdownContent');
-        const dropdownArrow = multiselectInput.querySelector('.dropdown-arrow');
-        const searchInput = document.getElementById('ledgerSearch');
-        const optionsContainer = document.getElementById('optionsContainer');
-        const selectAllBtn = document.getElementById('selectAllBtn');
-        const deselectAllBtn = document.getElementById('deselectAllBtn');
-        const placeholder = multiselectInput.querySelector('.placeholder');
+            const multiselectInput = document.getElementById('multiselectInput');
+            const dropdownContent = document.getElementById('dropdownContent');
+            const dropdownArrow = document.getElementById('dropdownArrow');
+            const searchInput = document.getElementById('ledgerSearch');
+            const optionsContainer = document.getElementById('optionsContainer');
+            const selectedItems = document.getElementById('selectedItems');
+            const placeholderText = document.getElementById('placeholderText');
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const deselectAllBtn = document.getElementById('deselectAllBtn');
+            const selectVisibleBtn = document.getElementById('selectVisibleBtn');
 
-        // Toggle dropdown
-        multiselectInput.addEventListener('click', function() {
-            const isOpen = dropdownContent.style.display === 'block';
-            dropdownContent.style.display = isOpen ? 'none' : 'block';
-            dropdownArrow.classList.toggle('rotated', !isOpen);
-            multiselectInput.classList.toggle('active', !isOpen);
+            // Toggle dropdown
+            multiselectInput.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-item')) {
+                    return; // Don't toggle dropdown when removing items
+                }
+                
+                const isOpen = dropdownContent.style.display === 'block';
+                dropdownContent.style.display = isOpen ? 'none' : 'block';
+                dropdownArrow.classList.toggle('rotated', !isOpen);
+                multiselectInput.classList.toggle('active', !isOpen);
 
-            if (!isOpen) {
-                searchInput.focus();
-            }
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.custom-multiselect')) {
-                dropdownContent.style.display = 'none';
-                dropdownArrow.classList.remove('rotated');
-                multiselectInput.classList.remove('active');
-            }
-        });
-
-        // Search functionality
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const options = optionsContainer.querySelectorAll('.multiselect-option');
-
-            options.forEach(option => {
-                const text = option.querySelector('.option-text').textContent.toLowerCase();
-                option.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+                if (!isOpen) {
+                    searchInput.focus();
+                }
             });
-        });
 
-        // Select All functionality
-        selectAllBtn.addEventListener('click', function() {
-            const visibleCheckboxes = optionsContainer.querySelectorAll('.multiselect-option:not([style*="display: none"]) input[type="checkbox"]');
-            visibleCheckboxes.forEach(checkbox => {
-                checkbox.checked = true;
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.enhanced-multiselect')) {
+                    dropdownContent.style.display = 'none';
+                    dropdownArrow.classList.remove('rotated');
+                    multiselectInput.classList.remove('active');
+                }
             });
-            updateSelectedDisplay();
-        });
 
-        // Deselect All functionality
-        deselectAllBtn.addEventListener('click', function() {
-            const checkboxes = optionsContainer.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = false;
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const options = optionsContainer.querySelectorAll('.multiselect-option');
+                let visibleCount = 0;
+
+                options.forEach(option => {
+                    const text = option.querySelector('.option-text').textContent.toLowerCase();
+                    const isVisible = text.includes(searchTerm);
+                    option.style.display = isVisible ? 'flex' : 'none';
+                    if (isVisible) visibleCount++;
+                });
+
+                // Show/hide no results message
+                const existingNoResults = optionsContainer.querySelector('.no-results');
+                if (existingNoResults) {
+                    existingNoResults.remove();
+                }
+
+                if (visibleCount === 0 && searchTerm.length > 0) {
+                    const noResultsDiv = document.createElement('div');
+                    noResultsDiv.className = 'no-results';
+                    noResultsDiv.innerHTML = '<i class="fas fa-search me-2"></i>No ledgers found matching "' + searchTerm + '"';
+                    optionsContainer.appendChild(noResultsDiv);
+                }
             });
-            updateSelectedDisplay();
-        });
 
-        // Update selected items display
-        function updateSelectedDisplay() {
-            const checkedBoxes = optionsContainer.querySelectorAll('input[type="checkbox"]:checked');
-
-            if (checkedBoxes.length === 0) {
-                placeholder.textContent = 'Search and select ledgers...';
-                placeholder.style.color = '#6c757d';
-            } else {
-                placeholder.textContent = `${checkedBoxes.length} ledger(s) selected`;
-                placeholder.style.color = '#212529';
-            }
-        }
-
-        // Initialize display
-        updateSelectedDisplay();
-
-        // Listen for checkbox changes
-        optionsContainer.addEventListener('change', function(e) {
-            if (e.target.type === 'checkbox') {
+            // Select All functionality
+            selectAllBtn.addEventListener('click', function() {
+                const allCheckboxes = optionsContainer.querySelectorAll('input[type="checkbox"]');
+                allCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
                 updateSelectedDisplay();
+            });
+
+            // Deselect All functionality
+            deselectAllBtn.addEventListener('click', function() {
+                const allCheckboxes = optionsContainer.querySelectorAll('input[type="checkbox"]');
+                allCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                updateSelectedDisplay();
+            });
+
+            // Select Visible functionality
+            selectVisibleBtn.addEventListener('click', function() {
+                const visibleCheckboxes = optionsContainer.querySelectorAll('.multiselect-option:not([style*="display: none"]) input[type="checkbox"]');
+                visibleCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+                updateSelectedDisplay();
+            });
+
+            // Update selected items display
+            function updateSelectedDisplay() {
+                const checkedBoxes = optionsContainer.querySelectorAll('input[type="checkbox"]:checked');
+                selectedItems.innerHTML = '';
+
+                if (checkedBoxes.length === 0) {
+                    placeholderText.style.display = 'block';
+                    multiselectInput.classList.remove('has-selections');
+                } else {
+                    placeholderText.style.display = 'none';
+                    multiselectInput.classList.add('has-selections');
+
+                    checkedBoxes.forEach((checkbox, index) => {
+                        if (index < 3) { // Show only first 3 items
+                            const optionText = checkbox.closest('.multiselect-option').querySelector('.option-text').textContent.trim();
+                            const selectedItem = createSelectedItem(optionText, checkbox.value);
+                            selectedItems.appendChild(selectedItem);
+                        }
+                    });
+
+                    // Add counter if more than 3 items
+                    if (checkedBoxes.length > 3) {
+                        const counter = document.createElement('span');
+                        counter.className = 'selection-counter';
+                        counter.textContent = `+${checkedBoxes.length - 3} more`;
+                        selectedItems.appendChild(counter);
+                    }
+                }
+
+                // Update option checkboxes visual state
+                optionsContainer.querySelectorAll('.multiselect-option').forEach(option => {
+                    const checkbox = option.querySelector('input[type="checkbox"]');
+                    option.classList.toggle('selected', checkbox.checked);
+                });
             }
+
+            function createSelectedItem(text, value) {
+                const item = document.createElement('div');
+                item.className = 'selected-item';
+                
+                const textSpan = document.createElement('span');
+                textSpan.className = 'selected-item-text';
+                textSpan.textContent = text.length > 25 ? text.substring(0, 25) + '...' : text;
+                textSpan.title = text; // Full text on hover
+                
+                const removeBtn = document.createElement('span');
+                removeBtn.className = 'remove-item';
+                removeBtn.innerHTML = '×';
+                removeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    removeSelectedItem(value);
+                });
+                
+                item.appendChild(textSpan);
+                item.appendChild(removeBtn);
+                return item;
+            }
+
+            function removeSelectedItem(value) {
+                const checkbox = optionsContainer.querySelector(`input[value="${value}"]`);
+                if (checkbox) {
+                    checkbox.checked = false;
+                    updateSelectedDisplay();
+                }
+            }
+
+            // Initialize display
+            updateSelectedDisplay();
+
+            // Listen for checkbox changes
+            optionsContainer.addEventListener('change', function(e) {
+                if (e.target.type === 'checkbox') {
+                    updateSelectedDisplay();
+                }
+            });
+
+            // Prevent dropdown from closing when interacting with content
+            dropdownContent.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
         });
 
-        // Form submission with loading state
-        const generateBtn = document.getElementById('generateBtn');
-        const form = document.getElementById('glReportForm');
-
-        form.addEventListener('submit', function() {
-            generateBtn.classList.add('loading');
-            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating...';
-        });
-    });
-
-    // Export functions
-    function exportReport(type) {
-        const form = document.getElementById('glReportForm');
-        const formData = new FormData(form);
-
-        let url = '{{ route("accounts.reports.general-ledger") }}?';
-
-        // Handle multiple ledger IDs
-        const selectedLedgers = Array.from(document.querySelectorAll('input[name="ledger_ids[]"]:checked')).map(cb => cb.value);
-        if (selectedLedgers && selectedLedgers.length > 0) {
-            selectedLedgers.forEach(function(ledgerId) {
-                url += 'ledger_ids[]=' + encodeURIComponent(ledgerId) + '&';
-            });
-        }
-
-        // Add other form fields
-        for (let [key, value] of formData.entries()) {
-            if (key !== 'ledger_ids[]') {
-                url += key + '=' + encodeURIComponent(value) + '&';
+        // Demo function to show selected values
+        function showSelectedValues() {
+            const checkedBoxes = document.querySelectorAll('input[name="ledger_ids[]"]:checked');
+            const output = document.getElementById('selectedOutput');
+            
+            if (checkedBoxes.length === 0) {
+                output.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>No ledgers selected</div>';
+            } else {
+                let html = '<div class="alert alert-success"><h6><i class="fas fa-check-circle me-2"></i>Selected Ledgers:</h6><ul class="mb-0">';
+                checkedBoxes.forEach(checkbox => {
+                    const optionText = checkbox.closest('.multiselect-option').querySelector('.option-text').textContent.trim();
+                    html += `<li><strong>ID:</strong> ${checkbox.value} - <strong>Name:</strong> ${optionText}</li>`;
+                });
+                html += '</ul></div>';
+                output.innerHTML = html;
             }
         }
-
-        url += 'export=' + type;
-
-        window.location.href = url;
-    }
-
-    function printReport() {
-        const form = document.getElementById('glReportForm');
-        const formData = new FormData(form);
-
-        let url = '{{ route("accounts.reports.general-ledger") }}?';
-
-        // Handle multiple ledger IDs
-        const selectedLedgers = Array.from(document.querySelectorAll('input[name="ledger_ids[]"]:checked')).map(cb => cb.value);
-        if (selectedLedgers && selectedLedgers.length > 0) {
-            selectedLedgers.forEach(function(ledgerId) {
-                url += 'ledger_ids[]=' + encodeURIComponent(ledgerId) + '&';
-            });
-        }
-
-        // Add other form fields
-        for (let [key, value] of formData.entries()) {
-            if (key !== 'ledger_ids[]') {
-                url += key + '=' + encodeURIComponent(value) + '&';
-            }
-        }
-
-        url += 'export=print';
-
-        window.open(url, '_blank');
-    }
-
-    // Form validation
-    document.getElementById('glReportForm').addEventListener('submit', function(e) {
-        const selectedLedgers = document.querySelectorAll('input[name="ledger_ids[]"]:checked');
-        if (selectedLedgers.length === 0) {
-            e.preventDefault();
-            alert('Please select at least one ledger to generate the report.');
-            return false;
-        }
-    });
 </script>
-@endsection
+@endpush
