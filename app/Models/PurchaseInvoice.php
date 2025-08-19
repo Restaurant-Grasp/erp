@@ -120,7 +120,15 @@ class PurchaseInvoice extends Model
         return $query->whereIn('status', ['pending', 'partial']);
     }
     public function payments()
-{
-    return $this->hasMany(PurchaseInvoicePayment::class, 'invoice_id');
-}
+	{
+		return $this->hasMany(PurchaseInvoicePayment::class, 'invoice_id');
+	}
+	
+	/**
+	 * Get the files associated with the purchase invoice.
+	 */
+	public function files(): HasMany
+	{
+		return $this->hasMany(PurchaseInvoiceFile::class, 'invoice_id');
+	}
 }

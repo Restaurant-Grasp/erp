@@ -103,11 +103,4 @@ class PurchaseInvoiceFile extends Model
         });
     }
 	
-	/**
-	 * Get the files associated with the purchase invoice.
-	 */
-	public function files(): HasMany
-	{
-		return $this->hasMany(PurchaseInvoiceFile::class, 'invoice_id');
-	}
 }

@@ -716,6 +716,7 @@ Route::get('packages/get-services', [PackageController::class, 'getServices'])->
             Route::get('/{invoice}', [PurchaseInvoiceController::class, 'show'])->name('show');
             Route::get('/{invoice}/edit', [PurchaseInvoiceController::class, 'edit'])->name('edit');
             Route::put('/{invoice}', [PurchaseInvoiceController::class, 'update'])->name('update');
+            Route::put('/{invoice}/payments', [PurchaseInvoiceController::class, 'getPayments'])->name('getPayments');
             Route::delete('/{invoice}', [PurchaseInvoiceController::class, 'destroy'])->name('destroy');
 
             // E-Invoice
@@ -723,6 +724,10 @@ Route::get('packages/get-services', [PackageController::class, 'getServices'])->
 
             // AJAX routes
             Route::get('/po-items', [PurchaseInvoiceController::class, 'getPoItems'])->name('po-items');
+			
+			// File management routes - ADD THESE
+			Route::get('/files/download/{file}', [PurchaseInvoiceController::class, 'downloadFile'])->name('files.download');
+			Route::delete('/files/{file}', [PurchaseInvoiceController::class, 'deleteFile'])->name('files.delete');
         });
 
         // Goods Receipt Notes (GRN)
@@ -866,8 +871,3 @@ Route::prefix('purchase/invoices/{invoice}/payments')->name('purchases.payments.
 Route::get('/sales/invoices/{invoice}/payments', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'getPayments'])
     ->name('sales.invoices.get-payments')
     ->middleware('permission:sales.payments.view');
-
-// In Purchase module routes, add:
-Route::get('/purchase/invoices/{invoice}/payments', [App\Http\Controllers\Purchase\PurchaseInvoiceController::class, 'getPayments'])
-    ->name('purchase.invoices.get-payments')
-    ->middleware('permission:purchases.payments.view');
