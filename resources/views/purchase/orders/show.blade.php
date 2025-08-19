@@ -228,10 +228,17 @@
                     @endif
                     @endcan
 					--}}
-
-                    <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
-                        <i class="fas fa-print me-2"></i> Print
-                    </button>
+                    <!-- Print and PDF Buttons -->
+                    <div class="btn-group" role="group">
+                        <a href="{{ route('purchase.orders.print', $order) }}" 
+                           class="btn btn-outline-secondary" target="_blank">
+                            <i class="fas fa-print me-2"></i> Print
+                        </a>
+                        <a href="{{ route('purchase.orders.pdf', $order) }}" 
+                           class="btn btn-outline-secondary">
+                            <i class="fas fa-file-pdf me-2"></i> PDF
+                        </a>
+                    </div>
 
                     <a href="{{ route('purchase.orders.index') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i> Back to List
