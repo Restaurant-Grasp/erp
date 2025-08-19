@@ -693,6 +693,8 @@ Route::get('packages/get-services', [PackageController::class, 'getServices'])->
             Route::post('/', [PurchaseOrderController::class, 'store'])->name('store');
             Route::get('/{order}', [PurchaseOrderController::class, 'show'])->name('show');
             Route::get('/{order}/edit', [PurchaseOrderController::class, 'edit'])->name('edit');
+            Route::get('/{order}/print', [PurchaseOrderController::class, 'print'])->name('print');
+            Route::get('/{order}/pdf', [PurchaseOrderController::class, 'pdf'])->name('pdf');
             Route::put('/{order}', [PurchaseOrderController::class, 'update'])->name('update');
             Route::delete('/{order}', [PurchaseOrderController::class, 'destroy'])->name('destroy');
 
