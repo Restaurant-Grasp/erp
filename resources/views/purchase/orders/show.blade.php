@@ -219,7 +219,7 @@
                     </button>
                     @endif
                     @endcan
-
+					{{-- 
                     @can('purchases.invoices.create')
                     @if($order->approval_status === 'approved')
                     <a href="{{ route('purchase.invoices.create-from-po', $order) }}" class="btn btn-outline-primary">
@@ -227,6 +227,7 @@
                     </a>
                     @endif
                     @endcan
+					--}}
 
                     <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
                         <i class="fas fa-print me-2"></i> Print
