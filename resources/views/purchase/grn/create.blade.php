@@ -243,7 +243,7 @@
             <select name="items[INDEX][product_id]" class="form-select form-select-sm product-select" required onchange="loadProductDetails(this)">
                 <option value="">Select Product</option>
                 @foreach($products as $product)
-                <option value="{{ $product->id }}" data-has-serial="{{ $product->has_serial_number }}" data-has-warranty="{{ $product->has_warranty }}" data-warranty-months="{{ $product->warranty_period_months }}">
+                <option value="{{ $product->id }}" data-has-serial="{{ $product->has_serial_number }}" data-has-warranty="{{ $product->has_warranty }}" data-warranty-months="{{ $product->warranty_period_months }}" data-default-uom="{{ $product->uom_id }}">
                     {{ $product->name }} ({{ $product->product_code }})
                 </option>
                 @endforeach
@@ -374,7 +374,15 @@ function loadProductDetails(select) {
     } else {
         row.find('.serial-btn').hide();
     }
-    
+
+    // Set default UOM
+    const defaultUom = selectedOption.data('default-uom');
+    if(defaultUom){
+        row.find('select[name*="[uom_id]"]').val(defaultUom);
+    } else {
+        row.find('select[name*="[uom_id]"]').val('');
+    }
+
     updateSummary();
 }
 
