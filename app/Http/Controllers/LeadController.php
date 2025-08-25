@@ -539,7 +539,7 @@ class LeadController extends Controller
 
             Contact::create([
                 'entity_id' => $lead->id,
-                'entity_type' => Lead::class,
+                'entity_type' => 'lead',
                 'name' => $contactData['name'],
                 'email' => $contactData['email'] ?? null,
                 'phone' => $contactData['phone'] ?? null,
@@ -569,7 +569,7 @@ class LeadController extends Controller
 
             $contactAttributes = [
                 'entity_id' => $lead->id,
-                'entity_type' => Lead::class,
+                'entity_type' => 'lead',
                 'name' => $contactData['name'],
                 'email' => $contactData['email'] ?? null,
                 'phone' => $contactData['phone'] ?? null,

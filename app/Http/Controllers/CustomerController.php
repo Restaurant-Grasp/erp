@@ -10,6 +10,7 @@ use App\Models\Group;
 use App\Models\Ledger;
 use App\Models\ServiceType;
 use App\Models\CustomerServiceType;
+use App\Models\Contact;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -88,7 +89,7 @@ class CustomerController extends Controller
     }
 
     /**
-     * Store a newly created customer.
+     * Store a newly created customer with contacts.
      */
     public function store(Request $request)
     {
@@ -119,20 +120,29 @@ class CustomerController extends Controller
             'service_types' => 'array',
             'service_types.*' => 'exists:service_types,id',
 
+            // Contact validation
+            'contacts' => 'required|array|min:1',
+            'contacts.*.name' => 'required|string|max:255',
+            'contacts.*.email' => 'nullable|email|max:255',
+            'contacts.*.phone' => 'nullable|string|max:50',
+            'contacts.*.is_primary' => 'nullable|boolean',
+            'contacts.*.is_billing_contact' => 'nullable|boolean',
+            'contacts.*.is_technical_contact' => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
         try {
             // Generate customer code
             $customerCode = $this->generateCustomerCode();
+            
             // Get trade debtors group
             $tradeDebtorGroup = Group::where('td', 1)->first();
             if (!$tradeDebtorGroup) {
                 throw new \Exception('Trade Debtors group not found');
             }
+            
             $existingLedgersCount = Ledger::where('group_id', $tradeDebtorGroup->id)->count();
             $rightCodeNumber = $existingLedgersCount + 1;
-
 
             $rightCode = str_pad($rightCodeNumber, 4, '0', STR_PAD_LEFT);
 
@@ -156,14 +166,17 @@ class CustomerController extends Controller
                 'right_code' => $rightCode,
             ]);
 
-
             // Create customer
-            $validated['customer_code'] = $customerCode;
-            $validated['ledger_id'] = $ledger->id;
-            $validated['created_by'] = Auth::id();
-            $validated['status'] = 'active';
+            $customerData = collect($validated)->except('contacts', 'service_types')->toArray();
+            $customerData['customer_code'] = $customerCode;
+            $customerData['ledger_id'] = $ledger->id;
+            $customerData['created_by'] = Auth::id();
+            $customerData['status'] = 'active';
 
-            $customer = Customer::create($validated);
+            $customer = Customer::create($customerData);
+
+            // Handle contacts
+            $this->storeContacts($customer, $request->input('contacts', []));
 
             // Attach service types if provided
             if ($request->has('service_types')) {
@@ -195,6 +208,7 @@ class CustomerController extends Controller
             'ledger',
             'lead',
             'serviceTypes',
+            'contacts',
             'invoices' => function ($query) {
                 $query->latest()->limit(10);
             },
@@ -220,6 +234,7 @@ class CustomerController extends Controller
      */
     public function edit(Customer $customer)
     {
+        $customer->load('contacts');
         $categories = Category::where('type', 'customer')->where('status', 1)->orderBy('name')->get();
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
         $serviceTypes = ServiceType::where('status', 1)->orderBy('name')->get();
@@ -229,7 +244,7 @@ class CustomerController extends Controller
     }
 
     /**
-     * Update the specified customer.
+     * Update the specified customer with contacts.
      */
     public function update(Request $request, Customer $customer)
     {
@@ -261,17 +276,30 @@ class CustomerController extends Controller
             'service_types' => 'array',
             'service_types.*' => 'exists:service_types,id',
 
+            // Contact validation
+            'contacts' => 'required|array|min:1',
+            'contacts.*.id' => 'nullable|exists:contacts,id',
+            'contacts.*.name' => 'required|string|max:255',
+            'contacts.*.email' => 'nullable|email|max:255',
+            'contacts.*.phone' => 'nullable|string|max:50',
+            'contacts.*.is_primary' => 'nullable|boolean',
+            'contacts.*.is_billing_contact' => 'nullable|boolean',
+            'contacts.*.is_technical_contact' => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
         try {
-            $customer->update($validated);
+            $customerData = collect($validated)->except('contacts', 'service_types')->toArray();
+            $customer->update($customerData);
 
             // Update ledger name if company name changed
             if ($customer->ledger && $customer->wasChanged('company_name')) {
                 $ledgerName = $validated['company_name'] . ' (' . $customer->customer_code . ')';
                 $customer->ledger->update(['name' => $ledgerName]);
             }
+
+            // Update contacts
+            $this->updateContacts($customer, $request->input('contacts', []));
 
             // Update service types
             CustomerServiceType::where('customer_id', $customer->id)->delete();
@@ -285,7 +313,7 @@ class CustomerController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('customers.index', $customer)->with('success', 'Customer updated successfully.');
+            return redirect()->route('customers.show', $customer)->with('success', 'Customer updated successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Error updating customer: ' . $e->getMessage())->withInput();
@@ -310,6 +338,7 @@ class CustomerController extends Controller
         try {
             // Delete related records
             CustomerServiceType::where('customer_id', $customer->id)->delete();
+            $customer->contacts()->delete();
 
             // Delete ledger if exists
             if ($customer->ledger) {
@@ -323,6 +352,82 @@ class CustomerController extends Controller
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->route('customers.index')->with('error', 'Error deleting customer: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Store contacts for a customer
+     */
+    private function storeContacts($customer, $contactsData)
+    {
+        $hasPrimary = false;
+        
+        foreach ($contactsData as $contactData) {
+            if (empty($contactData['name'])) continue;
+            
+            // Ensure only one primary contact
+            $isPrimary = isset($contactData['is_primary']) && $contactData['is_primary'] && !$hasPrimary;
+            if ($isPrimary) $hasPrimary = true;
+            
+            Contact::create([
+                'entity_id' => $customer->id,
+                'entity_type' => 'customer',
+                'name' => $contactData['name'],
+                'email' => $contactData['email'] ?? null,
+                'phone' => $contactData['phone'] ?? null,
+                'is_primary' => $isPrimary,
+                'is_billing_contact' => isset($contactData['is_billing_contact']) && $contactData['is_billing_contact'],
+                'is_technical_contact' => isset($contactData['is_technical_contact']) && $contactData['is_technical_contact'],
+            ]);
+        }
+    }
+
+    /**
+     * Update contacts for a customer
+     */
+    private function updateContacts($customer, $contactsData)
+    {
+        // Get existing contact IDs
+        $existingContactIds = $customer->contacts->pluck('id')->toArray();
+        $updatedContactIds = [];
+        $hasPrimary = false;
+        
+        foreach ($contactsData as $contactData) {
+            if (empty($contactData['name'])) continue;
+            
+            // Ensure only one primary contact
+            $isPrimary = isset($contactData['is_primary']) && $contactData['is_primary'] && !$hasPrimary;
+            if ($isPrimary) $hasPrimary = true;
+            
+            $contactAttributes = [
+                'entity_id' => $customer->id,
+                'entity_type' => 'customer',
+                'name' => $contactData['name'],
+                'email' => $contactData['email'] ?? null,
+                'phone' => $contactData['phone'] ?? null,
+                'is_primary' => $isPrimary,
+                'is_billing_contact' => isset($contactData['is_billing_contact']) && $contactData['is_billing_contact'],
+                'is_technical_contact' => isset($contactData['is_technical_contact']) && $contactData['is_technical_contact'],
+            ];
+            
+            if (!empty($contactData['id'])) {
+                // Update existing contact
+                $contact = Contact::find($contactData['id']);
+                if ($contact && $contact->entity_id == $customer->id) {
+                    $contact->update($contactAttributes);
+                    $updatedContactIds[] = $contact->id;
+                }
+            } else {
+                // Create new contact
+                $contact = Contact::create($contactAttributes);
+                $updatedContactIds[] = $contact->id;
+            }
+        }
+        
+        // Delete contacts that were not in the update
+        $contactsToDelete = array_diff($existingContactIds, $updatedContactIds);
+        if (!empty($contactsToDelete)) {
+            Contact::whereIn('id', $contactsToDelete)->delete();
         }
     }
 
@@ -346,7 +451,6 @@ class CustomerController extends Controller
      */
     private function generateCustomerCode()
     {
-
         $prefix = 'CU';
         $newNumber = 1;
 
