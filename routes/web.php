@@ -878,12 +878,12 @@ Route::delete('purchase/grn/documents/{document}', [GrnController::class, 'delet
      ->name('purchase.grn.documents.delete');
 Route::prefix('quotations')->group(function () {
     // Get items (products/services/packages) for dropdowns
-    Route::get('/get-items', [QuotationController::class, 'getItems'])->name('quotations.get-items');
+    Route::get('/get-items', [App\Http\Controllers\Sales\QuotationController::class, 'getItems'])->name('quotations.get-items');
     
     // Get packages specifically
-    Route::get('/get-packages', [QuotationController::class, 'getPackages'])->name('quotations.get-packages');
+    Route::get('/get-packages', [App\Http\Controllers\Sales\QuotationController::class, 'getPackages'])->name('quotations.get-packages');
     
     // Get package details including items
-    Route::get('/get-package-details/{packageId}', [QuotationController::class, 'getPackageDetails'])->name('quotations.get-package-details');
+    Route::get('/get-package-details/{packageId}', [App\Http\Controllers\Sales\QuotationController::class, 'getPackageDetails'])->name('quotations.get-package-details');
 });
 

@@ -83,6 +83,95 @@
                 </div>
             </div>
         </div>
+   {{-- Packages Section --}}
+        @php
+            $packageItems = $quotation->items->where('item_type', 'package');
+        @endphp
+        
+        @if($packageItems->count() > 0)
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-box me-2"></i>
+                    Package{{ $packageItems->count() > 1 ? 's' : '' }} ({{ $packageItems->count() }})
+                </h5>
+            </div>
+            <div class="card-body">
+                @foreach($packageItems as $packageItem)
+                <div class="package-item border rounded p-3 {{ !$loop->last ? 'mb-4' : '' }}">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 d-flex align-items-center">
+                                <span class="badge bg-secondary me-2">Package</span>
+                                {{ $packageItem->item_name ?? ($packageItem->package->name ?? 'Package') }}
+                            </h6>
+                            @if($packageItem->description || ($packageItem->package && $packageItem->package->description))
+                            <p class="text-muted mb-2 small">
+                                {{ $packageItem->description ?? $packageItem->package->description }}
+                            </p>
+                            @endif
+                        </div>
+                    
+                    </div>
+
+                    {{-- Package Items Breakdown --}}
+                    @if($packageItem->package && $packageItem->package->packageItems && $packageItem->package->packageItems->count() > 0)
+                    <div class="package-breakdown">
+                        <h6 class="text-muted mb-2">
+                            <i class="fas fa-list-ul me-1"></i>Package Includes:
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Item</th>
+                                        <th width="80">Qty</th>
+                                        <th width="100">Unit Price</th>
+                                        <th width="100">Line Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($packageItem->package->packageItems as $subItem)
+                                    @php
+                                        $subQuantity = (float)($subItem->quantity ?? 1);
+                                        $subUnitPrice = (float)($subItem->amount ?? $subItem->unit_price ?? 0);
+                                        $subTotal = $subQuantity * $subUnitPrice;
+                                        
+                                        // Get item name based on type
+                                        $subItemName = '';
+                                      
+                                        
+                                        $subItemName = $subItem->service->name;
+                                        
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            {{ $subItemName }}
+                                            @if($subItem->item_type)
+                                            <br><small class="text-muted">{{ ucfirst($subItem->item_type) }}</small>
+                                            @endif
+                                        </td>
+                                        <td>{{ number_format($subQuantity, 2) }}</td>
+                                        <td>{{ $quotation->currency }} {{ number_format($subUnitPrice, 2) }}</td>
+                                        <td>{{ $quotation->currency }} {{ number_format($subTotal, 2) }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                   
+                            </table>
+                        </div>
+                    </div>
+                    @else
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Package details not available or package items not loaded.
+                    </div>
+                    @endif
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
 
         <!-- Items -->
         <div class="card mt-4">
@@ -104,6 +193,7 @@
                         </thead>
                         <tbody>
                             @foreach($quotation->items as $item)
+                              @if(in_array($item->item_type, ['product', 'service']))
                             <tr>
                                 <td>
                                     <strong>{{ $item->item_name }}</strong>
@@ -124,6 +214,7 @@
                                 </td>
                                 <td>₹{{ number_format($item->total_amount, 2) }}</td>
                             </tr>
+                            @endif
                             @endforeach
                         </tbody>
                         <tfoot>

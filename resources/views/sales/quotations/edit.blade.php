@@ -161,7 +161,7 @@
                     </div>
 
                     <!-- Package Items Preview -->
-                    <div id="packageItemsPreview" style="display: none;" class="mt-3">
+                    <div id="packageItemsPreview"  class="mt-3">
                         <h6 class="text-muted">Package includes:</h6>
                         <div class="table-responsive">
                             <table class="table table-sm table-bordered">
@@ -445,11 +445,7 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    let itemIndex = {
-        {
-            count($quotation - > items)
-        }
-    };
+    let itemIndex = {{count($quotation->items)}};
     let selectedPackage = null;
 
     $(document).ready(function() {
@@ -616,6 +612,7 @@
             .then(response => response.json())
             .then(data => {
                 selectedPackage = data;
+               
                 document.getElementById('packageName').textContent = data.name;
                 document.getElementById('packageDescription').textContent = data.description || 'No description available';
                 document.getElementById('packagePrice').textContent = `{{ $quotation->currency }} ${parseFloat(data.package_price).toFixed(2)}`;
@@ -624,6 +621,7 @@
 
                 const tbody = document.getElementById('packageItemsBody');
                 tbody.innerHTML = '';
+                
                 (data.items || []).forEach(item => {
                     const row = document.createElement('tr');
                     const total = parseFloat(item.amount) * parseFloat(item.quantity);
