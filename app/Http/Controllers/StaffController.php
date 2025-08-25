@@ -30,6 +30,7 @@ class StaffController extends Controller
 
     public function store(Request $request)
     {
+
         $request->validate([
             'name' => 'required|string|max:255|unique:users,name',
             'email' => 'required|email|max:255|unique:users,email',
@@ -52,6 +53,7 @@ class StaffController extends Controller
                 'address' => $request->address,
                 'created_by' => auth()->id(),
             ]);
+
             $user = User::create([
                 'name' => $request->name,
                 'username' => $request->name,
@@ -65,13 +67,13 @@ class StaffController extends Controller
                 'user_id' => $user->id,
             ]);
             $user->assignRole(Role::find($request->role)->name);
-
+            DB::commit();
 
             Mail::raw("Your account has been created.\nEmail: {$user->email}\nPassword: {$password}", function ($message) use ($user) {
                 $message->to($user->email)->subject('Your Staff Login Credentials');
             });
 
-            return redirect()->route('staff.index')->with('success', 'Staff created successfully.');
+            return redirect()->route('staff.index')->with('success', 'Staff created successfully.1');
 
             DB::commit();
         } catch (\Exception $e) {
