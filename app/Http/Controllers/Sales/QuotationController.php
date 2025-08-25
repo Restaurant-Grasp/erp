@@ -580,89 +580,112 @@ class QuotationController extends Controller
      * Generate PDF for quotation
      */
     public function pdf(Quotation $quotation)
-    {
-        $quotation->load([
-            'customer',
-            'lead',
-            'items.product',
-            'items.service',
-            'items.package',
-            'items.uom',
-            'items.tax',
-            'createdBy'
-        ]);
+{
+    $quotation->load([
+        'customer',
+        'lead',
+        'items.product',
+        'items.service',
+        'items.package',
+        'items.uom',
+        'items.tax',
+        'createdBy'
+    ]);
 
-        // Get company information from settings
-        $companyInfo = $this->getCompanyInfo();
+    // Get company information from settings
+    $companyInfo = $this->getCompanyInfo();
 
-        // Get terms and conditions from settings
-        $termsConditions = SettingsHelper::getSetting('sales', 'terms_and_conditions');
+    // Get terms and conditions from settings
+    $termsConditions = SettingsHelper::getSetting('sales', 'terms_and_conditions');
 
-        $data = [
-            'quotation' => $quotation,
-            'companyInfo' => $companyInfo,
-            'termsConditions' => $termsConditions ?? $quotation->terms_conditions
-        ];
-
-        $pdf = PDF::loadView('sales.quotations.pdf', $data);
-        $pdf->setPaper('A4', 'portrait');
-        $pdf->getDomPDF()->set_option('isRemoteEnabled', true);
-
-        return $pdf->download('quotation_' . $quotation->quotation_no . '.pdf');
+    // Get cloud server hosting features if enabled
+    $cloudServerFeatures = [];
+    if ($quotation->cloud_server_hosting) {
+        $cloudServerFeatures = $this->getCloudServerHostingFeatures();
     }
 
+    $data = [
+        'quotation' => $quotation,
+        'companyInfo' => $companyInfo,
+        'termsConditions' => $termsConditions ?? $quotation->terms_conditions,
+        'cloudServerFeatures' => $cloudServerFeatures
+    ];
+
+    $pdf = PDF::loadView('sales.quotations.pdf', $data);
+    $pdf->setPaper('A4', 'portrait');
+    $pdf->getDomPDF()->set_option('isRemoteEnabled', true);
+
+    return $pdf->download('quotation_' . $quotation->quotation_no . '.pdf');
+}
     /**
      * Generate print view for quotation
      */
-    public function print(Quotation $quotation)
-    {
-        $quotation->load([
-            'customer',
-            'lead',
-            'items.product',
-            'items.service',
-            'items.package',
-            'items.uom',
-            'items.tax',
-            'createdBy'
-        ]);
+   public function print(Quotation $quotation)
+{
+    $quotation->load([
+        'customer',
+        'lead',
+        'items.product',
+        'items.service',
+        'items.package',
+        'items.uom',
+        'items.tax',
+        'createdBy'
+    ]);
 
-        // Get company information from settings
-        $companyInfo = $this->getCompanyInfo();
+    // Get company information from settings
+    $companyInfo = $this->getCompanyInfo();
 
-        // Get terms and conditions from settings
-        $termsConditions = SettingsHelper::getSetting('sales', 'terms_and_conditions');
+    // Get terms and conditions from settings
+    $termsConditions = SettingsHelper::getSetting('sales', 'terms_and_conditions');
 
-        $data = [
-            'quotation' => $quotation,
-            'companyInfo' => $companyInfo,
-            'termsConditions' => $termsConditions ?? $quotation->terms_conditions
-        ];
-
-        return view('sales.quotations.print', $data);
+    // Get cloud server hosting features if enabled
+    $cloudServerFeatures = [];
+    if ($quotation->cloud_server_hosting) {
+        $cloudServerFeatures = $this->getCloudServerHostingFeatures();
     }
+
+    $data = [
+        'quotation' => $quotation,
+        'companyInfo' => $companyInfo,
+        'termsConditions' => $termsConditions ?? $quotation->terms_conditions,
+        'cloudServerFeatures' => $cloudServerFeatures
+    ];
+
+    return view('sales.quotations.print', $data);
+}
 
     /**
      * Get company information from settings for quotations
      */
     private function getCompanyInfo()
-    {
-        return [
-            'name' => SettingsHelper::getSetting('general', 'name', 'Company Name Not Set'),
-            'address' => SettingsHelper::getSetting('general', 'address', 'Address Not Set'),
-            'pincode' => SettingsHelper::getSetting('general', 'pincode', 'Pincode Not Set'),
-            'state' => SettingsHelper::getSetting('general', 'state', 'State Not Set'),
-            'country' => SettingsHelper::getSetting('general', 'country', 'MY'),
-            'registration_number' => SettingsHelper::getSetting('general', 'registration_number', 'Registration Number Not Set'),
-            'phone' => SettingsHelper::getSetting('general', 'phone', 'Phone Not Set'),
-            'email' => SettingsHelper::getSetting('general', 'email', 'Email Not Set'),
-            'website' => SettingsHelper::getSetting('general', 'website', 'Website Not Set'),
-            'logo' => SettingsHelper::getCompanyLogo('general', 'logo',),
-            'sub_logo' => SettingsHelper::getCompanySubLogo('general', 'sub_logo',),
-            'currency' => SettingsHelper::getSetting('general', 'currency', 'MYR'),
-        ];
+{
+    return [
+        'name' => SettingsHelper::getSetting('general', 'name', 'Company Name Not Set'),
+        'address' => SettingsHelper::getSetting('general', 'address', 'Address Not Set'),
+        'pincode' => SettingsHelper::getSetting('general', 'pincode', 'Pincode Not Set'),
+        'state' => SettingsHelper::getSetting('general', 'state', 'State Not Set'),
+        'country' => SettingsHelper::getSetting('general', 'country', 'MY'),
+        'registration_number' => SettingsHelper::getSetting('general', 'registration_number', 'Registration Number Not Set'),
+        'phone' => SettingsHelper::getSetting('general', 'phone', 'Phone Not Set'),
+        'email' => SettingsHelper::getSetting('general', 'email', 'Email Not Set'),
+        'website' => SettingsHelper::getSetting('general', 'website', 'Website Not Set'),
+        'logo' => SettingsHelper::getCompanyLogo('general', 'logo'),
+        'sub_logo' => SettingsHelper::getCompanySubLogo('general', 'sub_logo'),
+        'currency' => SettingsHelper::getSetting('general', 'currency', 'MYR'),
+    ];
+}
+private function getCloudServerHostingFeatures()
+{
+    $featuresJson = SettingsHelper::getSetting('sales', 'cloud_server_hosting', '[]');
+    
+    try {
+        $features = json_decode($featuresJson, true);
+        return is_array($features) ? $features : [];
+    } catch (Exception $e) {
+        return [];
     }
-
+}
     /**
      * Calculate payment terms for quotation (if needed for future use)
      */

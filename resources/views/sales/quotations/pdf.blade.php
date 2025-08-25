@@ -284,6 +284,59 @@
         .customer-header-bg {
             background-color: #f0f0f0;
         }
+        /* Cloud Server Hosting Features */
+        .cloud-hosting-section {
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+
+        .cloud-hosting-header {
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            color: #000;
+            border-bottom: 1px solid #000;
+            padding-bottom: 4px;
+        }
+
+        .cloud-features-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            border: 1px solid #000;
+        }
+
+        .cloud-features-table th,
+        .cloud-features-table td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: left;
+            font-size: 9px;
+            vertical-align: top;
+        }
+
+        .cloud-features-table th {
+            background-color: #000;
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+            font-size: 9px;
+            text-transform: uppercase;
+            padding: 8px 6px;
+        }
+
+        .feature-name {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .feature-description {
+            font-size: 8px;
+            color: #333;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
     </style>
 </head>
 
@@ -521,7 +574,34 @@
             </tbody>
         </table>
     </div>
-
+<!-- Cloud Server Hosting Features (if enabled) -->
+    @if($quotation->cloud_server_hosting && !empty($cloudServerFeatures))
+    <div class="cloud-hosting-section">
+        <div class="cloud-hosting-header">Cloud Server & Hosting Features</div>
+        <table class="cloud-features-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%">S.NO</th>
+                    <th style="width: 30%">Feature</th>
+                    <th style="width: 62%">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($cloudServerFeatures as $index => $feature)
+                <tr>
+                    <td class="text-center">{{ $index + 1 }}</td>
+                    <td>
+                        <div class="feature-name">{{ $feature['feature'] ?? '' }}</div>
+                    </td>
+                    <td>
+                        <div class="feature-description">{{ $feature['description'] ?? '' }}</div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
     <!-- Footer -->
     <div class="footer">
         <p>This is a computer-generated quotation and does not require signature.</p>
