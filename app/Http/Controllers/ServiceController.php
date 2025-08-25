@@ -24,24 +24,31 @@ class ServiceController extends Controller
     {
         $serviceTypes = ServiceType::where('status', 1)->get();
         $ledgers = Ledger::orderBy('name')->get();
-        
+
         return view('service.create', compact('serviceTypes', 'ledgers'));
     }
 
     // Service Store
     public function serviceStore(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
+        $rules = [
+            'name' => 'required|string|max:255|unique:services,name',
             'code' => 'nullable|string|max:50|unique:services,code',
             'service_type_id' => 'required|exists:service_types,id',
-            'ledger_id' => 'required|exists:ledgers,id',
-            'item_type' => 'required|in:service,product',
+            'item_type' => 'required|in:service,product,item',
             'description' => 'nullable|string',
             'base_price' => 'required|numeric|min:0',
             'billing_cycle' => 'required|in:one-time,monthly,quarterly,yearly',
-        ]);
+        ];
 
+        if ($request->item_type === 'service' || $request->item_type === 'product') {
+            $rules['ledger_id'] = 'required|exists:ledgers,id';
+        } else {
+            $rules['ledger_id'] = 'nullable|exists:ledgers,id';
+        }
+
+
+        $validatedData = $request->validate($rules);
         DB::beginTransaction();
         try {
             Service::create([
@@ -71,24 +78,31 @@ class ServiceController extends Controller
     {
         $serviceTypes = ServiceType::where('status', 1)->get();
         $ledgers = Ledger::orderBy('name')->get();
-        
+
         return view('service.edit', compact('service', 'serviceTypes', 'ledgers'));
     }
 
     // Service Update
     public function serviceUpdate(Request $request, Service $service)
     {
-        $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:50|unique:services,code,' . $service->id,
             'service_type_id' => 'required|exists:service_types,id',
-            'ledger_id' => 'required|exists:ledgers,id',
-            'item_type' => 'required|in:service,product',
-            'description' => 'nullable|string',
+            'item_type' => 'required|in:service,product,item',
             'base_price' => 'required|numeric|min:0',
             'billing_cycle' => 'required|in:one-time,monthly,quarterly,yearly',
-        ]);
+            'description' => 'nullable|string',
+        ];
 
+        // Conditional ledger_id validation
+        if ($request->item_type === 'service' || $request->item_type === 'product') {
+            $rules['ledger_id'] = 'required|exists:ledgers,id';
+        } else {
+            $rules['ledger_id'] = 'nullable|exists:ledgers,id';
+        }
+
+        $validatedData = $request->validate($rules);
         DB::beginTransaction();
         try {
             $service->update([
@@ -118,7 +132,7 @@ class ServiceController extends Controller
         try {
             // Check if service is used in any transactions/quotations/invoices
             // Add your business logic here to prevent deletion if in use
-            
+
             $service->delete();
             return redirect()->route('service.index')->with('success', 'Service deleted successfully.');
         } catch (\Exception $e) {
