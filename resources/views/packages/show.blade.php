@@ -101,17 +101,9 @@
                                 <td><strong>Items Count:</strong></td>
                                 <td>
                                     @php
-                                        $servicesCount = $package->services->where('item_type', 'service')->count();
-                                        $productsCount = $package->services->where('item_type', 'product')->count();
-                                        $totalItems = $servicesCount + $productsCount;
+                                        $totalItems = $package->packageItems->count();
                                     @endphp
-                                    <span class="badge bg-primary">{{ $totalItems }} Total</span>
-                                    @if($servicesCount > 0)
-                                        <span class="badge bg-info ms-1">{{ $servicesCount }} Service{{ $servicesCount != 1 ? 's' : '' }}</span>
-                                    @endif
-                                    @if($productsCount > 0)
-                                        <span class="badge bg-success ms-1">{{ $productsCount }} Product{{ $productsCount != 1 ? 's' : '' }}</span>
-                                    @endif
+                                    <span class="badge bg-primary">{{ $totalItems }} Item{{ $totalItems != 1 ? 's' : '' }}</span>
                                 </td>
                             </tr>
                         </table>
@@ -128,122 +120,71 @@
                 @endif
 
                 <!-- Package Items -->
-                @php
-                    $services = $package->services->where('item_type', 'service');
-                    $products = $package->services->where('item_type', 'product');
-                @endphp
-
-                @if($services->count() > 0)
-                <!-- Services Section -->
+                @if($package->packageItems->count() > 0)
+                <!-- Items Section -->
                 <div class="mb-4">
-                    <h6 class="text-muted">Included Services ({{ $services->count() }})</h6>
+                    <h6 class="text-muted">Included Items ({{ $package->packageItems->count() }})</h6>
                     <div class="table-responsive">
                         <table class="table table-bordered table-sm">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Service</th>
+                                    <th>Item</th>
+                                    <th>Code</th>
                                     <th>Quantity</th>
-                                    <th>Amount</th>
+                                    <th>Unit Price</th>
                                     <th>Total</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($services as $packageService)
+                                @foreach($package->packageItems as $packageItem)
                                 <tr>
                                     <td>
-                                        <strong>{{ $packageService->service->name ?? 'N/A' }}</strong>
-                                        @if($packageService->service && $packageService->service->code)
-                                            <br><small class="text-muted">Code: {{ $packageService->service->code }}</small>
+                                        <strong>{{ $packageItem->service->name ?? 'N/A' }}</strong>
+                                        @if($packageItem->service && $packageItem->service->description)
+                                            <br><small class="text-muted">{{ Str::limit($packageItem->service->description, 50) }}</small>
                                         @endif
                                     </td>
-                                    <td>{{ $packageService->quantity }}</td>
-                                    <td>RM {{ number_format($packageService->amount / $packageService->quantity, 2) }}</td>
-                                    <td class="fw-bold">RM {{ number_format($packageService->amount, 2) }}</td>
+                                    <td>
+                                        @if($packageItem->service && $packageItem->service->code)
+                                            <span class="badge bg-secondary">{{ $packageItem->service->code }}</span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $packageItem->quantity }}</td>
+                                    <td>RM {{ number_format($packageItem->amount, 2) }}</td>
+                                    <td class="fw-bold">RM {{ number_format($packageItem->amount * $packageItem->quantity, 2) }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
                             <tfoot class="table-light">
                                 <tr>
-                                    <th colspan="3" class="text-end">Services Total:</th>
-                                    <th>RM {{ number_format($services->sum('amount'), 2) }}</th>
+                                    <th colspan="4" class="text-end">Items Total:</th>
+                                    <th>RM {{ number_format($package->packageItems->sum(function($item) { return $item->amount * $item->quantity; }), 2) }}</th>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
                 </div>
-                @endif
-
-                @if($products->count() > 0)
-                <!-- Products Section -->
-                <div class="mb-4">
-                    <h6 class="text-muted">Included Products ({{ $products->count() }})</h6>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Amount</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($products as $packageProduct)
-                                <tr>
-                                    <td>
-                                        <strong>{{ $packageProduct->product->name ?? 'N/A' }}</strong>
-                                        @if($packageProduct->product && $packageProduct->product->code)
-                                            <br><small class="text-muted">Code: {{ $packageProduct->product->code }}</small>
-                                        @endif
-                                    </td>
-                                    <td>{{ $packageProduct->quantity }}</td>
-                                    <td>RM {{ number_format($packageProduct->amount / $packageProduct->quantity, 2) }}</td>
-                                    <td class="fw-bold">RM {{ number_format($packageProduct->amount, 2) }}</td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                            <tfoot class="table-light">
-                                <tr>
-                                    <th colspan="3" class="text-end">Products Total:</th>
-                                    <th>RM {{ number_format($products->sum('amount'), 2) }}</th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-                @endif
-
-                @if($services->count() == 0 && $products->count() == 0)
+                @else
                 <div class="alert alert-warning text-center">
                     <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
                     <h6>No Items in Package</h6>
-                    <p class="mb-0">This package doesn't contain any services or products yet.</p>
+                    <p class="mb-0">This package doesn't contain any items yet.</p>
                 </div>
                 @endif
 
                 <!-- Package Summary -->
-                @if($services->count() > 0 || $products->count() > 0)
+                @if($package->packageItems->count() > 0)
                 <div class="card bg-light">
                     <div class="card-body">
                         <h6 class="card-title">Package Summary</h6>
                         <div class="row">
                             <div class="col-md-8">
                                 <table class="table table-borderless table-sm mb-0">
-                                    @if($services->count() > 0)
-                                    <tr>
-                                        <td>Services Total:</td>
-                                        <td class="text-end">RM {{ number_format($services->sum('amount'), 2) }}</td>
-                                    </tr>
-                                    @endif
-                                    @if($products->count() > 0)
-                                    <tr>
-                                        <td>Products Total:</td>
-                                        <td class="text-end">RM {{ number_format($products->sum('amount'), 2) }}</td>
-                                    </tr>
-                                    @endif
                                     <tr>
                                         <td><strong>Subtotal:</strong></td>
-                                        <td class="text-end"><strong>RM {{ number_format($package->subtotal ?? ($services->sum('amount') + $products->sum('amount')), 2) }}</strong></td>
+                                        <td class="text-end"><strong>RM {{ number_format($package->subtotal ?? $package->packageItems->sum(function($item) { return $item->amount * $item->quantity; }), 2) }}</strong></td>
                                     </tr>
                                     @if($package->discount_percentage > 0)
                                     <tr class="text-danger">
@@ -259,7 +200,7 @@
                             </div>
                             <div class="col-md-4">
                                 @php
-                                    $totalValue = $package->subtotal ?? ($services->sum('amount') + $products->sum('amount'));
+                                    $totalValue = $package->subtotal ?? $package->packageItems->sum(function($item) { return $item->amount * $item->quantity; });
                                     $savings = $totalValue - $package->package_price;
                                     $savingsPercentage = $totalValue > 0 ? ($savings / $totalValue) * 100 : 0;
                                 @endphp
@@ -306,7 +247,7 @@
 
                 <div class="row text-center">
                     <div class="col-6">
-                        <div class="fs-4 fw-bold text-primary">{{ $services->count() + $products->count() }}</div>
+                        <div class="fs-4 fw-bold text-primary">{{ $package->packageItems->count() }}</div>
                         <small class="text-muted">Total Items</small>
                     </div>
                     <div class="col-6">

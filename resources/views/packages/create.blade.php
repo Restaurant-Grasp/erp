@@ -78,10 +78,9 @@
                         <table class="table table-bordered" id="itemsTable">
                             <thead>
                                 <tr>
-                                    <th width="120">Type <span class="text-danger">*</span></th>
-                                    <th> Item <span class="text-danger">*</span></th>
-                                    <th width="100"> Quantity <span class="text-danger">*</span></th>
-                                    <th width="150"> Unit Price <span class="text-danger">*</span></th>
+                                    <th>Item <span class="text-danger">*</span></th>
+                                    <th width="100">Quantity <span class="text-danger">*</span></th>
+                                    <th width="150">Unit Price <span class="text-danger">*</span></th>
                                     <th width="150">Total</th>
                                     <th width="80">Action</th>
                                 </tr>
@@ -91,12 +90,12 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
+                                    <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
                                     <td><strong id="subtotalAmount">RM 0.00</strong></td>
                                     <td></td>
                                 </tr>
                                 <tr>
-                                    <td colspan="3" class="text-end">
+                                    <td colspan="2" class="text-end">
                                         <label for="discount_percentage"><strong>Package Discount (%):</strong></label>
                                     </td>
                                     <td>
@@ -110,7 +109,7 @@
                                     <td></td>
                                 </tr>
                                 <tr class="table-success">
-                                    <td colspan="4" class="text-end"><strong>Final Total:</strong></td>
+                                    <td colspan="3" class="text-end"><strong>Final Total:</strong></td>
                                     <td><strong id="finalTotal">RM 0.00</strong></td>
                                     <td></td>
                                 </tr>
@@ -142,28 +141,20 @@ function addItem() {
     const row = document.createElement('tr');
     row.innerHTML = `
         <td>
-            <select name="items[${itemIndex}][item_type]" class="form-select item-type" required onchange="loadItems(this, ${itemIndex})">
-                <option value="">Select Type</option>
-                <option value="service">Service</option>
-                <option value="product">Product</option>
-            </select>
-           <span class="error text-danger larger"></span>
-        </td>
-        <td>
             <select name="items[${itemIndex}][item_id]" class="form-select item-select" required onchange="updateItemDetails(this, ${itemIndex})">
                 <option value="">Select Item</option>
             </select>
-                <span class="error text-danger larger"></span>
+            <span class="error text-danger larger"></span>
         </td>
         <td>
             <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" 
                 required min="1" value="1" onchange="calculateRowTotal(${itemIndex})">
-                    <span class="error text-danger larger"></span>
+            <span class="error text-danger larger"></span>
         </td>
         <td>
-             <input type="number" name="items[${itemIndex}][unit_price]" class="form-control unit-price-input" 
+            <input type="number" name="items[${itemIndex}][unit_price]" class="form-control unit-price-input" 
                 required min="0" step="0.01" value="0" onchange="calculateRowTotal(${itemIndex})">
-                    <span class="error text-danger larger"></span>
+            <span class="error text-danger larger"></span>
         </td>
         <td>
             <span class="row-total">RM 0.00</span>
@@ -175,6 +166,9 @@ function addItem() {
         </td>
     `;
     tbody.appendChild(row);
+    
+    // Load services for the new item
+    loadItems(row.querySelector('.item-select'), itemIndex);
     itemIndex++;
 }
 
@@ -184,27 +178,20 @@ function removeItem(button) {
 }
 
 function loadItems(selectElement, index) {
-    const itemType = selectElement.value;
-    const itemSelect = selectElement.closest('tr').querySelector('.item-select');
+    selectElement.innerHTML = '<option value="">Loading...</option>';
     
-    itemSelect.innerHTML = '<option value="">Loading...</option>';
-    
-    if (itemType) {
-  fetch(`/packages/get-services?type=${itemType}`)
-            .then(response => response.json())
-            .then(data => {
-                itemSelect.innerHTML = '<option value="">Select Item</option>';
-                data.forEach(item => {
-                    itemSelect.innerHTML += `<option value="${item.id}" data-price="${item.price}" data-code="${item.code}">${item.name}</option>`;
-                });
-            })
-            .catch(error => {
-                console.error('Error loading items:', error);
-                itemSelect.innerHTML = '<option value="">Error loading items</option>';
+    fetch('/packages/get-services?item')
+        .then(response => response.json())
+        .then(data => {
+            selectElement.innerHTML = '<option value="">Select Item</option>';
+            data.forEach(item => {
+                selectElement.innerHTML += `<option value="${item.id}" data-price="${item.price}" data-code="${item.code}">${item.name}</option>`;
             });
-    } else {
-        itemSelect.innerHTML = '<option value="">Select Item</option>';
-    }
+        })
+        .catch(error => {
+            console.error('Error loading items:', error);
+            selectElement.innerHTML = '<option value="">Error loading items</option>';
+        });
 }
 
 function updateItemDetails(selectElement, index) {
@@ -213,7 +200,6 @@ function updateItemDetails(selectElement, index) {
     
     if (option && option.dataset.price) {
         const unitPrice = parseFloat(option.dataset.price);
-        row.querySelector('.unit-price').textContent = `RM ${unitPrice.toFixed(2)}`;
         row.querySelector('.unit-price-input').value = unitPrice;
         calculateRowTotal(index);
     }
@@ -259,60 +245,54 @@ $(document).ready(function() {
     // Add initial item
     addItem();
     
-  $('#packageForm').on('submit', function(e) {
-    let valid = true;
+    $('#packageForm').on('submit', function(e) {
+        let valid = true;
 
-    // clear old error messages
-    $('.error').text('');
+        // clear old error messages
+        $('.error').text('');
 
-    // validate Package Name
-    if (!$('input[name="name"]').val().trim()) {
-        $('input[name="name"]').after('<span class="text-danger error">Package Name is required</span>');
-        valid = false;
-    }
-
-    // validate Package Code
-    if (!$('input[name="code"]').val().trim()) {
-        $('input[name="code"]').after('<span class="text-danger error">Package Code is required</span>');
-        valid = false;
-    }
-
-    // validate at least one item
-    if ($('#itemsTableBody tr').length === 0) {
-        $('#itemsTable').after('<span class="text-danger error">At least one item is required</span>');
-        valid = false;
-    }
-
-    // validate each row
-    $('#itemsTableBody tr').each(function() {
-        const itemType = $(this).find('.item-type').val();
-        const itemId   = $(this).find('.item-select').val();
-        const qty      = parseFloat($(this).find('.quantity').val());
-        const price    = parseFloat($(this).find('.unit-price-input').val());
-
-        if (!itemType) {
-            $(this).find('.item-type').siblings('.error').text('Package Type required');
+        // validate Package Name
+        if (!$('input[name="name"]').val().trim()) {
+            $('input[name="name"]').after('<span class="text-danger error">Package Name is required</span>');
             valid = false;
         }
-        if (!itemId) {
-            $(this).find('.item-select').siblings('.error').text('Package Item required');
+
+        // validate Package Code
+        if (!$('input[name="code"]').val().trim()) {
+            $('input[name="code"]').after('<span class="text-danger error">Package Code is required</span>');
             valid = false;
         }
-        if (!qty || qty <= 0) {
-            $(this).find('.quantity').siblings('.error').text('Quantity must be greater than 0');
+
+        // validate at least one item
+        if ($('#itemsTableBody tr').length === 0) {
+            $('#itemsTable').after('<span class="text-danger error">At least one item is required</span>');
             valid = false;
         }
-        if (!price || price <= 0) {
-            $(this).find('.unit-price-input').siblings('.error').text('Unit price must be greater than 0');
-            valid = false;
+
+        // validate each row
+        $('#itemsTableBody tr').each(function() {
+            const itemId = $(this).find('.item-select').val();
+            const qty = parseFloat($(this).find('.quantity').val());
+            const price = parseFloat($(this).find('.unit-price-input').val());
+
+            if (!itemId) {
+                $(this).find('.item-select').siblings('.error').text('Item is required');
+                valid = false;
+            }
+            if (!qty || qty <= 0) {
+                $(this).find('.quantity').siblings('.error').text('Quantity must be greater than 0');
+                valid = false;
+            }
+            if (!price || price <= 0) {
+                $(this).find('.unit-price-input').siblings('.error').text('Unit price must be greater than 0');
+                valid = false;
+            }
+        });
+
+        if (!valid) {
+            e.preventDefault();
         }
     });
-
-    if (!valid) {
-        e.preventDefault();
-    }
-});
-
 });
 </script>
 @endsection

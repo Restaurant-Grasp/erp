@@ -122,6 +122,66 @@
                 </div>
             </div>
 
+            <!-- Package Section -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Select Package (Optional)</h5>
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="clearPackageSelection()">
+                        <i class="fas fa-times me-1"></i>Clear Selection
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Select Package</label>
+                            <select class="form-select" id="packageSelect" onchange="selectPackage(this)" name="packageSelect">
+                                <option value="">Choose a package...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="packageInfo" style="display: none;">
+                            <div class="package-details">
+                                <h6 class="text-primary" id="packageName"></h6>
+                                <p class="text-muted mb-1" id="packageDescription"></p>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">Package Price:</small><br>
+                                        <strong class="text-success" id="packagePrice"></strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Items Count:</small><br>
+                                        <strong id="packageItemsCount"></strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Package Items Preview -->
+                    <div id="packageItemsPreview" style="display: none;" class="mt-3">
+                        <h6 class="text-muted">Package includes:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Item</th>
+                                        <th width="80">Qty</th>
+                                        <th width="100">Unit Price</th>
+                                        <th width="100">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="packageItemsBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-end mt-2" style="display: none;">
+                            <button type="button" class="btn btn-success" style="display: none;" onclick="addPackageToQuotation()">
+                                <i class="fas fa-plus me-2"></i>Add Package to Quotation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Items Section -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -248,6 +308,13 @@
         margin-top: 0.25rem;
     }
 
+    .package-details {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 0.375rem;
+        border: 1px solid #dee2e6;
+    }
+
     @media (max-width: 768px) {
         .table-responsive {
             font-size: 0.875rem;
@@ -264,6 +331,149 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     let itemIndex = 0;
+    let selectedPackage = null;
+
+    // Load packages on page load
+    $(document).ready(function() {
+        loadPackages();
+        addItem();
+    });
+
+    // Load packages into dropdown
+    function loadPackages() {
+        fetch('/quotations/get-items?type=package')
+            .then(response => response.json())
+            .then(data => {
+                const packageSelect = document.getElementById('packageSelect');
+                packageSelect.innerHTML = '<option value="">Choose a package...</option>';
+                data.forEach(package => {
+                    packageSelect.innerHTML += `<option value="${package.id}">${package.name} - ${package.formatted_price}</option>`;
+                });
+            })
+            .catch(error => {
+                console.error('Error loading packages:', error);
+            });
+    }
+
+    // Handle package selection
+    function selectPackage(selectElement) {
+        const packageId = selectElement.value;
+        const packageInfo = document.getElementById('packageInfo');
+        const packageItemsPreview = document.getElementById('packageItemsPreview');
+
+        if (!packageId) {
+            packageInfo.style.display = 'none';
+            packageItemsPreview.style.display = 'none';
+            selectedPackage = null;
+            return;
+        }
+
+        // Fetch package details
+        fetch(`/quotations/get-package-details/${packageId}`)
+            .then(response => response.json())
+            .then(data => {
+                selectedPackage = data;
+                
+                // Update package info display
+                document.getElementById('packageName').textContent = data.name;
+                document.getElementById('packageDescription').textContent = data.description || 'No description available';
+                document.getElementById('packagePrice').textContent = `RM ${parseFloat(data.package_price).toFixed(2)}`;
+                document.getElementById('packageItemsCount').textContent = `${data.items.length} items`;
+                packageInfo.style.display = 'none';
+
+                // Update package items preview
+                const tbody = document.getElementById('packageItemsBody');
+                tbody.innerHTML = '';
+                data.items.forEach(item => {
+                    const row = document.createElement('tr');
+                    const total = parseFloat(item.amount) * parseFloat(item.quantity);
+                    row.innerHTML = `
+                        <td>${item.item_name}</td>
+                        <td>${item.quantity}</td>
+                        <td>RM ${parseFloat(item.amount).toFixed(2)}</td>
+                        <td>RM ${total.toFixed(2)}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                packageItemsPreview.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error loading package details:', error);
+                alert('Error loading package details. Please try again.');
+            });
+    }
+
+    // Add package to quotation
+    function addPackageToQuotation() {
+        if (!selectedPackage) {
+            alert('Please select a package first.');
+            return;
+        }
+
+        const tbody = document.getElementById('itemsTableBody');
+        const row = document.createElement('tr');
+        row.setAttribute('data-index', itemIndex);
+        row.innerHTML = `
+        <td>
+            <select name="items[${itemIndex}][item_type]" class="form-select item-type" required onchange="loadItems(this, ${itemIndex})">
+                <option value="">Select</option>
+                <option value="product">Product</option>
+                <option value="service">Service</option>
+            </select>
+        </td>
+        <td>
+            <select name="items[${itemIndex}][item_id]" class="form-select item-select" required onchange="updateItemDetails(this, ${itemIndex})">
+                <option value="${selectedPackage.id}" selected data-price="${selectedPackage.package_price}">${selectedPackage.name}</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" required min="1" step="1" value="1" onchange="calculateRowTotal(${itemIndex})">
+        </td>
+        <td style="display: none;">
+            <select name="items[${itemIndex}][uom_id]" class="form-select uom-select">
+                <option value="">-</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" name="items[${itemIndex}][unit_price]" class="form-control unit-price" required min="0" step="0.01" value="${selectedPackage.package_price}" onchange="calculateRowTotal(${itemIndex})">
+        </td>
+        <td>
+            <input type="number" name="items[${itemIndex}][discount_value]" class="form-control discount-value" min="0" step="0.01" value="0" onchange="calculateRowTotal(${itemIndex})">
+            <input type="hidden" name="items[${itemIndex}][discount_type]" value="percentage">
+        </td>
+        <td class="tax-cell">
+            <!-- Tax Dropdown (default) -->
+            <select name="items[${itemIndex}][tax_id]" class="form-select tax-select" style="display: none;" onchange="calculateRowTotal(${itemIndex})">
+                <option value="">No Tax</option>
+            </select>
+            <!-- Tax Input Fields (for Package type) -->
+            <div class="tax-inputs">
+                <input type="number" name="items[${itemIndex}][tax_rate]" class="form-control tax-rate mb-1" placeholder="Tax Rate %" min="0" step="0.01" onchange="calculateRowTotal(${itemIndex})">
+            </div>
+        </td>
+        <td>
+            <span class="row-total">RM ${parseFloat(selectedPackage.package_price).toFixed(2)}</span>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+        tbody.appendChild(row);
+        itemIndex++;
+        
+        calculateRowTotal(itemIndex - 1);
+        clearPackageSelection();
+    }
+
+    // Clear package selection
+    function clearPackageSelection() {
+        document.getElementById('packageSelect').value = '';
+        document.getElementById('packageInfo').style.display = 'none';
+        document.getElementById('packageItemsPreview').style.display = 'none';
+        selectedPackage = null;
+    }
 
     function addItem() {
         const tbody = document.getElementById('itemsTableBody');
@@ -612,21 +822,21 @@
     });
 
     $(document).ready(function() {
-        addItem();
         // Form validation
         $('#quotationForm').on('submit', function(e) {
             let valid = true;
             $('.error').remove(); // clear old errors
-// Quotation Date validation
-if (!$('input[name="quotation_date"]').val()) {
-    $('input[name="quotation_date"]').after('<span class="text-danger error">Quotation Date is required</span>');
-    valid = false;
-}
-// Quotation Date validation
-if (!$('input[name="valid_until"]').val()) {
-    $('input[name="valid_until"]').after('<span class="text-danger error">Valid Until Date is required</span>');
-    valid = false;
-}
+
+            // Quotation Date validation
+            if (!$('input[name="quotation_date"]').val()) {
+                $('input[name="quotation_date"]').after('<span class="text-danger error">Quotation Date is required</span>');
+                valid = false;
+            }
+            // Valid Until Date validation
+            if (!$('input[name="valid_until"]').val()) {
+                $('input[name="valid_until"]').after('<span class="text-danger error">Valid Until Date is required</span>');
+                valid = false;
+            }
             // Check customer or lead
             const hasCustomerOrLead = $('#customer_id').val() || $('#lead_id').val();
             if (!hasCustomerOrLead) {

@@ -572,6 +572,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::post('taxes/calculate-tax', [App\Http\Controllers\Sales\TaxController::class, 'calculateTax'])
             ->name('taxes.calculate');
+// Add these routes to your web.php file (inside your quotations route group)
 
         // Quotation Management Routes
         Route::resource('quotations', App\Http\Controllers\Sales\QuotationController::class);
@@ -875,3 +876,14 @@ Route::get('/sales/invoices/{invoice}/payments', [App\Http\Controllers\Sales\Sal
     ->middleware('permission:sales.payments.view');
 Route::delete('purchase/grn/documents/{document}', [GrnController::class, 'deleteDocument'])
      ->name('purchase.grn.documents.delete');
+Route::prefix('quotations')->group(function () {
+    // Get items (products/services/packages) for dropdowns
+    Route::get('/get-items', [QuotationController::class, 'getItems'])->name('quotations.get-items');
+    
+    // Get packages specifically
+    Route::get('/get-packages', [QuotationController::class, 'getPackages'])->name('quotations.get-packages');
+    
+    // Get package details including items
+    Route::get('/get-package-details/{packageId}', [QuotationController::class, 'getPackageDetails'])->name('quotations.get-package-details');
+});
+

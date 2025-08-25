@@ -80,7 +80,6 @@
                         <table class="table table-bordered" id="itemsTable">
                             <thead>
                                 <tr>
-                                    <th width="120">Type</th>
                                     <th>Item</th>
                                     <th width="100">Quantity</th>
                                     <th width="150">Unit Price</th>
@@ -92,22 +91,11 @@
                                 @foreach($package->packageItems as $index => $item)
                                 <tr>
                                     <td>
-                                        <select name="items[{{ $index }}][item_type]" class="form-select item-type" required onchange="loadItems(this, {{ $index }})">
-                                            <option value="">Select Type</option>
-                                            <option value="service" {{ $item->item_type == 'service' ? 'selected' : '' }}>Service</option>
-                                            <option value="product" {{ $item->item_type == 'product' ? 'selected' : '' }}>Product</option>
-                                        </select>
-                                    </td>
-                                    <td>
                                         <select name="items[{{ $index }}][item_id]" class="form-select item-select" required onchange="updateItemDetails(this, {{ $index }})">
                                             <option value="">Select Item</option>
-                                            @if($item->item_type == 'service' && $item->service)
+                                            @if($item->service)
                                                 <option value="{{ $item->service->id }}" selected data-price="{{ $item->service->base_price }}" data-code="{{ $item->service->code }}">
                                                     {{ $item->service->name }}
-                                                </option>
-                                            @elseif($item->item_type == 'product' && $item->product)
-                                                <option value="{{ $item->product->id }}" selected data-price="{{ $item->product->selling_price }}" data-code="{{ $item->product->product_code }}">
-                                                    {{ $item->product->name }}
                                                 </option>
                                             @endif
                                         </select>
@@ -116,7 +104,7 @@
                                         <input type="number" name="items[{{ $index }}][quantity]" class="form-control quantity" 
                                             required min="1" value="{{ $item->quantity }}" onchange="calculateRowTotal({{ $index }})">
                                     </td>
-                                      <td>
+                                    <td>
                                         <input type="number" name="items[{{ $index }}][unit_price]" class="form-control unit-price-input" 
                                             required min="0" step="0.01" value="{{ $item->amount }}" onchange="calculateRowTotal({{ $index }})">
                                     </td>
@@ -133,12 +121,12 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
-                                    <td><strong id="subtotalAmount">{{ $package->formatted_subtotal }}</strong></td>
+                                    <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                                    <td><strong id="subtotalAmount">{{ $package->formatted_subtotal ?? 'RM 0.00' }}</strong></td>
                                     <td></td>
                                 </tr>
                                 <tr>
-                                    <td colspan="3" class="text-end">
+                                    <td colspan="2" class="text-end">
                                         <label for="discount_percentage"><strong>Package Discount (%):</strong></label>
                                     </td>
                                     <td>
@@ -147,13 +135,13 @@
                                             min="0" max="100" step="0.01" onchange="calculateTotals()">
                                     </td>
                                     <td>
-                                        <span id="discountAmount">{{ $package->formatted_discount }}</span>
+                                        <span id="discountAmount">{{ $package->formatted_discount ?? 'RM 0.00' }}</span>
                                     </td>
                                     <td></td>
                                 </tr>
                                 <tr class="table-success">
-                                    <td colspan="4" class="text-end"><strong>Final Total:</strong></td>
-                                    <td><strong id="finalTotal">{{ $package->formatted_price }}</strong></td>
+                                    <td colspan="3" class="text-end"><strong>Final Total:</strong></td>
+                                    <td><strong id="finalTotal">{{ $package->formatted_price ?? 'RM 0.00' }}</strong></td>
                                     <td></td>
                                 </tr>
                             </tfoot>
@@ -184,30 +172,21 @@ function addItem() {
     const row = document.createElement('tr');
     row.innerHTML = `
         <td>
-            <select name="items[${itemIndex}][item_type]" class="form-select item-type" required onchange="loadItems(this, ${itemIndex})">
-                <option value="">Select Type</option>
-                <option value="service">Service</option>
-                <option value="product">Product</option>
-            </select>
-              <span class="error text-danger larger"></span>
-        </td>
-        <td>
             <select name="items[${itemIndex}][item_id]" class="form-select item-select" required onchange="updateItemDetails(this, ${itemIndex})">
                 <option value="">Select Item</option>
             </select>
-              <span class="error text-danger larger"></span>
+            <span class="error text-danger larger"></span>
         </td>
         <td>
             <input type="number" name="items[${itemIndex}][quantity]" class="form-control quantity" 
                 required min="1" value="1" onchange="calculateRowTotal(${itemIndex})">
-                  <span class="error text-danger larger"></span>
+            <span class="error text-danger larger"></span>
         </td>
         <td>
-          <input type="number" name="items[${itemIndex}][unit_price]" class="form-control unit-price-input" 
+            <input type="number" name="items[${itemIndex}][unit_price]" class="form-control unit-price-input" 
                 required min="0" step="0.01" value="0" onchange="calculateRowTotal(${itemIndex})">
-                  <span class="error text-danger larger"></span>
+            <span class="error text-danger larger"></span>
         </td>
-          
         <td>
             <span class="row-total">RM 0.00</span>
         </td>
@@ -218,6 +197,9 @@ function addItem() {
         </td>
     `;
     tbody.appendChild(row);
+    
+    // Load services for the new item
+    loadItems(row.querySelector('.item-select'), itemIndex);
     itemIndex++;
 }
 
@@ -227,27 +209,20 @@ function removeItem(button) {
 }
 
 function loadItems(selectElement, index) {
-    const itemType = selectElement.value;
-    const itemSelect = selectElement.closest('tr').querySelector('.item-select');
+
     
-    itemSelect.innerHTML = '<option value="">Loading...</option>';
-    
-    if (itemType) {
-  fetch(`/packages/get-services?type=${itemType}`)
-            .then(response => response.json())
-            .then(data => {
-                itemSelect.innerHTML = '<option value="">Select Item</option>';
-                data.forEach(item => {
-                    itemSelect.innerHTML += `<option value="${item.id}" data-price="${item.price}" data-code="${item.code}">${item.name}</option>`;
-                });
-            })
-            .catch(error => {
-                console.error('Error loading items:', error);
-                itemSelect.innerHTML = '<option value="">Error loading items</option>';
+    fetch('/packages/get-services?item')
+        .then(response => response.json())
+        .then(data => {
+         
+            data.forEach(item => {
+                selectElement.innerHTML += `<option value="${item.id}" data-price="${item.price}" data-code="${item.code}">${item.name}</option>`;
             });
-    } else {
-        itemSelect.innerHTML = '<option value="">Select Item</option>';
-    }
+        })
+        .catch(error => {
+            console.error('Error loading items:', error);
+            selectElement.innerHTML = '<option value="">Error loading items</option>';
+        });
 }
 
 function updateItemDetails(selectElement, index) {
@@ -255,8 +230,7 @@ function updateItemDetails(selectElement, index) {
     const row = selectElement.closest('tr');
     
     if (option && option.dataset.price) {
-   const unitPrice = parseFloat(option.dataset.price);
-        row.querySelector('.unit-price').textContent = `RM ${unitPrice.toFixed(2)}`;
+        const unitPrice = parseFloat(option.dataset.price);
         row.querySelector('.unit-price-input').value = unitPrice;
         calculateRowTotal(index);
     }
@@ -269,7 +243,7 @@ function calculateRowTotal(index) {
     if (!row) return;
     
     const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
-     const unitPrice = parseFloat(row.querySelector('.unit-price-input').value) || 0;
+    const unitPrice = parseFloat(row.querySelector('.unit-price-input').value) || 0;
     const rowTotal = quantity * unitPrice;
     
     row.querySelector('.row-total').textContent = `RM ${rowTotal.toFixed(2)}`;
@@ -302,13 +276,15 @@ function calculateTotals() {
 $(document).ready(function() {
     // Load items for existing rows
     $('#itemsTableBody tr').each(function(index) {
-        const itemType = $(this).find('.item-type').val();
         const itemSelect = $(this).find('.item-select');
         
-        if (itemType && itemSelect.find('option:selected').val()) {
-            // Item is already selected, just calculate totals
-            calculateRowTotal(index);
+        if (itemSelect.find('option:selected').val()) {
+            // Item is already selected, load all options for dropdown
+            loadItems(itemSelect[0], index);
         }
+        
+        // Calculate row total for existing items
+        calculateRowTotal(index);
     });
     
     // Initial calculation
@@ -316,57 +292,52 @@ $(document).ready(function() {
     
     // Form validation
     $('#packageForm').on('submit', function(e) {
-      let valid = true;
+        let valid = true;
 
-    // clear old error messages
-    $('.error').text('');
+        // clear old error messages
+        $('.error').text('');
 
-    // validate Package Name
-    if (!$('input[name="name"]').val().trim()) {
-        $('input[name="name"]').after('<span class="text-danger error">Package Name is required</span>');
-        valid = false;
-    }
-
-    // validate Package Code
-    if (!$('input[name="code"]').val().trim()) {
-        $('input[name="code"]').after('<span class="text-danger error">Package Code is required</span>');
-        valid = false;
-    }
-
-    // validate at least one item
-    if ($('#itemsTableBody tr').length === 0) {
-        $('#itemsTable').after('<span class="text-danger error">At least one item is required</span>');
-        valid = false;
-    }
-
-    // validate each row
-    $('#itemsTableBody tr').each(function() {
-        const itemType = $(this).find('.item-type').val();
-        const itemId   = $(this).find('.item-select').val();
-        const qty      = parseFloat($(this).find('.quantity').val());
-        const price    = parseFloat($(this).find('.unit-price-input').val());
-
-        if (!itemType) {
-            $(this).find('.item-type').siblings('.error').text('Type required');
+        // validate Package Name
+        if (!$('input[name="name"]').val().trim()) {
+            $('input[name="name"]').after('<span class="text-danger error">Package Name is required</span>');
             valid = false;
         }
-        if (!itemId) {
-            $(this).find('.item-select').siblings('.error').text('Item required');
-            valid = false;
-        }
-        if (!qty || qty <= 0) {
-            $(this).find('.quantity').siblings('.error').text('Quantity > 0 required');
-            valid = false;
-        }
-        if (!price || price <= 0) {
-            $(this).find('.unit-price-input').siblings('.error').text('Unit price > 0 required');
-            valid = false;
-        }
-    });
 
-    if (!valid) {
-        e.preventDefault();
-    }
+        // validate Package Code
+        if (!$('input[name="code"]').val().trim()) {
+            $('input[name="code"]').after('<span class="text-danger error">Package Code is required</span>');
+            valid = false;
+        }
+
+        // validate at least one item
+        if ($('#itemsTableBody tr').length === 0) {
+            $('#itemsTable').after('<span class="text-danger error">At least one item is required</span>');
+            valid = false;
+        }
+
+        // validate each row
+        $('#itemsTableBody tr').each(function() {
+            const itemId = $(this).find('.item-select').val();
+            const qty = parseFloat($(this).find('.quantity').val());
+            const price = parseFloat($(this).find('.unit-price-input').val());
+
+            if (!itemId) {
+                $(this).find('.item-select').siblings('.error').text('Item is required');
+                valid = false;
+            }
+            if (!qty || qty <= 0) {
+                $(this).find('.quantity').siblings('.error').text('Quantity > 0 required');
+                valid = false;
+            }
+            if (!price || price <= 0) {
+                $(this).find('.unit-price-input').siblings('.error').text('Unit price > 0 required');
+                valid = false;
+            }
+        });
+
+        if (!valid) {
+            e.preventDefault();
+        }
     });
 });
 </script>

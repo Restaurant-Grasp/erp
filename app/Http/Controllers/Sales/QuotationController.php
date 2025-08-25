@@ -110,7 +110,7 @@ class QuotationController extends Controller
      */
     public function store(Request $request)
     {
-       
+
         $validated = $request->validate([
             'quotation_date' => 'required|date',
             'customer_id' => 'required_without:lead_id|nullable|exists:customers,id',
@@ -123,19 +123,19 @@ class QuotationController extends Controller
             'terms_conditions' => 'nullable|string',
             'internal_notes' => 'nullable|string',
             'items' => 'required|array|min:1',
-            'items.*.item_type' => 'required|in:product,service,package',
+            'items.*.item_type' => 'required|in:product,service',
             'items.*.item_id' => 'required|integer',
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.discount_type' => 'required|in:percentage,amount',
             'items.*.discount_value' => 'required|numeric|min:0',
             'items.*.tax_id' => 'nullable|exists:taxes,id',
-            'items.*.description' => 'nullable|string'
+            'items.*.description' => 'nullable|string',
         ]);
 
         // Validate that either customer or lead is provided
         if (!$validated['customer_id'] &&  !$validated['lead_id']) {
-           
+
             return back()->withErrors(['customer_id' => 'Either customer or lead must be selected.'])->withInput();
         }
 
@@ -143,17 +143,27 @@ class QuotationController extends Controller
         try {
             // Create quotation
             $quotationData = $validated;
-         
+
             $quotationData['created_by'] = Auth::id();
             $quotationData['status'] = 'draft';
             $quotationData['approval_status'] = 'pending';
 
             $quotation = Quotation::create($quotationData);
-            
+
             $items = $quotationData['items'] ?? [];
-            
+            if (!empty($request->packageSelect)) {
+                $items[] = [
+                    'item_type' => 'package',
+                    'item_id' => $request->packageSelect,
+                    'quantity' => 1,
+                    'unit_price' => 0, // or fetch the package price if needed
+                    'discount_type' => $quotationData['discount_type'] ?? 'amount',
+                    'discount_value' => $quotationData['discount_value'] ?? 0,
+                    'description' => 'Package item',
+                ];
+            }
             // Create quotation items
-           foreach ($items as $index => $itemData) {
+            foreach ($items as $index => $itemData) {
                 $itemData['quotation_id'] = $quotation->id;
                 $itemData['sort_order'] = $index + 1;
                 QuotationItem::create($itemData);
@@ -218,10 +228,7 @@ class QuotationController extends Controller
      */
     public function update(Request $request, Quotation $quotation)
     {
-        if (!$quotation->can_be_edited) {
-            return redirect()->route('sales.quotations.show', $quotation)
-                ->with('error', 'Quotation cannot be edited in current status.');
-        }
+    
 
         $validated = $request->validate([
             'quotation_date' => 'required|date',
@@ -263,8 +270,19 @@ class QuotationController extends Controller
 
             // Create new items
             $items = $quotationData['items'] ?? [];
+            if (!empty($request->packageSelect)) {
+                $items[] = [
+                    'item_type' => 'package',
+                    'item_id' => $request->packageSelect,
+                    'quantity' => 1,
+                    'unit_price' => 0, // or fetch the package price if needed
+                    'discount_type' => $quotationData['discount_type'] ?? 'amount',
+                    'discount_value' => $quotationData['discount_value'] ?? 0,
+                    'description' => 'Package item',
+                ];
+            }
             // Create quotation items
-           foreach ($items as $index => $itemData) {
+            foreach ($items as $index => $itemData) {
                 $itemData['quotation_id'] = $quotation->id;
                 $itemData['sort_order'] = $index + 1;
                 QuotationItem::create($itemData);
@@ -312,11 +330,7 @@ class QuotationController extends Controller
      */
     public function createRevision(Quotation $quotation)
     {
-        if (!$quotation->can_be_edited) {
-            return redirect()->route('sales.quotations.show', $quotation)
-                ->with('error', 'Cannot create revision for quotation in current status.');
-        }
-
+   
         try {
             $revision = $quotation->createRevision();
 
@@ -494,11 +508,7 @@ class QuotationController extends Controller
                     ->get(['id', 'name', 'base_price as price']);
                 break;
             case 'package':
-                $items = Package::where('status', 1)
-                    ->where('name', 'like', "%{$search}%")
-                    ->limit(10)
-                    ->get(['id', 'name', 'package_price as price']);
-                break;
+                return $this->getPackages($request);
             default:
                 $items = collect();
         }
@@ -582,7 +592,7 @@ class QuotationController extends Controller
 
         // Get company information from settings
         $companyInfo = $this->getCompanyInfo();
-        
+
         // Get terms and conditions from settings
         $termsConditions = SettingsHelper::getSetting('sales', 'terms_and_conditions');
 
@@ -617,7 +627,7 @@ class QuotationController extends Controller
 
         // Get company information from settings
         $companyInfo = $this->getCompanyInfo();
-       
+
         // Get terms and conditions from settings
         $termsConditions = SettingsHelper::getSetting('sales', 'terms_and_conditions');
 
@@ -670,7 +680,7 @@ class QuotationController extends Controller
         foreach ($schedule as $index => $term) {
             $amount = ($totalAmount * $term['percentage']) / 100;
             $date = $quotation->quotation_date->addDays($term['days_offset']);
-            
+
             $paymentTerms[] = [
                 'no' => $index + 1,
                 'item' => $term['name'],
@@ -682,32 +692,32 @@ class QuotationController extends Controller
 
         return $paymentTerms;
     }
-      /**
+    /**
      * Manual convert to invoice (separate from approval)
      */
     public function convertToInvoice(Quotation $quotation)
     {
         if ($quotation->status === 'converted') {
             return redirect()->route('sales.invoices.show', $quotation->convertedInvoice)
-                           ->with('info', 'Quotation has already been converted to invoice.');
+                ->with('info', 'Quotation has already been converted to invoice.');
         }
 
         if ($quotation->approval_status !== 'approved') {
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'Quotation must be approved before conversion to invoice.');
+                ->with('error', 'Quotation must be approved before conversion to invoice.');
         }
 
         DB::beginTransaction();
         try {
             $invoice = $quotation->convertToInvoice();
-            
+
             DB::commit();
             return redirect()->route('sales.invoices.show', $invoice)
-                           ->with('success', 'Quotation converted to invoice successfully.');
+                ->with('success', 'Quotation converted to invoice successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'Error converting quotation: ' . $e->getMessage());
+                ->with('error', 'Error converting quotation: ' . $e->getMessage());
         }
     }
 
@@ -718,12 +728,12 @@ class QuotationController extends Controller
     {
         if (!$quotation->lead_id) {
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'This quotation is not associated with a lead.');
+                ->with('error', 'This quotation is not associated with a lead.');
         }
 
         if ($quotation->customer_id) {
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('info', 'Lead has already been converted to customer.');
+                ->with('info', 'Lead has already been converted to customer.');
         }
 
         DB::beginTransaction();
@@ -733,28 +743,28 @@ class QuotationController extends Controller
             if ($lead->converted_to_customer_id) {
                 // Use existing customer
                 $quotation->update(['customer_id' => $lead->converted_to_customer_id]);
-                
+
                 DB::commit();
                 return redirect()->route('sales.quotations.show', $quotation)
-                               ->with('success', 'Quotation linked to existing customer from lead conversion.');
+                    ->with('success', 'Quotation linked to existing customer from lead conversion.');
             }
 
             // Convert lead to customer using the private method logic
             $customerId = $this->performLeadToCustomerConversion($quotation->lead);
-            
+
             // Update quotation with new customer
             $quotation->update(['customer_id' => $customerId]);
-            
+
             DB::commit();
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('success', 'Lead converted to customer and linked to quotation successfully.');
+                ->with('success', 'Lead converted to customer and linked to quotation successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->route('sales.quotations.show', $quotation)
-                           ->with('error', 'Error converting lead to customer: ' . $e->getMessage());
+                ->with('error', 'Error converting lead to customer: ' . $e->getMessage());
         }
     }
- /**
+    /**
      * Private method to perform lead to customer conversion
      */
     private function performLeadToCustomerConversion(Lead $lead)
@@ -767,7 +777,7 @@ class QuotationController extends Controller
 
         // Generate customer code
         $customerCode = $this->generateCustomerCode();
-        
+
         // Create ledger for customer
         $ledgerName = ($lead->company_name ?: $lead->contact_person) . ' (' . $customerCode . ')';
         $ledger = Ledger::create([
@@ -827,4 +837,69 @@ class QuotationController extends Controller
 
         return $code;
     }
+    /**
+     * Get packages for dropdown
+     */
+    public function getPackages(Request $request)
+    {
+        $packages = Package::where('status', 1)
+            ->when($request->search, function ($query, $search) {
+                return $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            })
+            ->get(['id', 'name', 'code', 'package_price', 'subtotal', 'discount_percentage']);
+
+        return response()->json($packages->map(function ($package) {
+            return [
+                'id' => $package->id,
+                'name' => $package->name,
+                'code' => $package->code,
+                'price' => $package->package_price,
+                'subtotal' => $package->subtotal,
+                'discount_percentage' => $package->discount_percentage,
+                'formatted_price' => 'RM ' . number_format($package->package_price, 2)
+            ];
+        }));
+    }
+
+    /**
+     * Get package details including items
+     */
+    public function getPackageDetails($packageId)
+    {
+        $package = Package::with(['packageItems.service', 'packageItems.product'])
+            ->where('status', 1)
+            ->find($packageId);
+
+        if (!$package) {
+            return response()->json(['error' => 'Package not found'], 404);
+        }
+
+        return response()->json([
+            'id' => $package->id,
+            'name' => $package->name,
+            'code' => $package->code,
+            'description' => $package->description,
+            'package_price' => $package->package_price,
+            'subtotal' => $package->subtotal,
+            'discount_percentage' => $package->discount_percentage,
+            'discount_amount' => $package->discount_amount,
+            'items' => $package->packageItems->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'service_id' => $item->service_id,
+                    'product_id' => $item->product_id,
+                    'item_type' => $item->item_type,
+                    'item_name' => $item->service ? $item->service->name : ($item->product ? $item->product->name : 'N/A'),
+                    'quantity' => $item->quantity,
+                    'amount' => $item->amount,
+                    'discount_percentage' => $item->discount_percentage,
+                ];
+            })
+        ]);
+    }
+
+    /**
+     * Get items based on type (existing method - update to include package)
+     */
 }

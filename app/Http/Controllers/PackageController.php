@@ -17,10 +17,9 @@ class PackageController extends Controller
      */
     public function create()
     {
-        $services = Service::active()->get();
-        $products = Product::where('is_active', 1)->get();
+        $services = Service::where('status', 1)->where('item_type','item')->get();
 
-        return view('packages.create', compact('services', 'products'));
+        return view('packages.create', compact('services'));
     }
 
     /**
@@ -38,7 +37,6 @@ class PackageController extends Controller
             'discount_percentage' => 'required|numeric|min:0|max:100',
             'status' => 'boolean',
             'items' => 'required|array|min:1',
-            'items.*.item_type' => 'required|in:service,product',
             'items.*.item_id' => 'required|integer',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
@@ -56,33 +54,19 @@ class PackageController extends Controller
 
             foreach ($request->items as $item) {
                 $unitPrice = isset($item['unit_price']) ? (float) $item['unit_price'] : 0;
-                if ($item['item_type'] === 'service') {
-                    $service = Service::findOrFail($item['item_id']);
-                    if ($unitPrice == 0) {
-                        $unitPrice = $service->base_price;
-                    }
-                    $validatedItems[] = [
-                        'item_type' => 'service',
-                        'service_id' => $service->id,
-                        'product_id' => null,
-                        'quantity' => $item['quantity'],
-                        'unit_price' => $unitPrice,
-                        'total' => $unitPrice * $item['quantity']
-                    ];
-                } else {
-                    $product = Product::findOrFail($item['item_id']);
-                    if ($unitPrice == 0) {
-                        $unitPrice = $product->selling_price;
-                    }
-                    $validatedItems[] = [
-                        'item_type' => 'product',
-                        'service_id' => null,
-                        'product_id' => $product->id,
-                        'quantity' => $item['quantity'],
-                        'unit_price' => $unitPrice,
-                        'total' => $unitPrice * $item['quantity']
-                    ];
+                $service = Service::findOrFail($item['item_id']);
+                
+                if ($unitPrice == 0) {
+                    $unitPrice = $service->base_price;
                 }
+                
+                $validatedItems[] = [
+                    'service_id' => $service->id,
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $unitPrice,
+                    'total' => $unitPrice * $item['quantity']
+                ];
+                
                 $subtotal += end($validatedItems)['total'];
             }
 
@@ -110,15 +94,14 @@ class PackageController extends Controller
             foreach ($validatedItems as $item) {
                 PackageService::create([
                     'package_id' => $package->id,
-                    'service_id'=> $item['service_id'] ?? null,
-                    'product_id'=> $item['product_id'] ?? null,
-                    'item_type'=> $item['item_type'] ?? null,
-                    'quantity'=> $item['quantity'] ?? 0,          
-                    'amount' => $item['unit_price'] ?? 0.00,    
-                    'discount_percentage' => $item['discount_percentage'] ?? 0, 
+                    'service_id' => $item['service_id'],
+                    'product_id' => null,
+                    'item_type' => 'item',
+                    'quantity' => $item['quantity'],          
+                    'amount' => $item['unit_price'],    
+                    'discount_percentage' => 0, 
                 ]);
             }
-
 
             DB::commit();
             return redirect()->route('packages.index')
@@ -134,11 +117,10 @@ class PackageController extends Controller
      */
     public function edit(Package $package)
     {
-        $services = Service::active()->get();
-        $products = Product::where('is_active', 1)->get();
-        $package->load(['packageItems.service', 'packageItems.product']);
+        $services = Service::where('status', 1)->where('item_type','item')->get();
+        $package->load(['packageItems.service']);
 
-        return view('packages.edit', compact('package', 'services', 'products'));
+        return view('packages.edit', compact('package', 'services'));
     }
 
     /**
@@ -156,7 +138,6 @@ class PackageController extends Controller
             'discount_percentage' => 'required|numeric|min:0|max:100',
             'status' => 'boolean',
             'items' => 'required|array|min:1',
-            'items.*.item_type' => 'required|in:service,product',
             'items.*.item_id' => 'required|integer',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
@@ -173,37 +154,20 @@ class PackageController extends Controller
             $validatedItems = [];
 
             foreach ($request->items as $item) {
-
                 $unitPrice = isset($item['unit_price']) ? (float) $item['unit_price'] : 0;
-
-                if ($item['item_type'] === 'service') {
-                    $service = Service::findOrFail($item['item_id']);
-                    // Use custom price if provided, otherwise use service's base price
-                    if ($unitPrice == 0) {
-                        $unitPrice = $service->base_price;
-                    }
-                    $validatedItems[] = [
-                        'item_type' => 'service',
-                        'service_id' => $service->id,
-                        'product_id' => null,
-                        'quantity' => $item['quantity'],
-                        'unit_price' => $unitPrice,
-                        'total' => $unitPrice * $item['quantity']
-                    ];
-                } else {
-                    $product = Product::findOrFail($item['item_id']);
-                    if ($unitPrice == 0) {
-                        $unitPrice = $product->selling_price;
-                    }
-                    $validatedItems[] = [
-                        'item_type' => 'product',
-                        'service_id' => null,
-                        'product_id' => $product->id,
-                        'quantity' => $item['quantity'],
-                        'unit_price' => $unitPrice,
-                        'total' => $unitPrice * $item['quantity']
-                    ];
+                $service = Service::findOrFail($item['item_id']);
+                
+                if ($unitPrice == 0) {
+                    $unitPrice = $service->base_price;
                 }
+                
+                $validatedItems[] = [
+                    'service_id' => $service->id,
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $unitPrice,
+                    'total' => $unitPrice * $item['quantity']
+                ];
+                
                 $subtotal += end($validatedItems)['total'];
             }
 
@@ -231,17 +195,15 @@ class PackageController extends Controller
             $package->packageItems()->delete();
 
             foreach ($validatedItems as $item) {
-          foreach ($validatedItems as $item) {
                 PackageService::create([
                     'package_id' => $package->id,
-                    'service_id'=> $item['service_id'] ?? null,
-                    'product_id'=> $item['product_id'] ?? null,
-                    'item_type'=> $item['item_type'] ?? null,
-                    'quantity'=> $item['quantity'] ?? 0,          
-                    'amount' => $item['unit_price'] ?? 0.00,    
-                    'discount_percentage' => $item['discount_percentage'] ?? 0, 
+                    'service_id' => $item['service_id'],
+                    'product_id' => null,
+                    'item_type' => 'item',
+                    'quantity' => $item['quantity'],          
+                    'amount' => $item['unit_price'],    
+                    'discount_percentage' => 0, 
                 ]);
-            }
             }
 
             DB::commit();
@@ -258,66 +220,21 @@ class PackageController extends Controller
      */
     public function getServices(Request $request)
     {
-        $type = $request->query('type');
-
-        if ($type === 'service') {
-            $services = Service::active()
-                ->when($request->search, function ($query, $search) {
-                    return $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%");
-                })
-                ->get(['id', 'name', 'code', 'base_price', 'billing_cycle']);
-
-            return response()->json($services->map(function ($service) {
-                return [
-                    'id' => $service->id,
-                    'name' => $service->name,
-                    'code' => $service->code,
-                    'price' => $service->base_price,
-                    'billing_cycle' => $service->billing_cycle,
-                    'formatted_price' => 'RM ' . number_format($service->base_price, 2)
-                ];
-            }));
-        } elseif ($type === 'product') {
-            $products = Product::where('is_active', 1)
-                ->when($request->search, function ($query, $search) {
-                    return $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('product_code', 'like', "%{$search}%");
-                })
-                ->get(['id', 'name', 'product_code', 'selling_price']);
-
-            return response()->json($products->map(function ($product) {
-                return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'code' => $product->product_code,
-                    'price' => $product->selling_price,
-                    'formatted_price' => 'RM ' . number_format($product->selling_price, 2)
-                ];
-            }));
-        }
-    }
-
-
-    /**
-     * Get products for dropdown
-     */
-    public function getProducts(Request $request)
-    {
-        $products = Product::where('is_active', 1)
+        $services = Service::where('status', 1)->where('item_type','item')
             ->when($request->search, function ($query, $search) {
                 return $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('product_code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
             })
-            ->get(['id', 'name', 'product_code', 'selling_price']);
+            ->get(['id', 'name', 'code', 'base_price', 'billing_cycle']);
 
-        return response()->json($products->map(function ($product) {
+        return response()->json($services->map(function ($service) {
             return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'code' => $product->product_code,
-                'price' => $product->selling_price,
-                'formatted_price' => 'RM ' . number_format($product->selling_price, 2)
+                'id' => $service->id,
+                'name' => $service->name,
+                'code' => $service->code,
+                'price' => $service->base_price,
+                'billing_cycle' => $service->billing_cycle,
+                'formatted_price' => 'RM ' . number_format($service->base_price, 2)
             ];
         }));
     }
@@ -327,7 +244,7 @@ class PackageController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Package::with(['packageItems.service', 'packageItems.product']);
+        $query = Package::with(['packageItems.item']);
 
         // Search filter
         if ($request->filled('search')) {
@@ -364,7 +281,7 @@ class PackageController extends Controller
      */
     public function show(Package $package)
     {
-        $package->load(['packageItems.service', 'packageItems.product']);
+        $package->load(['packageItems.item']);
         return view('packages.show', compact('package'));
     }
 
@@ -435,23 +352,17 @@ class PackageController extends Controller
 
         if ($request->has('items') && is_array($request->items)) {
             foreach ($request->items as $item) {
-                if (!isset($item['item_type'], $item['item_id'], $item['quantity'])) {
+                if (!isset($item['item_id'], $item['quantity'])) {
                     continue;
                 }
 
                 $quantity = (int) $item['quantity'];
                 if ($quantity <= 0) continue;
 
-                if ($item['item_type'] === 'service') {
-                    $service = Service::find($item['item_id']);
-                    if ($service) {
-                        $subtotal += $service->base_price * $quantity;
-                    }
-                } elseif ($item['item_type'] === 'product') {
-                    $product = Product::find($item['item_id']);
-                    if ($product) {
-                        $subtotal += $product->selling_price * $quantity;
-                    }
+                $service = Service::find($item['item_id']);
+                if ($service) {
+                    $unitPrice = isset($item['unit_price']) ? (float) $item['unit_price'] : $service->base_price;
+                    $subtotal += $unitPrice * $quantity;
                 }
             }
         }
