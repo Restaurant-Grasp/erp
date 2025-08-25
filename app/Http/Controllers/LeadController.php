@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Staff;
 use App\Models\Ledger;
 use App\Models\Group;
+use App\Models\Contact;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -87,10 +88,6 @@ class LeadController extends Controller
     {
         $validated = $request->validate([
             'company_name' => 'nullable|string|max:255',
-            'contact_person' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
-            'mobile' => 'nullable|string|max:50',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
             'state' => 'nullable|string|max:100',
@@ -101,16 +98,25 @@ class LeadController extends Controller
             'interested_in' => 'nullable|string',
             'assigned_to' => 'nullable|exists:staff,id',
             'notes' => 'nullable|string',
-            'documents.*' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240'
+            'documents.*' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240',
+
+            // Contact validation
+            'contacts' => 'required|array|min:1',
+            'contacts.*.name' => 'required|string|max:255',
+            'contacts.*.email' => 'nullable|email|max:255',
+            'contacts.*.phone' => 'nullable|string|max:50',
         ]);
 
         DB::beginTransaction();
         try {
             $validated['created_by'] = Auth::id();
             $validated['lead_status'] = 'new';
-            $validated['country'] = 'Malaysia'; // Default for temple management
+            $validated['country'] = 'Malaysia';
 
-            $lead = Lead::create($validated);
+            $lead = Lead::create(collect($validated)->except('contacts')->toArray());
+
+            // Handle contacts
+            $this->storeContacts($lead, $request->input('contacts', []));
 
             // Handle document uploads
             if ($request->hasFile('documents')) {
@@ -118,7 +124,7 @@ class LeadController extends Controller
                     $this->storeDocument($lead, $document);
                 }
             }
- 
+
             // Create initial activity
             LeadActivity::create([
                 'lead_id' => $lead->id,
@@ -136,7 +142,6 @@ class LeadController extends Controller
             return redirect()->back()->with('error', 'Error creating lead: ' . $e->getMessage())->withInput();
         }
     }
-
     /**
      * Display the specified lead.
      */
@@ -146,6 +151,7 @@ class LeadController extends Controller
             'templeCategory',
             'assignedTo',
             'createdBy',
+            'contacts',
             'activities.createdBy',
             'documents.uploadedBy',
             'quotations',
@@ -164,6 +170,7 @@ class LeadController extends Controller
             return redirect()->route('leads.show', $lead)->with('error', 'Converted leads cannot be edited.');
         }
 
+        $lead->load('contacts');
         $templeCategories = TempleCategory::where('status', 1)->orderBy('name')->get();
         $staff = Staff::where('status', 'active')->orderBy('name')->get();
 
@@ -181,30 +188,33 @@ class LeadController extends Controller
 
         $validated = $request->validate([
             'company_name' => 'nullable|string|max:255',
-            'contact_person' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
-            'mobile' => 'nullable|string|max:50',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
             'state' => 'nullable|string|max:100',
             'temple_category_id' => 'nullable|exists:temple_categories,id',
             'temple_size' => 'nullable|in:small,medium,large,very_large',
-            'source' => 'required|in:online,reference,cold_call,exhibition,advertisement,other',
             'source_details' => 'nullable|string|max:255',
             'interested_in' => 'nullable|string',
-            'lead_status' => 'required|in:new,contacted,qualified,proposal,negotiation,won,lost',
             'assigned_to' => 'nullable|exists:staff,id',
             'next_followup_date' => 'nullable|date',
             'notes' => 'nullable|string',
-            'lost_reason' => 'nullable|required_if:lead_status,lost|string',
-            'documents.*' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240'
+            'documents.*' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240',
+            // Contact validation
+            'contacts' => 'required|array|min:1',
+            'contacts.*.id' => 'nullable|exists:contacts,id',
+            'contacts.*.name' => 'required|string|max:255',
+            'contacts.*.email' => 'nullable|email|max:255',
+            'contacts.*.phone' => 'nullable|string|max:50',
+
         ]);
 
         DB::beginTransaction();
         try {
             $oldStatus = $lead->lead_status;
-            $lead->update($validated);
+            $lead->update(collect($validated)->except('contacts')->toArray());
+
+            // Update contacts
+            $this->updateContacts($lead, $request->input('contacts', []));
 
             // Handle document uploads
             if ($request->hasFile('documents')) {
@@ -232,7 +242,6 @@ class LeadController extends Controller
             return redirect()->back()->with('error', 'Error updating lead: ' . $e->getMessage())->withInput();
         }
     }
-
     /**
      * Remove the specified lead from storage.
      */
@@ -516,5 +525,77 @@ class LeadController extends Controller
             ->get(['id', 'lead_no', 'company_name', 'contact_person']);
 
         return response()->json($leads);
+    }
+    private function storeContacts($lead, $contactsData)
+    {
+        $hasPrimary = false;
+
+        foreach ($contactsData as $index => $contactData) {
+            if (empty($contactData['name'])) continue;
+
+            // Ensure only one primary contact
+            $isPrimary = isset($contactData['is_primary']) && $contactData['is_primary'] && !$hasPrimary;
+            if ($isPrimary) $hasPrimary = true;
+
+            Contact::create([
+                'entity_id' => $lead->id,
+                'entity_type' => Lead::class,
+                'name' => $contactData['name'],
+                'email' => $contactData['email'] ?? null,
+                'phone' => $contactData['phone'] ?? null,
+                'is_primary' => $isPrimary,
+                'is_billing_contact' => isset($contactData['is_billing_contact']) && $contactData['is_billing_contact'],
+                'is_technical_contact' => isset($contactData['is_technical_contact']) && $contactData['is_technical_contact'],
+            ]);
+        }
+    }
+
+    /**
+     * Update contacts for a lead
+     */
+    private function updateContacts($lead, $contactsData)
+    {
+        // Get existing contact IDs
+        $existingContactIds = $lead->contacts->pluck('id')->toArray();
+        $updatedContactIds = [];
+        $hasPrimary = false;
+
+        foreach ($contactsData as $contactData) {
+            if (empty($contactData['name'])) continue;
+
+            // Ensure only one primary contact
+            $isPrimary = isset($contactData['is_primary']) && $contactData['is_primary'] && !$hasPrimary;
+            if ($isPrimary) $hasPrimary = true;
+
+            $contactAttributes = [
+                'entity_id' => $lead->id,
+                'entity_type' => Lead::class,
+                'name' => $contactData['name'],
+                'email' => $contactData['email'] ?? null,
+                'phone' => $contactData['phone'] ?? null,
+                'is_primary' => $isPrimary,
+                'is_billing_contact' => isset($contactData['is_billing_contact']) && $contactData['is_billing_contact'],
+                'is_technical_contact' => isset($contactData['is_technical_contact']) && $contactData['is_technical_contact'],
+            ];
+
+            if (!empty($contactData['id'])) {
+                // Update existing contact
+                $contact = Contact::find($contactData['id']);
+                if ($contact && $contact->entity_id == $lead->id) {
+                    $contact->update($contactAttributes);
+                    $updatedContactIds[] = $contact->id;
+                }
+            } else {
+                // Create new contact
+                $contact = Contact::create($contactAttributes);
+                $updatedContactIds[] = $contact->id;
+            }
+        }
+
+        // Delete contacts that were not in the update
+        $contactsToDelete = array_diff($existingContactIds, $updatedContactIds);
+        if (!empty($contactsToDelete)) {
+            Contact::whereIn('id', $contactsToDelete)->delete();
+        }
     }
 }

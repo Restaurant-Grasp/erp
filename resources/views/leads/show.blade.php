@@ -23,15 +23,6 @@
         <div class="card-header fw-bold">Lead Information</div>
         <div class="card-body">
           <dl class="row mb-0">
-            <dt class="col-sm-5">Contact Person</dt>
-            <dd class="col-sm-7">{{ $lead->contact_person }}</dd>
-
-            <dt class="col-sm-5">Email</dt>
-            <dd class="col-sm-7">{{ $lead->email ?: '-' }}</dd>
-
-            <dt class="col-sm-5">Phone / Mobile</dt>
-            <dd class="col-sm-7">{{ $lead->phone ?: '-' }} / {{ $lead->mobile ?: '-' }}</dd>
-
             <dt class="col-sm-5">Lead Source</dt>
             <dd class="col-sm-7">{{ ucfirst(str_replace('_',' ', $lead->source)) }}{{ $lead->source_details ? ' — '.$lead->source_details : '' }}</dd>
 
@@ -60,6 +51,121 @@
       </div>
     </div>
   </div>
+ {{-- Contact Details Section --}}
+  @if($lead->contacts && $lead->contacts->count() > 0)
+    <div class="card shadow-sm mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-users me-2"></i>Contact Details</h5>
+        <span class="badge bg-secondary">{{ $lead->contacts->count() }} Contact{{ $lead->contacts->count() > 1 ? 's' : '' }}</span>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          @foreach($lead->contacts as $contact)
+            <div class="col-md-6 mb-3">
+              <div class="contact-card border rounded p-3 h-100 {{ $contact->is_primary ? 'border-success bg-light-success' : '' }}">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="mb-0 fw-bold text-dark">
+                    {{ $contact->name }}
+                    @if($contact->is_primary)
+                      <span class="badge bg-success ms-1" style="font-size: 0.7em;">Primary</span>
+                    @endif
+                  </h6>
+                  <div class="contact-types">
+                    @if($contact->is_billing_contact)
+                      <span class="badge bg-info me-1" style="font-size: 0.7em;">Billing</span>
+                    @endif
+                    @if($contact->is_technical_contact)
+                      <span class="badge bg-warning me-1" style="font-size: 0.7em;">Technical</span>
+                    @endif
+                  </div>
+                </div>
+                
+                <div class="contact-info">
+                  @if($contact->email)
+                    <div class="mb-2">
+                      <i class="fas fa-envelope text-muted me-2"></i>
+                      <a href="mailto:{{ $contact->email }}" class="text-decoration-none">{{ $contact->email }}</a>
+                    </div>
+                  @endif
+                  
+                  @if($contact->phone)
+                    <div class="mb-2">
+                      <i class="fas fa-phone text-muted me-2"></i>
+                      <a href="tel:{{ $contact->phone }}" class="text-decoration-none">{{ $contact->phone }}</a>
+                    </div>
+                  @endif
+                  
+                  @if(!$contact->email && !$contact->phone)
+                    <small class="text-muted">No contact information available</small>
+                  @endif
+                </div>
+                
+                @if($contact->created_at)
+                  <div class="mt-2 pt-2 border-top">
+                    <small class="text-muted">
+                      <i class="fas fa-clock me-1"></i>
+                      Added {{ $contact->created_at->diffForHumans() }}
+                    </small>
+                  </div>
+                @endif
+              </div>
+            </div>
+          @endforeach
+        </div>
+        
+        {{-- Contact Summary --}}
+        @if($lead->contacts->count() > 2)
+          <div class="mt-3 pt-3 border-top">
+            <div class="row text-center">
+              @php
+                $primaryCount = $lead->contacts->where('is_primary', true)->count();
+                $billingCount = $lead->contacts->where('is_billing_contact', true)->count();
+                $technicalCount = $lead->contacts->where('is_technical_contact', true)->count();
+                $emailCount = $lead->contacts->whereNotNull('email')->count();
+                $phoneCount = $lead->contacts->whereNotNull('phone')->count();
+              @endphp
+              
+              <div class="col">
+                <div class="fw-bold text-success">{{ $primaryCount }}</div>
+                <small class="text-muted">Primary</small>
+              </div>
+              <div class="col">
+                <div class="fw-bold text-info">{{ $billingCount }}</div>
+                <small class="text-muted">Billing</small>
+              </div>
+              <div class="col">
+                <div class="fw-bold text-warning">{{ $technicalCount }}</div>
+                <small class="text-muted">Technical</small>
+              </div>
+              <div class="col">
+                <div class="fw-bold text-primary">{{ $emailCount }}</div>
+                <small class="text-muted">With Email</small>
+              </div>
+              <div class="col">
+                <div class="fw-bold text-secondary">{{ $phoneCount }}</div>
+                <small class="text-muted">With Phone</small>
+              </div>
+            </div>
+          </div>
+        @endif
+      </div>
+    </div>
+  @else
+    <div class="card shadow-sm mb-4">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-users me-2"></i>Contact Details</h5>
+      </div>
+      <div class="card-body text-center py-4">
+        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+        <p class="text-muted mb-0">No contact details available for this lead.</p>
+        @if(!$lead->is_converted && auth()->user()->can('leads.edit'))
+          <a href="{{ route('leads.edit', $lead) }}" class="btn btn-outline-primary btn-sm mt-2">
+            <i class="fas fa-plus me-1"></i> Add Contacts
+          </a>
+        @endif
+      </div>
+    </div>
+  @endif
 
   {{-- Notes & Address --}}
   @if($lead->address || $lead->notes)

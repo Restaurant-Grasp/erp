@@ -14,6 +14,7 @@ class Customer extends Model
     protected $fillable = [
         'customer_code',
         'ledger_id',
+         'contact_id',
         'company_name',
         'contact_person',
         'email',
@@ -226,4 +227,35 @@ class Customer extends Model
             ->whereIn('status', ['pending', 'partial'])
             ->sum('balance_amount');
     }
+    /**
+ * Get all contacts for this customer
+ */
+public function contacts()
+{
+    return $this->morphMany(Contact::class, 'entity');
+}
+
+/**
+ * Get primary contact
+ */
+public function primaryContact()
+{
+    return $this->morphOne(Contact::class, 'entity')->where('is_primary', true);
+}
+
+/**
+ * Get billing contacts
+ */
+public function billingContacts()
+{
+    return $this->morphMany(Contact::class, 'entity')->where('is_billing_contact', true);
+}
+
+/**
+ * Get technical contacts
+ */
+public function technicalContacts()
+{
+    return $this->morphMany(Contact::class, 'entity')->where('is_technical_contact', true);
+}
 }

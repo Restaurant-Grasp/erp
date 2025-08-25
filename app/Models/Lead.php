@@ -6,14 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-
-
+use App\Models\Contact;
 
 class Lead extends Model
 {
     protected $table = 'leads';
     protected $fillable = [
         'lead_no',
+        'contact_id',
         'company_name',
         'contact_person',
         'email',
@@ -178,5 +178,37 @@ class Lead extends Model
     {
         return $this->hasMany(CommunicationHistory::class);
     }
+/**
+ * Get primary contact
+ */
+public function primaryContact()
+{
+    return $this->morphOne(Contact::class, 'entity')->where('is_primary', true);
+}
+
+/**
+ * Get billing contacts
+ */
+public function billingContacts()
+{
+    return $this->morphMany(Contact::class, 'entity')->where('is_billing_contact', true);
+}
+
+/**
+ * Get technical contacts
+ */
+public function technicalContacts()
+{
+    return $this->morphMany(Contact::class, 'entity')->where('is_technical_contact', true);
+}
+/**
+ * Get all contacts for this lead
+ */
+public function contacts()
+{
+    return $this->morphMany(Contact::class, 'entity');
+}
+
+
 
 }

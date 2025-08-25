@@ -2,6 +2,25 @@
 
 @section('title', 'Edit Lead')
 
+<style>
+    .contact-item {
+        transition: all 0.3s ease;
+    }
+
+    .contact-item.removing {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+
+    .form-check {
+        margin-bottom: 0;
+    }
+
+    .form-check-input:checked+.form-check-label {
+        font-weight: 500;
+    }
+</style>
+
 @section('content')
 <div class="page-header">
     <h1 class="page-title">Edit Lead</h1>
@@ -14,7 +33,7 @@
     </nav>
 </div>
 
-<form action="{{ route('leads.update', $lead->id) }}" method="POST" enctype="multipart/form-data">
+<form action="{{ route('leads.update', $lead->id) }}" method="POST" enctype="multipart/form-data" id="leadForm">
     @csrf
     @method('PUT')
     <div class="row">
@@ -33,34 +52,68 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Contact Person *</label>
-                            <input type="text" name="contact_person" class="form-control @error('contact_person') is-invalid @enderror" value="{{ old('contact_person', $lead->contact_person) }}">
-                            @error('contact_person')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Details Section -->
+            <div class="card mt-4" id="contact-details-section">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Contact Details</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="add-contact">
+                        <i class="fas fa-plus me-1"></i> Add Contact
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="contacts-container">
+                        <!-- Contacts will be injected here -->
+                    </div>
+
+                    <!-- Contact Template (Hidden + Disabled so browser ignores it) -->
+                    <div id="contact-template" style="display:none;">
+                        <div class="contact-item border rounded p-3 mb-3" data-contact-index="">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Contact <span class="contact-number"></span></h6>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-contact">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Name <span class="text-danger">*</span></label>
+                                    <input type="text" name="contacts[][name]" class="form-control contact-name" disabled>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" name="contacts[][email]" class="form-control contact-email" disabled>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Phone</label>
+                                    <input type="text" name="contacts[][phone]" class="form-control contact-phone" disabled>
+                                </div>
+                                <div class="col-md-6" style="display: none;">
+                                    <label class="form-label">Contact Types</label>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input contact-primary" type="checkbox" name="contacts[][is_primary]" value="1" disabled>
+                                            <label class="form-check-label">Primary</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input contact-billing" type="checkbox" name="contacts[][is_billing_contact]" value="1" disabled>
+                                            <label class="form-check-label">Billing</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input contact-technical" type="checkbox" name="contacts[][is_technical_contact]" value="1" disabled>
+                                            <label class="form-check-label">Technical</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email</label>
-                            <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $lead->email) }}">
-                            @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Phone</label>
-                            <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', $lead->phone) }}">
-                            @error('phone')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Mobile</label>
-                            <input type="text" name="mobile" class="form-control @error('mobile') is-invalid @enderror" value="{{ old('mobile', $lead->mobile) }}">
-                            @error('mobile')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+
+                        <!-- Hidden field for existing contact ID (for edit mode) -->
+                        <input type="hidden" name="contacts[][id]" class="contact-id" disabled>
                     </div>
                 </div>
             </div>
@@ -313,23 +366,201 @@
         </div>
     </div>
 </form>
-@endsection
 
-@push('scripts')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    function toggleLostReason() {
-        if ($('#lead_status').val() === 'lost') {
-            $('#lost_reason_div').show();
-            $('#lost_reason').prop('required', true);
-        } else {
-            $('#lost_reason_div').hide();
-            $('#lost_reason').prop('required', false);
-        }
-    }
+    (function() {
+        // Handle form submit + optional lost reason logic safely
+        $(document).ready(function() {
+            $('#leadForm').on('submit', function(e) {
+                if (!window.validateContacts || !window.validateContacts()) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
 
-    $(document).ready(function() {
-        toggleLostReason();
-        $('#lead_status').on('change', toggleLostReason);
-    });
+            // Lost reason toggle
+            function toggleLostReason() {
+                var statusEl = document.getElementById('lead_status');
+                var reasonDiv = document.getElementById('lost_reason_div');
+                var reason = document.getElementById('lost_reason');
+                if (!statusEl || !reasonDiv || !reason) return;
+
+                if (statusEl.value === 'lost') {
+                    reasonDiv.style.display = '';
+                    reason.setAttribute('required', 'required');
+                } else {
+                    reasonDiv.style.display = 'none';
+                    reason.removeAttribute('required');
+                }
+            }
+            $('#lead_status').on('change', toggleLostReason);
+            toggleLostReason();
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            let contactIndex = 0;
+            const contactsContainer = document.getElementById('contacts-container');
+            const contactTemplate = document.getElementById('contact-template');
+            const addContactBtn = document.getElementById('add-contact');
+
+            addContactBtn.addEventListener('click', function() {
+                addNewContact();
+            });
+
+            function addNewContact(contactData = null) {
+                contactIndex++;
+                const newContact = contactTemplate.firstElementChild.cloneNode(true);
+                newContact.style.display = 'block';
+                newContact.id = '';
+                newContact.setAttribute('data-contact-index', contactIndex);
+
+                // Enable all fields (remove disabled from template)
+                newContact.querySelectorAll('input, textarea, select, button').forEach(el => {
+                    el.removeAttribute('disabled');
+                });
+
+                // Update contact label (1-based)
+                newContact.querySelector('.contact-number').textContent = contactIndex;
+
+                // Update names with proper index
+                updateContactInputNames(newContact, contactIndex);
+
+                // Ensure required only on visible instances
+                const nameField = newContact.querySelector('.contact-name');
+                if (nameField) nameField.setAttribute('required', 'required');
+
+                // Populate when editing
+                if (contactData) {
+                    populateContactData(newContact, contactData);
+                }
+
+                // Remove contact handler
+                const removeBtn = newContact.querySelector('.remove-contact');
+                removeBtn.addEventListener('click', function() {
+                    removeContact(newContact);
+                });
+
+                // Only one primary contact
+                const primaryCheckbox = newContact.querySelector('.contact-primary');
+                if (primaryCheckbox) {
+                    primaryCheckbox.addEventListener('change', function() {
+                        if (this.checked) {
+                            document.querySelectorAll('.contact-primary').forEach(cb => {
+                                if (cb !== this) cb.checked = false;
+                            });
+                        }
+                    });
+                }
+
+                contactsContainer.appendChild(newContact);
+
+                // Smooth scroll to new contact
+                newContact.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+
+            function removeContact(contactElement) {
+                if (confirm('Are you sure you want to remove this contact?')) {
+                    contactElement.classList.add('removing');
+                    setTimeout(() => {
+                        contactElement.remove();
+                        updateContactNumbers();
+                    }, 300);
+                }
+            }
+
+            // Robust re-indexing: handles both 'contacts[]' and 'contacts[0]' formats
+            function updateContactInputNames(contactElement, index) {
+                const inputs = contactElement.querySelectorAll(
+                    'input[name^="contacts["], textarea[name^="contacts["], select[name^="contacts["],' +
+                    'input[name^="contacts[]"], textarea[name^="contacts[]"], select[name^="contacts[]"]'
+                );
+
+                inputs.forEach(input => {
+                    const current = input.getAttribute('name');
+                    const replaced = current
+                        .replace(/contacts\[\d+\]/, `contacts[${index - 1}]`)
+                        .replace(/contacts\[\]/, `contacts[${index - 1}]`);
+                    input.setAttribute('name', replaced);
+                });
+            }
+
+            function populateContactData(contactElement, data) {
+                const sel = (cls) => contactElement.querySelector(cls);
+                if (sel('.contact-name')) sel('.contact-name').value = data.name || '';
+                if (sel('.contact-email')) sel('.contact-email').value = data.email || '';
+                if (sel('.contact-phone')) sel('.contact-phone').value = data.phone || '';
+                if (sel('.contact-id')) sel('.contact-id').value = data.id || '';
+
+                if (data.is_primary && sel('.contact-primary')) sel('.contact-primary').checked = true;
+                if (data.is_billing_contact && sel('.contact-billing')) sel('.contact-billing').checked = true;
+                if (data.is_technical_contact && sel('.contact-technical')) sel('.contact-technical').checked = true;
+            }
+
+            function updateContactNumbers() {
+                const contacts = contactsContainer.querySelectorAll('.contact-item[data-contact-index]');
+                contacts.forEach((contact, idx) => {
+                    const number = idx + 1;
+                    contact.querySelector('.contact-number').textContent = number;
+                    contact.setAttribute('data-contact-index', number);
+                    updateContactInputNames(contact, number);
+                });
+                contactIndex = contacts.length;
+            }
+
+            // Public loader for existing contacts from server
+            window.loadExistingContacts = function(contacts) {
+                contacts.forEach(contact => addNewContact(contact));
+            };
+   @if(isset($lead) && $lead->contacts)
+    const existingContacts = {!! json_encode(
+        $lead->contacts->map(function($contact) {
+            return array(
+                'id' => $contact->id,
+                'name' => $contact->name,
+                'email' => $contact->email,
+                'phone' => $contact->phone,
+                'is_primary' => (bool) $contact->is_primary,
+                'is_billing_contact' => (bool) $contact->is_billing_contact,
+                'is_technical_contact' => (bool) $contact->is_technical_contact,
+            );
+        })->values()
+    ) !!};
+    
+    if (existingContacts && existingContacts.length > 0) {
+        existingContacts.forEach(contact => addNewContact(contact));
+    } else {
+        addNewContact(); // Add one empty contact if no existing contacts
+    }
+@else
+    // Add one empty contact for new leads
+    addNewContact();
+@endif
+
+            // Client-side validation for visible contacts only
+            window.validateContacts = function() {
+                const contacts = contactsContainer.querySelectorAll('.contact-item[data-contact-index]');
+                if (contacts.length === 0) {
+                    alert('Please add at least one contact.');
+                    return false;
+                }
+                let isValid = true;
+                contacts.forEach(contact => {
+                    const nameField = contact.querySelector('.contact-name');
+                    if (!nameField || !nameField.value.trim()) {
+                        if (nameField) nameField.classList.add('is-invalid');
+                        isValid = false;
+                    } else {
+                        nameField.classList.remove('is-invalid');
+                    }
+                });
+                if (!isValid) alert('Please fill in all required contact fields.');
+                return isValid;
+            };
+        });
+    })();
 </script>
-@endpush
+@endsection
