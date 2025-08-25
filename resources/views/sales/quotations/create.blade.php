@@ -52,7 +52,7 @@
                             @error('entity_type')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                                <input type="hidden" name="customer_id" id="customer_id" value="{{ $customer->id ?? '' }}" class="customer_lead">
+                            <input type="hidden" name="customer_id" id="customer_id" value="{{ $customer->id ?? '' }}" class="customer_lead">
                             <input type="hidden" name="lead_id" id="lead_id" value="{{ $lead->id ?? '' }}">
                         </div>
                         <div class="col-md-3">
@@ -73,7 +73,7 @@
                                 </option>
                                 @endif
                             </select>
-                        
+
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Reference No</label>
@@ -83,7 +83,7 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-md-4">
                             <label class="form-label">Subject</label>
                             <input type="text" name="subject" class="form-control @error('subject') is-invalid @enderror"
                                 value="{{ old('subject') }}" maxlength="500">
@@ -91,6 +91,18 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                        <div class="col-md-2" style="text-align: center; padding-top: 33px; padding-left: 28px;">
+                                 <div class="form-check">
+                <input type="checkbox" name="cloud_server_hosting" class="form-check-input @error('cloud_server_hosting') is-invalid @enderror" id="activeCheck" {{ old('cloud_server_hosting') ? 'checked' : '' }}>
+                <label class="form-check-label" for="activeCheck">Cloud Server & Hosting</label>
+                @error('cloud_server_hosting')
+                    <div class="text-danger mt-1">{{ $message }}</div>
+                @enderror
+            </div>
+                        </div>
+
+                  
+
                         <div class="col-md-3">
                             <label class="form-label">Currency</label>
                             <input type="text"
@@ -155,7 +167,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Package Items Preview -->
                     <div id="packageItemsPreview" style="display: none;" class="mt-3">
                         <h6 class="text-muted">Package includes:</h6>
@@ -373,7 +385,7 @@
             .then(response => response.json())
             .then(data => {
                 selectedPackage = data;
-                
+
                 // Update package info display
                 document.getElementById('packageName').textContent = data.name;
                 document.getElementById('packageDescription').textContent = data.description || 'No description available';
@@ -462,7 +474,7 @@
     `;
         tbody.appendChild(row);
         itemIndex++;
-        
+
         calculateRowTotal(itemIndex - 1);
         clearPackageSelection();
     }

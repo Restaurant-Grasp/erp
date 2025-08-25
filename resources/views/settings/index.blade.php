@@ -166,6 +166,60 @@
         transform: translateY(-50%);
         pointer-events: none;
     }
+
+    /* Cloud Server Features Styling */
+    .cloud-server-section {
+        border: 2px solid #e3f2fd;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .cloud-server-feature-item {
+        transition: all 0.3s ease;
+        border-left: 4px solid #2196F3;
+    }
+
+    .cloud-server-feature-item:hover {
+        box-shadow: 0 4px 15px rgba(33, 150, 243, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .feature-input:focus,
+    .description-input:focus {
+        border-color: #2196F3;
+        box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.25);
+    }
+
+    .cloud-server-count-badge {
+        background: linear-gradient(45deg, #2196F3, #21CBF3);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    #cloud-server-features-container {
+        min-height: 100px;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .cloud-server-feature-item .btn-outline-danger:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+    }
+
+    .cloud-server-header {
+        background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
 </style>
 @endpush
 
@@ -213,7 +267,7 @@
         </ul>
 
         <!-- Settings Form -->
-        <form method="POST" action="{{ route('settings.update') }}" class="mt-4" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('settings.update') }}" class="mt-4" enctype="multipart/form-data" id="settings-form">
             @csrf
             @method('PUT')
 
@@ -371,6 +425,176 @@
                             </div>
                         </div>
                     </div>
+                    
+                    @elseif($category === 'sales')
+                    {{-- Sales category with Cloud Server Hosting section --}}
+                    <div class="settings-form-section">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-{{ getCategoryIcon($category) }} me-2"></i>
+                            {{ ucfirst($category) }} Settings
+                        </h6>
+
+                        {{-- Regular sales settings --}}
+                        @foreach($settingsByCategory[$category]->where('setting_key', '!=', 'cloud_server_hosting') as $setting)
+                        <div class="setting-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <div class="setting-label">
+                                        {{ $setting->display_key }}
+                                        <span class="setting-type-badge bg-light text-muted ms-2">
+                                            {{ strtoupper($setting->setting_type) }}
+                                        </span>
+                                    </div>
+                                    @if($setting->description)
+                                    <div class="setting-description">
+                                        {{ $setting->description }}
+                                    </div>
+                                    @endif
+                                </div>
+
+                                <div class="col-md-6">
+                                    @if($setting->setting_type === 'file')
+                                    <div class="file-upload-section">
+                                        @if($setting->setting_value)
+                                        <div class="current-file mb-2">
+                                            @if(in_array(pathinfo($setting->setting_value, PATHINFO_EXTENSION), ['jpg', 'jpeg', 'png', 'gif', 'svg']))
+                                            <img src="{{ asset('assets/' . $setting->setting_value) }}"
+                                                alt="Current {{ $setting->display_key }}"
+                                                class="img-thumbnail"
+                                                style="max-height: 100px;">
+                                            @else
+                                            <a href="{{ asset('assets/' . $setting->setting_value) }}"
+                                                target="_blank"
+                                                class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-download me-1"></i>View File
+                                            </a>
+                                            @endif
+                                            <div class="small text-muted mt-1">
+                                                Current: {{ basename($setting->setting_value) }}
+                                            </div>
+                                        </div>
+                                        @endif
+                                        <input type="file"
+                                            class="form-control"
+                                            name="files[{{ $setting->id }}]"
+                                            accept="image/*"
+                                            onchange="previewFile(this, {{ $setting->id }})">
+                                        <div class="small text-muted mt-1">
+                                            Accepted: JPG, JPEG, PNG, SVG, GIF (Max: 2MB)
+                                        </div>
+                                        <div id="preview_{{ $setting->id }}" class="mt-2"></div>
+                                    </div>
+                                    @elseif($setting->setting_type === 'boolean')
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input"
+                                            type="checkbox"
+                                            name="settings[{{ $setting->id }}]"
+                                            id="setting_{{ $setting->id }}"
+                                            value="1"
+                                            {{ $setting->setting_value == '1' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="setting_{{ $setting->id }}">
+                                            {{ $setting->setting_value == '1' ? 'Enabled' : 'Disabled' }}
+                                        </label>
+                                    </div>
+                                    @elseif($setting->setting_type === 'number')
+                                    <input type="number"
+                                        class="form-control"
+                                        name="settings[{{ $setting->id }}]"
+                                        value="{{ $setting->setting_value }}"
+                                        step="any">
+                                    @elseif($setting->setting_type === 'json')
+                                    <textarea class="form-control"
+                                        name="settings[{{ $setting->id }}]"
+                                        rows="3"
+                                        placeholder="Valid JSON format">{{ $setting->setting_value }}</textarea>
+                                    @elseif($setting->setting_type === 'longtext')
+                                    {{-- Special handling for terms and conditions - large textarea --}}
+                                    <div class="terms-conditions-section">
+                                        <textarea class="form-control"
+                                            name="settings[{{ $setting->id }}]"
+                                            rows="12"
+                                            placeholder="Enter terms and conditions..."
+                                            style="font-family: 'Courier New', monospace; font-size: 12px;">{{ $setting->setting_value }}</textarea>
+                                        <div class="small text-muted mt-1">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            This will be used as default terms and conditions for sales documents (quotations, invoices, etc.)
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            Character count: <span id="char-count-{{ $setting->id }}">{{ strlen($setting->setting_value) }}</span>
+                                        </div>
+                                    </div>
+
+                                    @else
+                                    <input type="text"
+                                        class="form-control"
+                                        name="settings[{{ $setting->id }}]"
+                                        value="{{ $setting->setting_value }}"
+                                        placeholder="Enter {{ strtolower($setting->display_key) }}">
+                                    @endif
+                                </div>
+
+                                <div class="col-md-2 text-end">
+                                    @if ($permissions->contains('name', 'settings.delete'))
+                                    <button type="button"
+                                        class="btn btn-sm btn-outline-danger"
+                                        onclick="deleteSetting({{ $setting->id }})"
+                                        title="Delete Setting">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Cloud Server Hosting Section --}}
+                    @php
+                    $cloudServerSetting = $settingsByCategory['sales']->where('setting_key', 'cloud_server_hosting')->first();
+                    $cloudServerFeatures = $cloudServerSetting ? json_decode($cloudServerSetting->setting_value, true) : [];
+                    @endphp
+
+                    <div class="cloud-server-section">
+                        <div class="cloud-server-header text-center">
+                            <h5 class="mb-2">
+                                <i class="fas fa-cloud-server me-2"></i>
+                                Cloud Server Hosting Features
+                            </h5>
+                            <p class="mb-0 small opacity-75">
+                                Manage your cloud hosting features dynamically. All data is stored in JSON format.
+                            </p>
+                        </div>
+                        
+                        <div data-setting-id="{{ $cloudServerSetting ? $cloudServerSetting->id : '' }}">
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div class="setting-label">
+                                            Cloud Server Features Management
+                                            <span class="setting-type-badge bg-info text-white ms-2">JSON</span>
+                                        </div>
+                                        <button type="button" class="btn btn-success" onclick="addCloudServerFeature()">
+                                            <i class="fas fa-plus me-1"></i>Add New Feature
+                                        </button>
+                                    </div>
+                                    
+                                    {{-- Hidden input to store JSON data --}}
+                                    <input type="hidden" 
+                                           name="settings[{{ $cloudServerSetting ? $cloudServerSetting->id : 'new' }}]" 
+                                           id="cloud-server-json-input" 
+                                           value="{{ $cloudServerSetting ? htmlspecialchars($cloudServerSetting->setting_value) : '[]' }}">
+                                    
+                                    {{-- Dynamic features container --}}
+                                    <div id="cloud-server-features-container" class="border rounded p-3 bg-light">
+                                        {{-- Features will be populated by JavaScript --}}
+                                    </div>
+                                    
+                            
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     @else
                     {{-- Original layout for other categories --}}
                     <div class="settings-form-section">
@@ -577,8 +801,59 @@
     </div>
 </div>
 
+<!-- Cloud Server Feature Template (Hidden) -->
+<div id="cloud-server-feature-template" class="d-none">
+    <div class="cloud-server-feature-item border rounded bg-white p-3 mb-3" data-feature-id="">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label fw-bold text-primary">
+                    <i class="fas fa-tag me-1"></i>Feature Name
+                </label>
+                <input type="text" 
+                       class="form-control feature-input" 
+                       placeholder="e.g., High Performance SSD Storage"
+                       required>
+                <div class="small text-muted mt-1">
+                    <i class="fas fa-lightbulb me-1"></i>Keep it concise and descriptive
+                </div>
+            </div>
+            <div class="col-md-7">
+                <label class="form-label fw-bold text-primary">
+                    <i class="fas fa-align-left me-1"></i>Description
+                </label>
+                <textarea class="form-control description-input" 
+                          rows="3"
+                          placeholder="Detailed description of this feature, its benefits, and specifications..."
+                          required></textarea>
+                <div class="small text-muted mt-1">
+                    <i class="fas fa-info-circle me-1"></i>Provide detailed information about this feature
+                </div>
+            </div>
+            <div class="col-md-1 d-flex align-items-center justify-content-center">
+                <button type="button" 
+                        class="btn btn-outline-danger" 
+                        onclick="removeCloudServerFeature(this)"
+                        title="Remove Feature">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-12">
+                <div class="small text-muted">
+                    <i class="fas fa-clock me-1"></i>
+                    Added: <span class="feature-timestamp">Just now</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
+    // Cloud Server Features Management
+    let cloudServerFeatures = [];
+
     // Handle custom category field
     $('select[name="category"]').change(function() {
         if ($(this).val() === 'custom') {
@@ -622,6 +897,153 @@
         } else {
             preview.innerHTML = '';
         }
+    }
+
+    // Initialize cloud server features on page load
+    $(document).ready(function() {
+        initializeCloudServerFeatures();
+        updateTimezoneTime();
+    });
+
+    function initializeCloudServerFeatures() {
+        const jsonInput = $('#cloud-server-json-input');
+        let jsonValue = jsonInput.val();
+        
+        // Decode HTML entities if needed
+        jsonValue = $('<div/>').html(jsonValue).text();
+        
+        try {
+            cloudServerFeatures = jsonValue ? JSON.parse(jsonValue) : [];
+            
+            // Ensure each feature has required properties
+            cloudServerFeatures = cloudServerFeatures.map((feature, index) => {
+                return {
+                    id: feature.id || 'feature_' + Date.now() + '_' + index,
+                    feature: feature.feature || '',
+                    description: feature.description || '',
+                    created_at: feature.created_at || new Date().toISOString(),
+                    updated_at: feature.updated_at || feature.created_at || new Date().toISOString()
+                };
+            });
+            
+            console.log('Loaded cloud server features:', cloudServerFeatures);
+        } catch (e) {
+            cloudServerFeatures = [];
+            console.error('Error parsing cloud server features JSON:', e);
+            console.log('JSON value was:', jsonValue);
+        }
+        
+        renderCloudServerFeatures();
+        updateCloudServerSummary();
+    }
+
+    function addCloudServerFeature() {
+        const newFeature = {
+            id: 'feature_' + Date.now(),
+            feature: '',
+            description: '',
+            created_at: new Date().toISOString()
+        };
+        
+        cloudServerFeatures.push(newFeature);
+        renderCloudServerFeatures();
+        updateCloudServerJson();
+        updateCloudServerSummary();
+        
+        // Focus on the new feature input
+        setTimeout(() => {
+            const newFeatureElement = $(`[data-feature-id="${newFeature.id}"]`);
+            newFeatureElement.find('.feature-input').focus();
+        }, 100);
+    }
+
+    function removeCloudServerFeature(button) {
+        const featureItem = $(button).closest('.cloud-server-feature-item');
+        const featureId = featureItem.data('feature-id');
+        
+        if (confirm('Are you sure you want to remove this feature?')) {
+            // Remove from array
+            cloudServerFeatures = cloudServerFeatures.filter(f => f.id !== featureId);
+            
+            // Remove from DOM
+            featureItem.fadeOut(300, function() {
+                $(this).remove();
+                updateCloudServerJson();
+                updateCloudServerSummary();
+            });
+        }
+    }
+
+    function renderCloudServerFeatures() {
+        const container = $('#cloud-server-features-container');
+        container.empty();
+        
+        if (cloudServerFeatures.length === 0) {
+            container.html(`
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-cloud fa-3x mb-3" style="opacity: 0.3;"></i>
+                    <h6>No Cloud Server Features Added</h6>
+                    <p class="small">Click "Add New Feature" to start adding your cloud hosting features.</p>
+                </div>
+            `);
+            return;
+        }
+        
+        cloudServerFeatures.forEach(feature => {
+            const template = $('#cloud-server-feature-template').html();
+            const featureElement = $(template);
+            
+            featureElement.attr('data-feature-id', feature.id);
+            featureElement.find('.feature-input').val(feature.feature);
+            featureElement.find('.description-input').val(feature.description);
+            featureElement.find('.feature-timestamp').text(formatTimestamp(feature.created_at));
+            
+            // Add event listeners
+            featureElement.find('.feature-input').on('input', function() {
+                updateFeatureData(feature.id, 'feature', $(this).val());
+            });
+            
+            featureElement.find('.description-input').on('input', function() {
+                updateFeatureData(feature.id, 'description', $(this).val());
+            });
+            
+            container.append(featureElement);
+        });
+    }
+
+    function updateFeatureData(featureId, field, value) {
+        const feature = cloudServerFeatures.find(f => f.id === featureId);
+        if (feature) {
+            feature[field] = value;
+            feature.updated_at = new Date().toISOString();
+            updateCloudServerJson();
+            updateCloudServerSummary();
+        }
+    }
+
+    function updateCloudServerJson() {
+        const jsonInput = $('#cloud-server-json-input');
+        jsonInput.val(JSON.stringify(cloudServerFeatures));
+    }
+
+    function updateCloudServerSummary() {
+        $('#cloud-server-count').text(cloudServerFeatures.length);
+        $('#cloud-server-last-update').text(new Date().toLocaleString());
+    }
+
+    function formatTimestamp(timestamp) {
+        if (!timestamp) return 'Unknown';
+        
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} minutes ago`;
+        if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hours ago`;
+        
+        return date.toLocaleDateString();
     }
 
     // Update timezone current time
@@ -704,11 +1126,6 @@
     // Update time every second
     setInterval(updateTimezoneTime, 1000);
 
-    // Initial load
-    $(document).ready(function() {
-        updateTimezoneTime();
-    });
-
     // Delete setting function
     function deleteSetting(settingId) {
         if (confirm('Are you sure you want to delete this setting? This action cannot be undone.')) {
@@ -733,99 +1150,118 @@
             form.submit();
         }
     }
+
+    // Validation before form submit
+    $('#settings-form').on('submit', function(e) {
+        let isValid = true;
+        const emptyFeatures = [];
+        
+        cloudServerFeatures.forEach((feature, index) => {
+            if (!feature.feature.trim() || !feature.description.trim()) {
+                emptyFeatures.push(index + 1);
+                isValid = false;
+            }
+        });
+        
+        if (!isValid && cloudServerFeatures.length > 0) {
+            e.preventDefault();
+            alert(`Please fill in all feature names and descriptions. Empty features found at positions: ${emptyFeatures.join(', ')}`);
+            return false;
+        }
+    });
 </script>
 @endpush
 
 @php
 function getCategoryIcon($category) {
-$icons = [
-'company' => 'building',
-'general' => 'globe',
-'sales' => 'chart-line',
-'purchase' => 'shopping-cart',
-'service' => 'tools',
-'subscription' => 'sync',
-'hr' => 'users',
-'email' => 'envelope',
-'system' => 'server',
-'security' => 'shield-alt',
-'api' => 'plug',
-];
+    $icons = [
+        'company' => 'building',
+        'general' => 'globe',
+        'sales' => 'chart-line',
+        'purchase' => 'shopping-cart',
+        'service' => 'tools',
+        'subscription' => 'sync',
+        'hr' => 'users',
+        'email' => 'envelope',
+        'system' => 'server',
+        'security' => 'shield-alt',
+        'api' => 'plug',
+    ];
 
-return $icons[$category] ?? 'cog';
+    return $icons[$category] ?? 'cog';
 }
 
 function getTimezoneList() {
-return [
-// Asia Pacific (Most Common)
-'Asia/Kuala_Lumpur' => '(GMT+08:00) Kuala Lumpur, Singapore',
-'Asia/Jakarta' => '(GMT+07:00) Jakarta',
-'Asia/Bangkok' => '(GMT+07:00) Bangkok, Hanoi',
-'Asia/Manila' => '(GMT+08:00) Manila',
-'Asia/Hong_Kong' => '(GMT+08:00) Hong Kong',
-'Asia/Shanghai' => '(GMT+08:00) Beijing, Shanghai',
-'Asia/Tokyo' => '(GMT+09:00) Tokyo, Osaka',
-'Asia/Seoul' => '(GMT+09:00) Seoul',
-'Asia/Kolkata' => '(GMT+05:30) Mumbai, Delhi, Kolkata',
-'Asia/Karachi' => '(GMT+05:00) Karachi, Islamabad',
-'Asia/Dubai' => '(GMT+04:00) Dubai, Abu Dhabi',
-'Asia/Riyadh' => '(GMT+03:00) Riyadh, Kuwait',
+    return [
+        // Asia Pacific (Most Common)
+        'Asia/Kuala_Lumpur' => '(GMT+08:00) Kuala Lumpur, Singapore',
+        'Asia/Jakarta' => '(GMT+07:00) Jakarta',
+        'Asia/Bangkok' => '(GMT+07:00) Bangkok, Hanoi',
+        'Asia/Manila' => '(GMT+08:00) Manila',
+        'Asia/Hong_Kong' => '(GMT+08:00) Hong Kong',
+        'Asia/Shanghai' => '(GMT+08:00) Beijing, Shanghai',
+        'Asia/Tokyo' => '(GMT+09:00) Tokyo, Osaka',
+        'Asia/Seoul' => '(GMT+09:00) Seoul',
+        'Asia/Kolkata' => '(GMT+05:30) Mumbai, Delhi, Kolkata',
+        'Asia/Karachi' => '(GMT+05:00) Karachi, Islamabad',
+        'Asia/Dubai' => '(GMT+04:00) Dubai, Abu Dhabi',
+        'Asia/Riyadh' => '(GMT+03:00) Riyadh, Kuwait',
 
-// Europe
-'Europe/London' => '(GMT+00:00) London, Dublin, Edinburgh',
-'Europe/Paris' => '(GMT+01:00) Paris, Berlin, Madrid',
-'Europe/Amsterdam' => '(GMT+01:00) Amsterdam, Brussels',
-'Europe/Zurich' => '(GMT+01:00) Zurich, Vienna',
-'Europe/Moscow' => '(GMT+03:00) Moscow, St. Petersburg',
-'Europe/Istanbul' => '(GMT+03:00) Istanbul',
-'Europe/Athens' => '(GMT+02:00) Athens, Helsinki',
+        // Europe
+        'Europe/London' => '(GMT+00:00) London, Dublin, Edinburgh',
+        'Europe/Paris' => '(GMT+01:00) Paris, Berlin, Madrid',
+        'Europe/Amsterdam' => '(GMT+01:00) Amsterdam, Brussels',
+        'Europe/Zurich' => '(GMT+01:00) Zurich, Vienna',
+        'Europe/Moscow' => '(GMT+03:00) Moscow, St. Petersburg',
+        'Europe/Istanbul' => '(GMT+03:00) Istanbul',
+        'Europe/Athens' => '(GMT+02:00) Athens, Helsinki',
 
-// Americas
-'America/New_York' => '(GMT-05:00) New York, Toronto',
-'America/Chicago' => '(GMT-06:00) Chicago, Dallas',
-'America/Denver' => '(GMT-07:00) Denver, Salt Lake City',
-'America/Phoenix' => '(GMT-07:00) Phoenix (No DST)',
-'America/Los_Angeles' => '(GMT-08:00) Los Angeles, San Francisco',
-'America/Sao_Paulo' => '(GMT-03:00) São Paulo, Rio de Janeiro',
-'America/Buenos_Aires' => '(GMT-03:00) Buenos Aires',
-'America/Lima' => '(GMT-05:00) Lima, Bogota',
+        // Americas
+        'America/New_York' => '(GMT-05:00) New York, Toronto',
+        'America/Chicago' => '(GMT-06:00) Chicago, Dallas',
+        'America/Denver' => '(GMT-07:00) Denver, Salt Lake City',
+        'America/Phoenix' => '(GMT-07:00) Phoenix (No DST)',
+        'America/Los_Angeles' => '(GMT-08:00) Los Angeles, San Francisco',
+        'America/Sao_Paulo' => '(GMT-03:00) São Paulo, Rio de Janeiro',
+        'America/Buenos_Aires' => '(GMT-03:00) Buenos Aires',
+        'America/Lima' => '(GMT-05:00) Lima, Bogota',
 
-// Australia & Pacific
-'Australia/Sydney' => '(GMT+10:00) Sydney, Melbourne',
-'Australia/Brisbane' => '(GMT+10:00) Brisbane',
-'Australia/Perth' => '(GMT+08:00) Perth',
-'Australia/Adelaide' => '(GMT+09:30) Adelaide',
-'Pacific/Auckland' => '(GMT+12:00) Auckland, Wellington',
-'Pacific/Honolulu' => '(GMT-10:00) Honolulu',
+        // Australia & Pacific
+        'Australia/Sydney' => '(GMT+10:00) Sydney, Melbourne',
+        'Australia/Brisbane' => '(GMT+10:00) Brisbane',
+        'Australia/Perth' => '(GMT+08:00) Perth',
+        'Australia/Adelaide' => '(GMT+09:30) Adelaide',
+        'Pacific/Auckland' => '(GMT+12:00) Auckland, Wellington',
+        'Pacific/Honolulu' => '(GMT-10:00) Honolulu',
 
-// Africa
-'Africa/Cairo' => '(GMT+02:00) Cairo',
-'Africa/Johannesburg' => '(GMT+02:00) Johannesburg, Cape Town',
-'Africa/Lagos' => '(GMT+01:00) Lagos, Kinshasa',
-'Africa/Nairobi' => '(GMT+03:00) Nairobi, Addis Ababa',
+        // Africa
+        'Africa/Cairo' => '(GMT+02:00) Cairo',
+        'Africa/Johannesburg' => '(GMT+02:00) Johannesburg, Cape Town',
+        'Africa/Lagos' => '(GMT+01:00) Lagos, Kinshasa',
+        'Africa/Nairobi' => '(GMT+03:00) Nairobi, Addis Ababa',
 
-// UTC & Other
-'UTC' => '(GMT+00:00) UTC - Universal Coordinated Time',
-'GMT' => '(GMT+00:00) Greenwich Mean Time',
-];
+        // UTC & Other
+        'UTC' => '(GMT+00:00) UTC - Universal Coordinated Time',
+        'GMT' => '(GMT+00:00) Greenwich Mean Time',
+    ];
 }
 function getSupportedCurrencies() {
-return [
-'MYR' => '🇲🇾 MYR (RM) - Malaysia',
-'SGD' => '🇸🇬 SGD (S$) - Singapore',
-'IDR' => '🇮🇩 IDR (Rp) - Indonesia',
-'THB' => '🇹🇭 THB (฿) - Thailand',
-'PHP' => '🇵🇭 PHP (₱) - Philippines',
-'INR' => '🇮🇳 INR (₹) - India',
-'AED' => '🇦🇪 AED (د.إ) - United Arab Emirates',
-'USD' => '🇺🇸 USD ($) - United States',
-'GBP' => '🇬🇧 GBP (£) - United Kingdom',
-'EUR' => '🇪🇺 EUR (€) - European Union',
-'JPY' => '🇯🇵 JPY (¥) - Japan',
-'AUD' => '🇦🇺 AUD (A$) - Australia',
-'CAD' => '🇨🇦 CAD (C$) - Canada',
-'CNY' => '🇨🇳 CNY (¥) - China',
-];
+    return [
+        'MYR' => '🇲🇾 MYR (RM) - Malaysia',
+        'SGD' => '🇸🇬 SGD (S$) - Singapore',
+        'IDR' => '🇮🇩 IDR (Rp) - Indonesia',
+        'THB' => '🇹🇭 THB (฿) - Thailand',
+        'PHP' => '🇵🇭 PHP (₱) - Philippines',
+        'INR' => '🇮🇳 INR (₹) - India',
+        'AED' => '🇦🇪 AED (د.إ) - United Arab Emirates',
+        'USD' => '🇺🇸 USD ($) - United States',
+        'GBP' => '🇬🇧 GBP (£) - United Kingdom',
+        'EUR' => '🇪🇺 EUR (€) - European Union',
+        'JPY' => '🇯🇵 JPY (¥) - Japan',
+        'AUD' => '🇦🇺 AUD (A$) - Australia',
+        'CAD' => '🇨🇦 CAD (C$) - Canada',
+        'CNY' => '🇨🇳 CNY (¥) - China',
+    ];
 }
 @endphp
 @endsection

@@ -147,6 +147,7 @@ class QuotationController extends Controller
             $quotationData['created_by'] = Auth::id();
             $quotationData['status'] = 'draft';
             $quotationData['approval_status'] = 'pending';
+            $quotationData['cloud_server_hosting'] = $request->has('cloud_server_hosting') ? 1 : 0;
 
             $quotation = Quotation::create($quotationData);
 
@@ -263,6 +264,7 @@ class QuotationController extends Controller
         try {
             // Update quotation
             $quotationData = $validated;
+            $quotationData['cloud_server_hosting'] = $request->has('cloud_server_hosting') ? 1 : 0;
             $quotation->update($quotationData);
 
             // Delete existing items

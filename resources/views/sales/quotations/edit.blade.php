@@ -79,7 +79,7 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-md-4">
                             <label class="form-label">Subject</label>
                             <input type="text" name="subject" class="form-control @error('subject') is-invalid @enderror"
                                 value="{{ old('subject', $quotation->subject) }}" maxlength="500">
@@ -87,6 +87,12 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+   <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="cloud_server_hosting" id="cloud_server_hosting" value="1"
+        {{ isset($quotation) ? ($quotation->cloud_server_hosting == 1 ? 'checked' : '') : 'checked' }}>
+    <label class="form-check-label" for="cloud_server_hosting">Cloud Server & Hosting</label>
+</div>
+
                         <div class="col-md-3">
                             <label class="form-label">Currency</label>
                             <input type="text"

@@ -37,7 +37,8 @@ class Quotation extends Model
         'approved_date',
         'is_revised',
         'parent_quotation_id',
-        'revision_number'
+        'revision_number',
+        'cloud_server_hosting'
     ];
 
     protected $casts = [

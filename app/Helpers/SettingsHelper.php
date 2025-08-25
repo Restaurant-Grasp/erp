@@ -459,4 +459,48 @@ class SettingsHelper
         $logo = self::getSetting('general', 'logo');
         return $logo ? asset('assets/' . $logo) : null;
     }
+
+public static function getCloudServerFeatures()
+{
+    $features = self::getSetting('sales', 'cloud_server_hosting', '[]');
+    return json_decode($features, true) ?: [];
+}
+
+/**
+ * Set cloud server hosting features
+ */
+public static function setCloudServerFeatures($features)
+{
+    $jsonData = json_encode($features);
+    return self::set('sales', 'cloud_server_hosting', $jsonData, 'json', 'Cloud server hosting features and descriptions');
+}
+
+/**
+ * Add a single cloud server feature
+ */
+public static function addCloudServerFeature($feature, $description)
+{
+    $currentFeatures = self::getCloudServerFeatures();
+    $currentFeatures[] = [
+        'feature' => $feature,
+        'description' => $description,
+        'id' => uniqid(), // Unique identifier for frontend manipulation
+        'created_at' => now()->toISOString()
+    ];
+    
+    return self::setCloudServerFeatures($currentFeatures);
+}
+
+/**
+ * Remove a cloud server feature by ID
+ */
+public static function removeCloudServerFeature($featureId)
+{
+    $currentFeatures = self::getCloudServerFeatures();
+    $filteredFeatures = array_filter($currentFeatures, function($item) use ($featureId) {
+        return $item['id'] !== $featureId;
+    });
+    
+    return self::setCloudServerFeatures(array_values($filteredFeatures));
+}
 }
