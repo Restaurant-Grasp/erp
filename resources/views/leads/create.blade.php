@@ -18,13 +18,13 @@
     @csrf
     <div class="row">
         <div class="col-md-8">
-            {{-- Temple Information --}}
+            {{-- Business Information --}}
             <div class="card">
-                <div class="card-header"><h5 class="mb-0">Temple Information</h5></div>
+                <div class="card-header"><h5 class="mb-0">Business Information</h5></div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Temple Name</label>
+                            <label class="form-label">Client Name</label>
                             <input type="text" name="company_name" class="form-control @error('company_name') is-invalid @enderror" value="{{ old('company_name') }}">
                             @error('company_name')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -96,13 +96,13 @@
                 </div>
             </div>
 
-            {{-- Temple Details --}}
+            {{-- Business Details --}}
             <div class="card mt-4">
-                <div class="card-header"><h5 class="mb-0">Temple Details</h5></div>
+                <div class="card-header"><h5 class="mb-0">Business Details</h5></div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Temple Category</label>
+                            <label class="form-label">Business Category</label>
                             <select name="temple_category_id" class="form-select @error('temple_category_id') is-invalid @enderror">
                                 <option value="">Select Category</option>
                                 @foreach($templeCategories as $category)
@@ -116,7 +116,7 @@
                             @enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Temple Size</label>
+                            <label class="form-label">Size</label>
                             <select name="temple_size" class="form-select @error('temple_size') is-invalid @enderror">
                                 <option value="">Select Size</option>
                                 <option value="small" {{ old('temple_size') == 'small' ? 'selected' : '' }}>Small</option>

@@ -47,10 +47,10 @@
         <div class="card-header fw-bold">Additional Information</div>
         <div class="card-body">
           <dl class="row mb-0">
-            <dt class="col-sm-5">Temple Category</dt>
+            <dt class="col-sm-5">Business Category</dt>
             <dd class="col-sm-7">{{ $lead->templeCategory->name ?? '-' }}</dd>
 
-            <dt class="col-sm-5">Temple Size</dt>
+            <dt class="col-sm-5">Size</dt>
             <dd class="col-sm-7">{{ ucfirst(str_replace('_',' ', $lead->temple_size ?? '-')) }}</dd>
 
             <dt class="col-sm-5">Interested In</dt>
